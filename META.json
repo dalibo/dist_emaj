@@ -1,0 +1,39 @@
+{
+   "name": "Distributed E-Maj",
+   "abstract": "Distributed E-Maj is a PostgreSQL extension which extends the E-Maj extension capabilities by offering multi-databases distribution capabilities.",
+   "description": "Two clients allow to synchronize E-Maj marks set and E-Maj rollback operations in a consistent manner.",
+   "version": "devel",
+   "maintainer": "Philippe Beaudoin - phb<dot>emaj<at>free<dot>fr",
+   "license": "gpl_3",
+   "tags": [ "emaj", "2PC", "2 phase commit", "consistency" ],
+   "prereqs": {
+     "runtime": {
+       "requires": {
+         "dblink": 0,
+       }
+     }
+   },
+   "provides": {
+     "emaj": {
+       "file": "sql/dist_emaj--devel.sql",
+       "docfile": "doc/Emaj.devel_doc_en.pdf",
+       "version": "devel",
+       "abstract": "Distributed tables changes log and rollback"
+     }
+   },
+   "resources": {
+      "homepage": "http://emaj.readthedocs.io",
+      "repository": {
+        "url":  "https://github.com/dalibo/emaj.git",
+        "web":  "https://github.com/dalibo/emaj/",
+        "type": "git"
+      },
+      "bugtracker": {
+         "web": "https://github.com/dalibo/emaj/issues"
+      }
+   },
+   "meta-spec": {
+      "version": "1.0.0",
+      "url": "http://pgxn.org/meta/spec.txt"
+   }
+}

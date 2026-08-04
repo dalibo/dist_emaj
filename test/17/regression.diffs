@@ -1,0 +1,13 @@
+*** /home/postgres/proj/dist_emaj/test/17/expected/viewer.out	Mon Aug  3 15:30:03 2026
+--- /home/postgres/proj/dist_emaj/test/17/results/viewer.out	Mon Aug  3 15:35:34 2026
+***************
+*** 103,108 ****
+--- 103,110 ----
+  ERROR:  permission denied for table dist_emaj_server
+  delete from dist_emaj.dist_emaj_server;
+  ERROR:  permission denied for table dist_emaj_server
++ select * from dist_emaj.dist_emaj_server_aggregates;
++ ERROR:  permission denied for table dist_emaj_server
+  -----------------------------
+  -- authorized functions
+  -----------------------------

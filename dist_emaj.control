@@ -1,0 +1,10 @@
+# File:	dist_emaj.control
+# Distributed E-Maj extension
+
+default_version = 'devel'
+comment         = 'The dist_emaj extension add distributed features to E-Maj.'
+directory       = 'dist_emaj'
+superuser       = true
+schema          = 'dist_emaj'
+relocatable     = false
+requires        = 'dblink'
