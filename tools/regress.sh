@@ -15,7 +15,7 @@
 # DIST_EMAJ_REGTEST_MENU_ACTIONS        : Contains the functions to be executed according to the regression test and the PostgreSQL version (do not fill this array)
 # DIST_EMAJ_REGTEST_MENU                : Contains the menu's entries (do not fill this array)
 typeset -r DIST_EMAJ_REGTEST_STANDART=('install' 'setup' 'create_drop' 'start_stop' 'rollback' 'misc' 'viewer' 'adm' 'check' 'cleanup')
-typeset -r DIST_EMAJ_REGTEST_STANDART_PGVER='17 18'
+typeset -r DIST_EMAJ_REGTEST_STANDART_PGVER='14 17 18 19'
 typeset -r DIST_EMAJ_REGTEST_UNINSTALL=('install' 'setup' 'before_uninstall' 'uninstall' 'install' 'cleanup')
 typeset -r DIST_EMAJ_REGTEST_UNINSTALL_PGVER=(18)
 

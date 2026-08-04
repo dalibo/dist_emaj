@@ -1,0 +1,422 @@
+-- create_drop.sql : non regression tests for Distributed E-Maj objects creation and drop
+-- It tests in particular:
+--   dist_emaj_create_server(), dist_emaj_drop_server(),
+--   dist_emaj_create_cluster(), dist_emaj_drop_cluster(),
+--   dist_emaj_assign_group(), dist_emaj_remove_group()
+--
+-- Prepare the test context
+--
+-- set sequence restart value
+select public.handle_dist_emaj_sequences(1000);
+ handle_dist_emaj_sequences 
+----------------------------
+ 
+(1 row)
+
+--
+-- Test dist_emaj_create_server()
+--
+-- illegal value
+select dist_emaj.dist_emaj_create_server(null, 'a connect string', 2);
+ERROR:  dist_emaj_create_server: The server name can't be NULL or empty.
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_create_server(text,text,integer,boolean) line 18 at RAISE
+select dist_emaj.dist_emaj_create_server('first_server', null, 2);
+ERROR:  dist_emaj_create_server: The connect string can't be NULL.
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_create_server(text,text,integer,boolean) line 22 at RAISE
+select dist_emaj.dist_emaj_create_server('first_server', 'a connect string', null);
+ERROR:  dist_emaj_create_server: The number of rollback parallel sessions must be greater than 0.
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_create_server(text,text,integer,boolean) line 26 at RAISE
+select dist_emaj.dist_emaj_create_server('first_server', 'a connect string', 0);
+ERROR:  dist_emaj_create_server: The number of rollback parallel sessions must be greater than 0.
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_create_server(text,text,integer,boolean) line 26 at RAISE
+-- ok
+select dist_emaj.dist_emaj_create_server('first_server', 'a connect string', 2);
+ dist_emaj_create_server 
+-------------------------
+                       1
+(1 row)
+
+select * from dist_emaj.dist_emaj_server where srv_name = 'first_server';
+   srv_name   | srv_connect_string | srv_rlbk_parallel_session | srv_creation_time_id | srv_last_alter_time_id 
+--------------+--------------------+---------------------------+----------------------+------------------------
+ first_server | a connect string   |                         2 |                 1000 |                       
+(1 row)
+
+-- already created
+select dist_emaj.dist_emaj_create_server('first_server', 'another connect string', 3);
+ERROR:  dist_emaj_create_server: The server "first_server" already exists.
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_create_server(text,text,integer,boolean) line 36 at RAISE
+select dist_emaj.dist_emaj_create_server('first_server', 'another connect string', 3, true);
+ dist_emaj_create_server 
+-------------------------
+                       0
+(1 row)
+
+select * from dist_emaj.dist_emaj_server where srv_name = 'first_server';
+   srv_name   |   srv_connect_string   | srv_rlbk_parallel_session | srv_creation_time_id | srv_last_alter_time_id 
+--------------+------------------------+---------------------------+----------------------+------------------------
+ first_server | another connect string |                         3 |                 1000 |                   1001
+(1 row)
+
+--
+-- Test dist_emaj_drop_server()
+--
+-- server does not exist.
+select dist_emaj.dist_emaj_drop_server('dummy_server');
+ERROR:  dist_emaj_drop_server: The server "dummy_server" does not exist.
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_drop_server(text,boolean,boolean) line 22 at RAISE
+select dist_emaj.dist_emaj_drop_server('dummy_server', true);
+ dist_emaj_drop_server 
+-----------------------
+                     0
+(1 row)
+
+-- an assigned group
+insert into dist_emaj.dist_emaj_cluster (clst_name) values ('a_cluster');
+insert into dist_emaj.dist_emaj_cluster_group values ('a_cluster', 'first_server', 'a group');
+-- but CASCADE is not allowed
+select dist_emaj.dist_emaj_drop_server('first_server');
+ERROR:  dist_emaj_drop_server: The server "first_server" has 1 groups assigned to existing clusters.
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_drop_server(text,boolean,boolean) line 37 at RAISE
+-- ok, CASCADE is now allowed
+select dist_emaj.dist_emaj_drop_server('first_server', false, true);
+ dist_emaj_drop_server 
+-----------------------
+                     1
+(1 row)
+
+delete from dist_emaj.dist_emaj_cluster where clst_name = 'a_cluster';
+--
+-- Test dist_emaj_create_cluster()
+--
+-- illegal value
+select dist_emaj.dist_emaj_create_cluster(null);
+ERROR:  dist_emaj_create_cluster: The cluster name can't be NULL or empty.
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_create_cluster(text,boolean) line 15 at RAISE
+-- ok
+select dist_emaj.dist_emaj_create_cluster('first_cluster');
+ dist_emaj_create_cluster 
+--------------------------
+                        1
+(1 row)
+
+-- already created
+select dist_emaj.dist_emaj_create_cluster('first_cluster');
+ERROR:  dist_emaj_create_cluster: The cluster "first_cluster" already exists.
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_create_cluster(text,boolean) line 25 at RAISE
+select dist_emaj.dist_emaj_create_cluster('first_cluster', true);
+ dist_emaj_create_cluster 
+--------------------------
+                        0
+(1 row)
+
+--
+-- Test dist_emaj_drop_cluster()
+--
+-- cluster does not exist.
+select dist_emaj.dist_emaj_drop_cluster('dummy_cluster');
+ERROR:  dist_emaj_drop_cluster: The cluster "dummy_cluster" does not exist.
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_drop_cluster(text,boolean,boolean) line 22 at RAISE
+select dist_emaj.dist_emaj_drop_cluster('dummy_cluster', true);
+ dist_emaj_drop_cluster 
+------------------------
+                      0
+(1 row)
+
+-- an assigned group
+insert into dist_emaj.dist_emaj_server (srv_name, srv_connect_string, srv_rlbk_parallel_session) values ('a_server', 'a connect string', 1);
+insert into dist_emaj.dist_emaj_cluster_group values ('first_cluster', 'a_server', 'a group');
+-- but CASCADE is not allowed
+select dist_emaj.dist_emaj_drop_cluster('first_cluster');
+ERROR:  dist_emaj_drop_cluster: The cluster "first_cluster" has 1 groups assigned to it.
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_drop_cluster(text,boolean,boolean) line 37 at RAISE
+-- ok, CASCADE is now allowed
+select dist_emaj.dist_emaj_drop_cluster('first_cluster', false, true);
+ dist_emaj_drop_cluster 
+------------------------
+                      1
+(1 row)
+
+delete from dist_emaj.dist_emaj_server where srv_name = 'a_server';
+--
+-- Test dist_emaj_assign_group()
+--
+insert into dist_emaj.dist_emaj_cluster (clst_name) values ('a_cluster');
+insert into dist_emaj.dist_emaj_server (srv_name, srv_connect_string, srv_rlbk_parallel_session) values ('a_server', 'a connect string', 1);
+-- invalid values
+select dist_emaj.dist_emaj_assign_group('dummy_cluster', 'dummy_server', 'dummy_group');
+ERROR:  dist_emaj_assign_group: The cluster "dummy_cluster" does not exist.
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_assign_group(text,text,text,boolean) line 20 at RAISE
+select dist_emaj.dist_emaj_assign_group('a_cluster', 'dummy_server', 'dummy_group');
+ERROR:  dist_emaj_assign_group: The server "dummy_server" does not exist.
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_assign_group(text,text,text,boolean) line 29 at RAISE
+-- ok
+select dist_emaj.dist_emaj_assign_group('a_cluster', 'a_server', 'a_group');
+ dist_emaj_assign_group 
+------------------------
+                      1
+(1 row)
+
+-- already assigned
+select dist_emaj.dist_emaj_assign_group('a_cluster', 'a_server', 'a_group');
+ERROR:  dist_emaj_assign_group: The table group "a_group" on server "a_server" is already assigned to the cluster "a_cluster".
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_assign_group(text,text,text,boolean) line 41 at RAISE
+select dist_emaj.dist_emaj_assign_group('a_cluster', 'a_server', 'a_group', true);
+ dist_emaj_assign_group 
+------------------------
+                      0
+(1 row)
+
+--
+-- Test dist_emaj_remove_group()
+--
+-- invalid values
+select dist_emaj.dist_emaj_remove_group('dummy_cluster', 'dummy_server', 'dummy_group');
+ERROR:  dist_emaj_remove_group: The cluster "dummy_cluster" does not exist.
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_remove_group(text,text,text,boolean) line 20 at RAISE
+select dist_emaj.dist_emaj_remove_group('a_cluster', 'dummy_server', 'dummy_group');
+ERROR:  dist_emaj_remove_group: The server "dummy_server" does not exist.
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_remove_group(text,text,text,boolean) line 29 at RAISE
+-- ok
+select dist_emaj.dist_emaj_remove_group('a_cluster', 'a_server', 'a_group');
+ dist_emaj_remove_group 
+------------------------
+                      1
+(1 row)
+
+-- not assigned group
+select dist_emaj.dist_emaj_remove_group('a_cluster', 'a_server', 'a_group');
+ERROR:  dist_emaj_remove_group: The table group "a_group" on server "a_server" is not currently assigned to the cluster "a_cluster".
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_remove_group(text,text,text,boolean) line 41 at RAISE
+select dist_emaj.dist_emaj_remove_group('a_cluster', 'a_server', 'a_group', true);
+ dist_emaj_remove_group 
+------------------------
+                      0
+(1 row)
+
+delete from dist_emaj.dist_emaj_server where srv_name = 'a_server';
+delete from dist_emaj.dist_emaj_cluster where clst_name = 'a_cluster';
+--
+-- prepare the clusters configuration for the next script.
+--
+select dist_emaj.dist_emaj_create_server('emaj_1', 'host=localhost port=' || pg_catalog.current_setting('port') || ' dbname=regression_1 user=_regress_emaj_adm password=adm', 2);
+ dist_emaj_create_server 
+-------------------------
+                       1
+(1 row)
+
+select dist_emaj.dist_emaj_create_server('emaj_2', 'postgresql://_regress_emaj_adm:adm@localhost:' || pg_catalog.current_setting('port') || '/regression_2', 2);
+ dist_emaj_create_server 
+-------------------------
+                       1
+(1 row)
+
+select dist_emaj.dist_emaj_create_cluster('my_cluster');
+ dist_emaj_create_cluster 
+--------------------------
+                        1
+(1 row)
+
+select dist_emaj.dist_emaj_create_cluster('empty_cluster');
+ dist_emaj_create_cluster 
+--------------------------
+                        1
+(1 row)
+
+select dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_1', 'myGroup1');
+ dist_emaj_assign_group 
+------------------------
+                      1
+(1 row)
+
+select dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_1', 'myGroup2');
+ dist_emaj_assign_group 
+------------------------
+                      1
+(1 row)
+
+select dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_2', 'phil''s group#3",');
+ dist_emaj_assign_group 
+------------------------
+                      1
+(1 row)
+
+select dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_2', 'myGroup4');
+ dist_emaj_assign_group 
+------------------------
+                      1
+(1 row)
+
+select dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_2', 'myGroup5');
+ dist_emaj_assign_group 
+------------------------
+                      1
+(1 row)
+
+select dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_2', 'myGroup6');
+ dist_emaj_assign_group 
+------------------------
+                      1
+(1 row)
+
+--
+-- Test dist_emaj_verify_cluster
+-- (Note that the distributed rollback states cleanup is tested in the rollback.sql script)
+--
+-- unknown cluster
+select dist_emaj.dist_emaj_verify_cluster('dummy');
+ERROR:  dist_emaj_verify_cluster: The cluster "dummy" is unknown.
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 23 at RAISE
+-- empty cluster
+select dist_emaj.dist_emaj_verify_cluster('empty_cluster');
+ dist_emaj_verify_cluster 
+--------------------------
+ 
+(1 row)
+
+select dist_emaj.dist_emaj_verify_cluster('empty_cluster', TRUE);
+ERROR:  dist_emaj_verify_cluster: The cluster "empty_cluster" is empty.
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 31 at RAISE
+-- emaj is missing in a server
+create database regression_no_emaj;
+select dist_emaj.dist_emaj_create_server('no_emaj', 'host=localhost port=' || pg_catalog.current_setting('port') || ' dbname=regression_no_emaj user=_regress_emaj_adm password=adm', 1);
+ dist_emaj_create_server 
+-------------------------
+                       1
+(1 row)
+
+begin;
+  select dist_emaj.dist_emaj_create_cluster('buggy_cluster');
+ dist_emaj_create_cluster 
+--------------------------
+                        1
+(1 row)
+
+  select dist_emaj.dist_emaj_assign_group('buggy_cluster', 'no_emaj', 'myGroup1');
+ dist_emaj_assign_group 
+------------------------
+                      1
+(1 row)
+
+  select dist_emaj.dist_emaj_verify_cluster('buggy_cluster');
+ERROR:  _verify_server (2): Error on server "no_emaj", the emaj extension is not installed in the database.
+CONTEXT:  PL/pgSQL function dist_emaj._verify_server(text,text,text,text,boolean) line 54 at RAISE
+SQL statement "SELECT dist_emaj._verify_server(srv_name, srv_connect_string, groups_list, v_dblinkSchema, TRUE)
+      FROM (
+        SELECT srv_name, srv_connect_string,
+               string_agg(quote_literal(clgrp_group), ',' ORDER BY clgrp_group) AS groups_list
+          FROM dist_emaj.dist_emaj_cluster_group
+               JOIN dist_emaj.dist_emaj_server ON (dist_emaj_server.srv_name = dist_emaj_cluster_group.clgrp_server)
+          WHERE clgrp_cluster = p_cluster
+          GROUP BY srv_name, srv_connect_string
+          ORDER BY srv_name
+        ) AS servers"
+PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 41 at PERFORM
+rollback;
+-- keep the server and the database for dist_emaj_verify_all() tests in misc.sql
+-- should be OK
+select dist_emaj.dist_emaj_verify_cluster('my_cluster');
+ dist_emaj_verify_cluster 
+--------------------------
+ 
+(1 row)
+
+--
+-- Check dist_emaj tables content
+--
+select hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_wording, E'\\d\\d\.\\d\\d\\.\\d\\d\\.\\d\\d\\d\\d', '%', 'g'), hist_user
+  from dist_emaj.dist_emaj_hist where hist_id >= 1000 order by 1;
+ hist_id | hist_function  |   hist_event   |       hist_object       |                regexp_replace                 | hist_user 
+---------+----------------+----------------+-------------------------+-----------------------------------------------+-----------
+    1004 | CREATE_SERVER  | BEGIN          | first_server            |                                               | postgres
+    1005 | CREATE_SERVER  | TIME STAMP SET | 1000                    |                                               | postgres
+    1006 | CREATE_SERVER  | END            | first_server            | Server created                                | postgres
+    1008 | CREATE_SERVER  | BEGIN          | first_server            |                                               | postgres
+    1009 | CREATE_SERVER  | TIME STAMP SET | 1001                    |                                               | postgres
+    1010 | CREATE_SERVER  | END            | first_server            | Server modified                               | postgres
+    1012 | DROP_SERVER    | BEGIN          | dummy_server            |                                               | postgres
+    1013 | DROP_SERVER    | END            | dummy_server            | The server did not exist                      | postgres
+    1016 | DROP_SERVER    | BEGIN          | first_server            |                                               | postgres
+    1017 | DROP_SERVER    | TIME STAMP SET | 1003                    |                                               | postgres
+    1018 | DROP_SERVER    | END            | first_server            | Server dropped, 1 group assignments deleted   | postgres
+    1020 | CREATE_CLUSTER | BEGIN          | first_cluster           |                                               | postgres
+    1021 | CREATE_CLUSTER | TIME STAMP SET | 1004                    |                                               | postgres
+    1022 | CREATE_CLUSTER | END            | first_cluster           | Cluster created                               | postgres
+    1024 | CREATE_CLUSTER | BEGIN          | first_cluster           |                                               | postgres
+    1025 | CREATE_CLUSTER | END            | first_cluster           | The cluster already existed                   | postgres
+    1027 | DROP_CLUSTER   | BEGIN          | dummy_cluster           |                                               | postgres
+    1028 | DROP_CLUSTER   | END            | dummy_cluster           | The cluster did not exist                     | postgres
+    1031 | DROP_CLUSTER   | BEGIN          | first_cluster           |                                               | postgres
+    1032 | DROP_CLUSTER   | TIME STAMP SET | 1006                    |                                               | postgres
+    1033 | DROP_CLUSTER   | END            | first_cluster           | Cluster dropped, 1 group assignments deleted  | postgres
+    1036 | ASSIGN_GROUP   | BEGIN          | a_server.a_group        | To cluster a_cluster                          | postgres
+    1037 | ASSIGN_GROUP   | TIME STAMP SET | 1007                    |                                               | postgres
+    1038 | ASSIGN_GROUP   | END            | a_server.a_group        | Group assigned to the cluster                 | postgres
+    1040 | ASSIGN_GROUP   | BEGIN          | a_server.a_group        | To cluster a_cluster                          | postgres
+    1041 | ASSIGN_GROUP   | END            | a_server.a_group        | The group was already assigned to the cluster | postgres
+    1044 | REMOVE_GROUP   | BEGIN          | a_server.a_group        | From cluster a_cluster                        | postgres
+    1045 | REMOVE_GROUP   | TIME STAMP SET | 1008                    |                                               | postgres
+    1046 | REMOVE_GROUP   | END            | a_server.a_group        | Group removed from the cluster                | postgres
+    1048 | REMOVE_GROUP   | BEGIN          | a_server.a_group        | From cluster a_cluster                        | postgres
+    1049 | REMOVE_GROUP   | END            | a_server.a_group        | The group was not assigned to the cluster     | postgres
+    1050 | CREATE_SERVER  | BEGIN          | emaj_1                  |                                               | postgres
+    1051 | CREATE_SERVER  | TIME STAMP SET | 1009                    |                                               | postgres
+    1052 | CREATE_SERVER  | END            | emaj_1                  | Server created                                | postgres
+    1053 | CREATE_SERVER  | BEGIN          | emaj_2                  |                                               | postgres
+    1054 | CREATE_SERVER  | TIME STAMP SET | 1010                    |                                               | postgres
+    1055 | CREATE_SERVER  | END            | emaj_2                  | Server created                                | postgres
+    1056 | CREATE_CLUSTER | BEGIN          | my_cluster              |                                               | postgres
+    1057 | CREATE_CLUSTER | TIME STAMP SET | 1011                    |                                               | postgres
+    1058 | CREATE_CLUSTER | END            | my_cluster              | Cluster created                               | postgres
+    1059 | CREATE_CLUSTER | BEGIN          | empty_cluster           |                                               | postgres
+    1060 | CREATE_CLUSTER | TIME STAMP SET | 1012                    |                                               | postgres
+    1061 | CREATE_CLUSTER | END            | empty_cluster           | Cluster created                               | postgres
+    1062 | ASSIGN_GROUP   | BEGIN          | emaj_1.myGroup1         | To cluster my_cluster                         | postgres
+    1063 | ASSIGN_GROUP   | TIME STAMP SET | 1013                    |                                               | postgres
+    1064 | ASSIGN_GROUP   | END            | emaj_1.myGroup1         | Group assigned to the cluster                 | postgres
+    1065 | ASSIGN_GROUP   | BEGIN          | emaj_1.myGroup2         | To cluster my_cluster                         | postgres
+    1066 | ASSIGN_GROUP   | TIME STAMP SET | 1014                    |                                               | postgres
+    1067 | ASSIGN_GROUP   | END            | emaj_1.myGroup2         | Group assigned to the cluster                 | postgres
+    1068 | ASSIGN_GROUP   | BEGIN          | emaj_2.phil's group#3", | To cluster my_cluster                         | postgres
+    1069 | ASSIGN_GROUP   | TIME STAMP SET | 1015                    |                                               | postgres
+    1070 | ASSIGN_GROUP   | END            | emaj_2.phil's group#3", | Group assigned to the cluster                 | postgres
+    1071 | ASSIGN_GROUP   | BEGIN          | emaj_2.myGroup4         | To cluster my_cluster                         | postgres
+    1072 | ASSIGN_GROUP   | TIME STAMP SET | 1016                    |                                               | postgres
+    1073 | ASSIGN_GROUP   | END            | emaj_2.myGroup4         | Group assigned to the cluster                 | postgres
+    1074 | ASSIGN_GROUP   | BEGIN          | emaj_2.myGroup5         | To cluster my_cluster                         | postgres
+    1075 | ASSIGN_GROUP   | TIME STAMP SET | 1017                    |                                               | postgres
+    1076 | ASSIGN_GROUP   | END            | emaj_2.myGroup5         | Group assigned to the cluster                 | postgres
+    1077 | ASSIGN_GROUP   | BEGIN          | emaj_2.myGroup6         | To cluster my_cluster                         | postgres
+    1078 | ASSIGN_GROUP   | TIME STAMP SET | 1018                    |                                               | postgres
+    1079 | ASSIGN_GROUP   | END            | emaj_2.myGroup6         | Group assigned to the cluster                 | postgres
+    1080 | CREATE_SERVER  | BEGIN          | no_emaj                 |                                               | postgres
+    1081 | CREATE_SERVER  | TIME STAMP SET | 1019                    |                                               | postgres
+    1082 | CREATE_SERVER  | END            | no_emaj                 | Server created                                | postgres
+(64 rows)
+
+select * from dist_emaj.dist_emaj_cluster order by 1;
+   clst_name   | clst_creation_time_id | clst_last_alter_time_id 
+---------------+-----------------------+-------------------------
+ empty_cluster |                  1012 |                        
+ my_cluster    |                  1011 |                    1018
+(2 rows)
+
+select * from dist_emaj.dist_emaj_server order by 1;
+ srv_name |                                   srv_connect_string                                   | srv_rlbk_parallel_session | srv_creation_time_id | srv_last_alter_time_id 
+----------+----------------------------------------------------------------------------------------+---------------------------+----------------------+------------------------
+ emaj_1   | host=localhost port=5419 dbname=regression_1 user=_regress_emaj_adm password=adm       |                         2 |                 1009 |                       
+ emaj_2   | postgresql://_regress_emaj_adm:adm@localhost:5419/regression_2                         |                         2 |                 1010 |                       
+ no_emaj  | host=localhost port=5419 dbname=regression_no_emaj user=_regress_emaj_adm password=adm |                         1 |                 1019 |                       
+(3 rows)
+
+select * from dist_emaj.dist_emaj_cluster_group order by 1,2,3;
+ clgrp_cluster | clgrp_server |   clgrp_group    | clgrp_last_assign_time_id 
+---------------+--------------+------------------+---------------------------
+ my_cluster    | emaj_1       | myGroup1         |                      1013
+ my_cluster    | emaj_1       | myGroup2         |                      1014
+ my_cluster    | emaj_2       | myGroup4         |                      1016
+ my_cluster    | emaj_2       | myGroup5         |                      1017
+ my_cluster    | emaj_2       | myGroup6         |                      1018
+ my_cluster    | emaj_2       | phil's group#3", |                      1015
+(6 rows)
+
