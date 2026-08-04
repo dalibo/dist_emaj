@@ -58,11 +58,14 @@ select 0 from pg_stat_activity limit 1;
 
 -- display dist_emaj functions that are not called by any regression test script
 -- some functions are excluded:
+--   _dist_emaj_param_before_stmt_fnct and _dist_emaj_default_param_before_stmt_fnct are called by triggers but always raise an exception.
+--       (and thus are not listed in pg_stat_user_functions for PG14- versions),
 --   dist_emaj_drop_extension() is not called by the standart test scenarios.
 select proname from pg_proc, pg_namespace
   where pronamespace = pg_namespace.oid
     and nspname = 'dist_emaj' and (proname like E'dist\\_emaj\\_%' or proname like E'\\_%')
-    and proname not in ('dist_emaj_drop_extension')
+    and proname not in ('_dist_emaj_default_param_before_stmt_fnct', '_dist_emaj_param_before_stmt_fnct',
+                        'dist_emaj_drop_extension')
 except
 select funcname from pg_stat_user_functions
   where schemaname = 'dist_emaj' and (funcname like E'dist\\_emaj\\_%' or funcname like E'\\_%')

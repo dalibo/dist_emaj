@@ -21,10 +21,10 @@
 DO LANGUAGE plpgsql
 $do$
   BEGIN
--- Check postgres version is >= 17.
-    IF pg_catalog.current_setting('server_version_num')::INT < 170000 THEN
+-- Check postgres version is >= 14.
+    IF pg_catalog.current_setting('server_version_num')::INT < 140000 THEN
       RAISE EXCEPTION 'Distributed E-Maj installation: The current postgres version (%) is too old for this dist_emaj version. '
-                      'It should be at least 17.', pg_catalog.current_setting('server_version');
+                      'It should be at least 14.', pg_catalog.current_setting('server_version');
     END IF;
 -- Create both dist_emaj_adm and dist_emaj_viewer roles (NOLOGIN), if they do not exist.
     IF NOT EXISTS
@@ -254,8 +254,7 @@ COMMENT ON VIEW dist_emaj.dist_emaj_all_param IS
 $$View on all parameters.$$;
 
 -- View used by clients to get servers characteristics.
-CREATE VIEW dist_emaj.dist_emaj_server_aggregates
-  WITH (security_invoker) AS
+CREATE VIEW dist_emaj.dist_emaj_server_aggregates AS
   SELECT clgrp_cluster AS clst_name, srv_name, srv_connect_string, srv_rlbk_parallel_session,
          array_agg(clgrp_group ORDER BY clgrp_group) AS srv_groups_array,
          string_agg(quote_literal(clgrp_group), ', ' ORDER BY clgrp_group) AS srv_groups_list,
@@ -1047,7 +1046,7 @@ $_verify_server$
         RETURN NEXT v_msg;
       END IF;
     END IF;
--- Then check the emaj version installed on the server is >= 4.8.
+-- Then check the emaj version installed on the server is >= 5.0.
     IF v_checkStep >= 3 THEN
       v_stmt = 'SELECT emaj.emaj_get_version() AS emaj_version';
       EXECUTE format('SELECT emaj_version FROM %I.dblink(%L) AS (emaj_version TEXT)',
@@ -1058,8 +1057,8 @@ $_verify_server$
         v_emajVersionNum = v_emajVersionArray[1]::SMALLINT * 10000 +
                            v_emajVersionArray[2]::SMALLINT * 100 +
                            v_emajVersionArray[3]::SMALLINT;
-        IF v_emajVersionNum < 40800 THEN
-          v_msg = format('Error on server "%s", the emaj version (%s) is too old. It must be at least 4.8.0.',
+        IF v_emajVersionNum < 50000 THEN
+          v_msg = format('Error on server "%s", the emaj version (%s) is too old. It must be at least 5.0.0.',
                          p_server, v_emajVersion);
           IF p_onErrorStop THEN
             EXECUTE format('SELECT %I.dblink_disconnect()', p_dblinkSchema);
@@ -1091,9 +1090,9 @@ $_verify_server$
       v_stmt = 'SELECT string_agg(grp, '', '') AS missing_groups_list '
                  'FROM ( '
                    'SELECT grp '
-                     'FROM unnest(ARRAY[' || p_groupsList || ']) AS t(grp) '
+                     'FROM unnest(ARRAY[' || p_groupsList || ']) AS t1(grp) '
                      'WHERE NOT EXISTS (SELECT 1 FROM emaj.emaj_group WHERE group_name = grp) '
-                   ')';
+                   ') AS t2';
       EXECUTE format('SELECT missing_groups_list FROM %I.dblink(%L) AS (missing_groups_list TEXT)',
                      p_dblinkSchema, v_stmt)
         INTO v_missingGroupsList;
@@ -1314,7 +1313,7 @@ $dist_emaj_sync_marks_cluster$
                      'AND mark_time_id >= ' || v_mostRecentStart || ' '
                    'GROUP BY mark_time_id '
                    'HAVING count(mark_group) = ' || r_server.nb_groups_in_cluster || ' '
-               ')';
+               ') AS t';
       EXECUTE format('SELECT time_id_array FROM %I.dblink(%L) AS (time_id_array BIGINT[])',
                      v_dblinkSchema, v_stmt)
         INTO v_missingMarkTimeIdArray;
@@ -1779,6 +1778,9 @@ GRANT SELECT ON ALL SEQUENCES IN SCHEMA dist_emaj TO dist_emaj_viewer;
 REVOKE SELECT ON TABLE dist_emaj.dist_emaj_server FROM dist_emaj_viewer;
 GRANT SELECT (srv_name, srv_rlbk_parallel_session, srv_creation_time_id, srv_last_alter_time_id) ON TABLE dist_emaj.dist_emaj_server
   TO dist_emaj_viewer;
+REVOKE SELECT ON TABLE dist_emaj.dist_emaj_server_aggregates FROM dist_emaj_viewer;
+GRANT SELECT (clst_name, srv_name, srv_rlbk_parallel_session, srv_groups_array, srv_groups_list, srv_nb_group)
+  ON TABLE dist_emaj.dist_emaj_server_aggregates TO dist_emaj_viewer;
 
 ----------------------------------------------------------------
 --                                                            --

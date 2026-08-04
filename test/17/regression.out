@@ -6,5 +6,5 @@ test rollback                 ... ok
 test misc                     ... ok
 test viewer                   ... FAILED
 test adm                      ... ok
-test check                    ... ok
+test check                    ... FAILED
 test cleanup                  ... ok
