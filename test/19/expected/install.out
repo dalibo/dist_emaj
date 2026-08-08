@@ -72,6 +72,12 @@ select relname from pg_catalog.pg_class,
 (13 rows)
 
 -- check history
+select verh_version from dist_emaj.dist_emaj_version_hist;
+ verh_version 
+--------------
+ <devel>
+(1 row)
+
 select hist_id, hist_function, hist_event, hist_object, hist_wording, hist_user from dist_emaj.dist_emaj_hist order by hist_id;
  hist_id |   hist_function   | hist_event |    hist_object    |       hist_wording       | hist_user 
 ---------+-------------------+------------+-------------------+--------------------------+-----------

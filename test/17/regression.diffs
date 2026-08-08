@@ -1,68 +1,17 @@
-*** /home/postgres/proj/dist_emaj/test/17/expected/viewer.out	Mon Aug  3 15:36:50 2026
---- /home/postgres/proj/dist_emaj/test/17/results/viewer.out	Tue Aug  4 18:48:52 2026
+*** /home/postgres/proj/dist_emaj/test/17/expected/install.out	Tue Aug  4 18:50:18 2026
+--- /home/postgres/proj/dist_emaj/test/17/results/install.out	Sat Aug  8 18:48:58 2026
 ***************
-*** 98,110 ****
-   emaj_2   |                         2
-  (2 rows)
+*** 72,77 ****
+--- 72,83 ----
+  (13 rows)
   
-  -- forbidden
-  select * from dist_emaj.dist_emaj_server;
-  ERROR:  permission denied for table dist_emaj_server
-  delete from dist_emaj.dist_emaj_server;
-  ERROR:  permission denied for table dist_emaj_server
-  select * from dist_emaj.dist_emaj_server_aggregates;
-! ERROR:  permission denied for table dist_emaj_server
-  -----------------------------
-  -- authorized functions
-  -----------------------------
---- 98,117 ----
-   emaj_2   |                         2
-  (2 rows)
-  
-+ select clst_name, srv_name, srv_rlbk_parallel_session, srv_groups_array from dist_emaj.dist_emaj_server_aggregates order by 1, 2;
-+  clst_name  | srv_name | srv_rlbk_parallel_session |                 srv_groups_array                 
-+ ------------+----------+---------------------------+--------------------------------------------------
-+  my_cluster | emaj_1   |                         2 | {myGroup1,myGroup2}
-+  my_cluster | emaj_2   |                         2 | {myGroup4,myGroup5,myGroup6,"phil's group#3\","}
-+ (2 rows)
+  -- check history
++ select verh_version from dist_emaj.dist_emaj_version_hist;
++  verh_version 
++ --------------
++  <devel>
++ (1 row)
 + 
-  -- forbidden
-  select * from dist_emaj.dist_emaj_server;
-  ERROR:  permission denied for table dist_emaj_server
-  delete from dist_emaj.dist_emaj_server;
-  ERROR:  permission denied for table dist_emaj_server
-  select * from dist_emaj.dist_emaj_server_aggregates;
-! ERROR:  permission denied for view dist_emaj_server_aggregates
-  -----------------------------
-  -- authorized functions
-  -----------------------------
-*** /home/postgres/proj/dist_emaj/test/17/expected/check.out	Mon Aug  3 15:36:50 2026
---- /home/postgres/proj/dist_emaj/test/17/results/check.out	Tue Aug  4 18:48:52 2026
-***************
-*** 58,68 ****
-  
-  -- display dist_emaj functions that are not called by any regression test script
-  -- some functions are excluded:
-  --   dist_emaj_drop_extension() is not called by the standart test scenarios.
-  select proname from pg_proc, pg_namespace
-    where pronamespace = pg_namespace.oid
-      and nspname = 'dist_emaj' and (proname like E'dist\\_emaj\\_%' or proname like E'\\_%')
-!     and proname not in ('dist_emaj_drop_extension')
-  except
-  select funcname from pg_stat_user_functions
-    where schemaname = 'dist_emaj' and (funcname like E'dist\\_emaj\\_%' or funcname like E'\\_%')
---- 58,71 ----
-  
-  -- display dist_emaj functions that are not called by any regression test script
-  -- some functions are excluded:
-+ --   _dist_emaj_param_before_stmt_fnct and _dist_emaj_default_param_before_stmt_fnct are called by triggers but always raise an exception.
-+ --       (and thus are not listed in pg_stat_user_functions for PG14- versions),
-  --   dist_emaj_drop_extension() is not called by the standart test scenarios.
-  select proname from pg_proc, pg_namespace
-    where pronamespace = pg_namespace.oid
-      and nspname = 'dist_emaj' and (proname like E'dist\\_emaj\\_%' or proname like E'\\_%')
-!     and proname not in ('_dist_emaj_default_param_before_stmt_fnct', '_dist_emaj_param_before_stmt_fnct',
-!                         'dist_emaj_drop_extension')
-  except
-  select funcname from pg_stat_user_functions
-    where schemaname = 'dist_emaj' and (funcname like E'dist\\_emaj\\_%' or funcname like E'\\_%')
+  select hist_id, hist_function, hist_event, hist_object, hist_wording, hist_user from dist_emaj.dist_emaj_hist order by hist_id;
+   hist_id |   hist_function   | hist_event |    hist_object    |       hist_wording       | hist_user 
+  ---------+-------------------+------------+-------------------+--------------------------+-----------

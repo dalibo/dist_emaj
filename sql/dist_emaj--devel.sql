@@ -76,6 +76,17 @@ CREATE TYPE dist_emaj._rlbk_status_enum AS ENUM (
 --                                                            --
 ----------------------------------------------------------------
 
+-- Table containing the history of installed Distributed E-Maj versions.
+CREATE TABLE dist_emaj.dist_emaj_version_hist (
+  verh_version                 TEXT        NOT NULL,       -- dist_emaj version name
+  verh_time_range              TSTZRANGE   NOT NULL,       -- validity time stamps range (with inclusive bounds)
+                                                           --   the lower bound corresponds to the installation/upgrade end time or the
+                                                           --   latest database logical restore time
+  PRIMARY KEY (verh_version)
+  );
+COMMENT ON TABLE dist_emaj.dist_emaj_version_hist IS
+$$Contains Distributed E-Maj versions history.$$;
+
 -- Table containing Distributed E-maj default parameters.
 CREATE TABLE dist_emaj.dist_emaj_default_param (
   param_key                    TEXT        NOT NULL,       -- parameter key
@@ -1037,7 +1048,7 @@ $_verify_server$
     IF v_checkStep >= 3 THEN
       IF NOT v_getVersionExists THEN
         v_msg = format('Error on server "%s", the emaj.emaj_get_version() function is missing. The emaj version is '
-                          'probably too old (a version 4.8+ is required).',
+                          'probably too old (a version 5.0+ is required).',
                        p_server);
         IF p_onErrorStop THEN
           EXECUTE format('SELECT %I.dblink_disconnect()', p_dblinkSchema);
@@ -1826,6 +1837,9 @@ INSERT INTO pg_catalog.pg_description (objoid, classoid, objsubid, description)
              AND (proname LIKE E'dist\\_emaj\\_%' OR proname LIKE E'\\_%')
              AND pg_description.description IS NULL
         );
+-- Register the dist_emaj version into the version history table.
+INSERT INTO dist_emaj.dist_emaj_version_hist (verh_version, verh_time_range)
+  SELECT '<devel>', TSTZRANGE(clock_timestamp(), null, '[]');
 -- Insert the completion event into the operations history.
 INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_object, hist_wording)
   VALUES ('DIST_EMAJ_INSTALL', 'dist_emaj <devel>', 'Initialisation completed');
