@@ -16,7 +16,7 @@ L'extension dispose de **1 paramètre**, modifiable par les administrateurs Dist
 
 **Notes**
 
-Le contenu du paramètre ``history_retention`` doit être interprétable comme une donnée *INTERVAL* ; une valeur >= 100 ans désactive la :ref:`purge des historiques<dist_emaj_purge_histories>`.
+Le contenu du paramètre ``history_retention`` doit être interprétable comme une donnée *INTERVAL*. Une valeur >= 100 ans désactive la :ref:`purge des historiques<dist_emaj_purge_histories>`.
 
 ----
 
@@ -42,7 +42,7 @@ La fonction retourne le nombre de paramètres modifiés (0 ou 1).
 
 Les **clés** sont **insensibles à la casse**.
 
-Les valeurs de paramètres sont des chaînes de caractères. Pour les paramètres représentant un intervalle de temps, la chaîne doit être une représentation valide d’une donnée *INTERVAL* (ex : *'3 us'* ou *'3 micro-seconds'*).
+Les valeurs de paramètres sont des chaînes de caractères. Pour les paramètres représentant un intervalle de temps, la chaîne doit être une représentation valide d’une donnée *INTERVAL* (ex : *'30 days'*).
 
 Toute modification de paramètre est tracée dans la :ref:`table dist_emaj_hist<dist_emaj_hist>`.
 
