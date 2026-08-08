@@ -50,6 +50,8 @@ select * from dist_emaj.dist_emaj_server_aggregates;
 -- authorized functions
 -----------------------------
 
+select dist_emaj.dist_emaj_get_version();
+
 -----------------------------
 -- forbiden functions (just test 1)
 -----------------------------

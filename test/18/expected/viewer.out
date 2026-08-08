@@ -115,6 +115,12 @@ ERROR:  permission denied for view dist_emaj_server_aggregates
 -----------------------------
 -- authorized functions
 -----------------------------
+select dist_emaj.dist_emaj_get_version();
+ dist_emaj_get_version 
+-----------------------
+ <devel>
+(1 row)
+
 -----------------------------
 -- forbiden functions (just test 1)
 -----------------------------

@@ -1374,6 +1374,15 @@ $$Synchronizes recorded distributed marks of a cluster with local marks on serve
 --                                                            --
 ----------------------------------------------------------------
 
+CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_get_version()
+RETURNS TEXT LANGUAGE SQL STABLE AS
+$$
+-- This function returns the current dist_emaj extension version.
+SELECT verh_version FROM dist_emaj.dist_emaj_version_hist WHERE upper_inf(verh_time_range);
+$$;
+COMMENT ON FUNCTION dist_emaj.dist_emaj_get_version() IS
+$$Returns the current dist_emaj version.$$;
+
 CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_set_param(p_key TEXT, p_value TEXT)
 RETURNS INT LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS
@@ -1779,7 +1788,8 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA dist_emaj TO dist_emaj_adm;
 
 -- Rights given to dist_emaj_viewer.
 --
--- dist_emaj_viewer can only examine all dist_emaj tables and sequences,
+-- dist_emaj_viewer can
+-- ... examine all dist_emaj tables and sequences,
 --     except the dist_emaj_server table that contains connection parameters to servers, including password.
 
 GRANT USAGE ON SCHEMA dist_emaj TO dist_emaj_viewer;
@@ -1792,6 +1802,10 @@ GRANT SELECT (srv_name, srv_rlbk_parallel_session, srv_creation_time_id, srv_las
 REVOKE SELECT ON TABLE dist_emaj.dist_emaj_server_aggregates FROM dist_emaj_viewer;
 GRANT SELECT (clst_name, srv_name, srv_rlbk_parallel_session, srv_groups_array, srv_groups_list, srv_nb_group)
   ON TABLE dist_emaj.dist_emaj_server_aggregates TO dist_emaj_viewer;
+
+-- ... and execute a subset of dist_emaj functions for which rights are explicitely granted.
+
+GRANT EXECUTE ON FUNCTION dist_emaj.dist_emaj_get_version() TO dist_emaj_viewer;
 
 ----------------------------------------------------------------
 --                                                            --

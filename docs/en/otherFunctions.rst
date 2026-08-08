@@ -1,6 +1,25 @@
 Other Functions
 ===============
 
+.. _dist_emaj_get_version:
+
+Getting the Distributed E-Maj Extension Version
+-----------------------------------------------
+
+The ``dist_emaj_get_version()`` function returns the **current version** identifier of the *dist_emaj* extension. ::
+
+   SELECT dist_emaj.dist_emaj_get_version();
+
+**Input Parameters**
+
+The function does not require any input parameter.
+
+**Returned data**
+
+The function returns a textual representation of the *dist_emaj* current version.
+
+----
+
 .. _dist_emaj_verify_cluster:
 
 Verifying the State of a Cluster

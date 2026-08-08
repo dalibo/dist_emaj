@@ -57,8 +57,8 @@ select relname from pg_catalog.pg_class,
   where t.oid = pg_class.oid
   order by 1;
 
--- check history
-select verh_version from dist_emaj.dist_emaj_version_hist;
+-- check version and history
+select dist_emaj.dist_emaj_get_version();
 select hist_id, hist_function, hist_event, hist_object, hist_wording, hist_user from dist_emaj.dist_emaj_hist order by hist_id;
 
 -- reset function calls statistics (so the check.sql output is stable with all installation paths)

@@ -1,6 +1,6 @@
 test install                  ... ok
 test setup                    ... ok
 test before_uninstall         ... ok
-test uninstall                ... FAILED
+test uninstall                ... ok
 test install                  ... ok
 test cleanup                  ... ok

@@ -4,7 +4,7 @@ test create_drop              ... ok
 test start_stop               ... ok
 test rollback                 ... ok
 test misc                     ... ok
-test viewer                   ... ok
+test viewer                   ... FAILED
 test adm                      ... ok
-test check                    ... ok
+test check                    ... FAILED
 test cleanup                  ... ok

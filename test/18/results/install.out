@@ -71,10 +71,10 @@ select relname from pg_catalog.pg_class,
  dist_emaj_time_stamp_time_id_seq
 (13 rows)
 
--- check history
-select verh_version from dist_emaj.dist_emaj_version_hist;
- verh_version 
---------------
+-- check version and history
+select dist_emaj.dist_emaj_get_version();
+ dist_emaj_get_version 
+-----------------------
  <devel>
 (1 row)
 

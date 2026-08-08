@@ -1,6 +1,25 @@
 Autres fonctions
 ================
 
+.. _dist_emaj_get_version:
+
+Obtenir la version courante de l’extension dist_emaj
+----------------------------------------------------
+
+La fonction ``dist_emaj_get_version()`` retourne l’identifiant de la version courante de l’extension *dist_emaj* : ::
+
+   SELECT dist_emaj.dist_emaj_get_version();
+
+**Paramètres en entrée**
+
+La fonction n'a pas de paramètre en entrée.
+
+**Données retournées**
+
+La fonction retourne une représentation textuelle de la version courante de l'extension *dist_emaj*.
+
+----
+
 .. _dist_emaj_verify_cluster:
 
 Vérifier l'état d'un cluster

@@ -3,7 +3,7 @@ List of Distributed E-Maj Functions
 
 The available *Distributed E-Maj* functions for users are listed below in alphabetical order.
 
-All these functions can be called by roles with *dist_emaj_adm* privileges.
+All these functions can be called by roles with *dist_emaj_adm* privileges. The chart also specifies those callable by **dist_emaj_viewer** roles (sign **(V)** behind the function name).
 
 +--------------------------------------------------+-------------------------------+----------------------------------+
 | Functions                                        | Input Parameters              | Returned Data                    |
@@ -35,6 +35,9 @@ All these functions can be called by roles with *dist_emaj_adm* privileges.
 | :ref:`dist_emaj_drop_server                      | | p_server TEXT               | # servers deleted (0/1) INT      |
 | <dist_emaj_drop_server>`                         | | [ p_ifExists BOOLEAN ]      |                                  |
 |                                                  | | [ p_cascade BOOLEAN ]       |                                  |
++--------------------------------------------------+-------------------------------+----------------------------------+
+| :ref:`dist_emaj_get_version                      |                               | version TEXT                     |
+| <dist_emaj_get_version>` (V)                     |                               |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
 | :ref:`dist_emaj_purge_histories                  | [ p_retentionDelay INTERVAL ] | Summary TEXT                     |
 | <dist_emaj_purge_histories>`                     |                               |                                  |

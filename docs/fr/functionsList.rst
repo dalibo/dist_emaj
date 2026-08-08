@@ -3,7 +3,7 @@ Liste des fonctions Distributed E-Maj
 
 Les fonctions *Distributed E-Maj* disponibles pour les utilisateurs sont listées ci-dessous par ordre alphabétique.
 
-Toutes ces fonctions sont appelables par les rôles disposant des privilèges *dist_emaj_adm*.
+Toutes ces fonctions sont appelables par les rôles disposant des privilèges *dist_emaj_adm*. Le tableau précise celles qui sont également appelables par les rôles **dist_emaj_viewer** (marque *(V)* derrière le nom de la fonction).
 
 +--------------------------------------------------+-------------------------------+---------------------------------------+
 | Fonctions                                        | Paramètres en entrée          | Données restituées                    |
@@ -35,6 +35,9 @@ Toutes ces fonctions sont appelables par les rôles disposant des privilèges *d
 | :ref:`dist_emaj_drop_server                      | | p_server TEXT               | nb.server.supprimé (0/1) INT          |
 | <dist_emaj_drop_server>`                         | | [ p_ifExists BOOLEAN ]      |                                       |
 |                                                  | | [ p_cascade BOOLEAN ]       |                                       |
++--------------------------------------------------+-------------------------------+---------------------------------------+
+| :ref:`dist_emaj_get_version                      |                               | version TEXT                          |
+| <dist_emaj_get_version>` (V)                     |                               |                                       |
 +--------------------------------------------------+-------------------------------+---------------------------------------+
 | :ref:`dist_emaj_purge_histories                  | [ p_retentionDelay INTERVAL ] | bilan TEXT                            |
 | <dist_emaj_purge_histories>`                     |                               |                                       |
