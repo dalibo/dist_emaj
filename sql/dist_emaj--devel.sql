@@ -2043,9 +2043,7 @@ $_import_param_conf$
             v_event = 'UPDATED PARAMETER';
           END IF;
           INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object, hist_wording)
-            VALUES ('IMPORT_PARAMETERS', v_event, r_param.param_key,
-                    CASE WHEN r_param.param_key = 'dblink_user_password' THEN '<masked data>'
-                         ELSE 'From: ' || r_param.param_value || ' to: ' || v_newValue END);
+            VALUES ('IMPORT_PARAMETERS', v_event, r_param.param_key, 'From: ' || r_param.param_value || ' to: ' || v_newValue);
           p_nbModifiedParam = p_nbModifiedParam + 1;
         END IF;
       END LOOP;
