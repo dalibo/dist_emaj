@@ -278,6 +278,35 @@ $$View on servers characteristics.$$;
 
 ----------------------------------------------------------------
 --                                                            --
+--                      Composite types                       --
+--                                                            --
+----------------------------------------------------------------
+
+-- Composite types used by dist_emaj internal functions.
+
+CREATE TYPE dist_emaj._report_message_type AS (
+  rpt_msg_type                 INT,                        -- message number
+                                                           -- range 1 - 99 used by _import_groups_conf_check
+                                                           -- range 101 - 199 used by _check_json_param_conf
+                                                           -- range 201 - 249 used by _check_json_groups_conf
+                                                           -- range 250 - 299 used by _import_groups_conf_prepare
+  rpt_severity                 INT,                        -- severity level
+                                                           -- 0 : notice
+                                                           -- 1 : blocking error
+                                                           -- 2 : error not blocking an audit_only group creation
+                                                           -- 3 : warning
+  rpt_text_var_1               TEXT,                       -- textual variable #1
+  rpt_text_var_2               TEXT,                       -- textual variable #2
+  rpt_text_var_3               TEXT,                       -- textual variable #3
+  rpt_text_var_4               TEXT,                       -- textual variable #4
+  rpt_int_var_1                INT,                        -- integer variable #1
+  rpt_message                  TEXT                        -- the english formatted error message
+  );
+COMMENT ON TYPE dist_emaj._report_message_type IS
+$$Represents a generic notice, warning or error message structure that can be translated by external clients.$$;
+
+----------------------------------------------------------------
+--                                                            --
 --                Distributed E-Maj Parameters                --
 --                                                            --
 ----------------------------------------------------------------
@@ -458,6 +487,96 @@ $_check_dist_mark$
     RETURN v_markTimeId;
   END;
 $_check_dist_mark$;
+
+CREATE OR REPLACE FUNCTION dist_emaj._check_json_param_conf(p_paramsJson JSON)
+RETURNS SETOF dist_emaj._report_message_type LANGUAGE plpgsql AS
+$_check_json_param_conf$
+-- This function verifies that the JSON structure that contains a parameter configuration is correct.
+-- Any detected issue is reported as a message row. The caller defines what to do with them.
+-- It is called by the _import_param_conf() function.
+-- The function is also directly called by Emaj_web.
+-- This function checks that:
+--   - the "parameters" attribute exists
+--   - "key" attribute are defined and are known parameters
+--   - no unknow attribute are listed
+--   - parameters are not described several times
+-- Input: the JSON structure to check
+-- Output: set of error messages
+  DECLARE
+    v_parameters             JSON;
+    v_paramNumber            INT;
+    v_key                    TEXT;
+    v_value                  TEXT;
+    r_param                  RECORD;
+  BEGIN
+-- Extract the "parameters" json path and check that the attribute exists.
+    v_parameters = p_paramsJson #> '{"parameters"}';
+    IF v_parameters IS NULL THEN
+      RETURN QUERY
+        VALUES (101, 1, NULL::TEXT, NULL::TEXT, NULL::TEXT, NULL::TEXT, NULL::INT,
+                'The JSON structure does not contain any "parameters" array.');
+    ELSE
+-- Check that all keywords of the "parameters" structure are valid.
+      v_paramNumber = 0;
+      FOR r_param IN
+        SELECT param
+          FROM json_array_elements(v_parameters) AS t(param)
+      LOOP
+        v_paramNumber = v_paramNumber + 1;
+-- Check the "key" attribute exists in the json structure.
+        v_key = r_param.param ->> 'key';
+        IF v_key IS NULL THEN
+          RETURN QUERY
+            VALUES (102, 1, NULL::TEXT, NULL::TEXT, NULL::TEXT, NULL::TEXT, v_paramNumber,
+                    format('The #%s parameter has no "key" attribute or a "key" set to null.',
+                           v_paramNumber::TEXT));
+        END IF;
+-- Check that the structure only contains "key" and "value" attributes.
+        RETURN QUERY
+          SELECT 103, 1, v_key, attr, NULL::TEXT, NULL::TEXT, NULL::INT,
+               format('For the parameter "%s", the attribute "%s" is unknown.',
+                      v_key, attr)
+            FROM (
+              SELECT attr
+                FROM json_object_keys(r_param.param) AS x(attr)
+                WHERE attr NOT IN ('key', 'value')
+              ) AS t;
+-- Check the key is valid.
+        IF v_key NOT IN ('history_retention') THEN
+          RETURN QUERY
+            VALUES (104, 1, v_key, NULL::TEXT, NULL::TEXT, NULL::TEXT, NULL::INT,
+                 format('"%s" is not a known Distributed E-Maj parameter.',
+                        v_key));
+        END IF;
+-- Check that parameters of type interval have valid value.
+        IF v_key IN ('history_retention') THEN
+          v_value = r_param.param ->> 'value';
+          BEGIN
+            PERFORM v_value::INTERVAL;
+          EXCEPTION WHEN OTHERS THEN
+            RETURN QUERY
+              VALUES (106, 1, v_key, v_value, NULL::TEXT, NULL::TEXT, NULL::INT,
+                   format('For key "%s", the value ("%s") is not a valid time interval.',
+                          v_key, v_value));
+          END;
+        END IF;
+      END LOOP;
+-- Check that parameters are not configured more than once in the JSON structure.
+      RETURN QUERY
+        SELECT 105, 1, "key", NULL::TEXT, NULL::TEXT, NULL::TEXT, NULL::INT,
+             format('The JSON structure references several times the parameter "%s".',
+                    "key")
+          FROM (
+            SELECT "key", count(*)
+              FROM json_to_recordset(v_parameters) AS x("key" TEXT)
+              GROUP BY "key"
+              HAVING count(*) > 1
+            ) AS t;
+    END IF;
+--
+    RETURN;
+  END;
+$_check_json_param_conf$;
 
 ----------------------------------------------------------------
 --                                                            --
@@ -1653,6 +1772,289 @@ $dist_emaj_verify_all$
 $dist_emaj_verify_all$;
 COMMENT ON FUNCTION dist_emaj.dist_emaj_verify_all() IS
 $$Performs a health check of the entire dist_emaj configuration.$$;
+
+CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_export_parameters_configuration(p_includeDefault BOOLEAN DEFAULT FALSE)
+RETURNS JSON LANGUAGE plpgsql AS
+$dist_emaj_export_parameters_configuration$
+-- This function returns a JSON formatted structure representing all the parameters.
+-- The function can be called by clients like Emaj_web.
+-- This is just a wrapper of the internal _export_param_conf() function.
+-- Input: boolean indicating whether keys which current value equals their default value must be exported (false by default).
+-- Output: the parameters content in JSON format
+  BEGIN
+    RETURN dist_emaj._export_param_conf(p_includeDefault);
+  END;
+$dist_emaj_export_parameters_configuration$;
+COMMENT ON FUNCTION dist_emaj.dist_emaj_export_parameters_configuration(BOOLEAN) IS
+$$Generates a json structure describing the Distributed E-Maj parameters.$$;
+
+CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_export_parameters_configuration(p_location TEXT, p_includeDefault BOOLEAN DEFAULT FALSE)
+RETURNS INT LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS
+$dist_emaj_export_parameters_configuration$
+-- This function stores the parameters configuration into a file on the server.
+-- The JSON structure is built by the _export_param_conf() function.
+-- Input: - output file location,
+--        - boolean indicating whether keys which current value equals their default value must be exported (false by default).
+-- Output: the number of parameters of the recorded JSON structure.
+-- The function is defined as SECURITY DEFINER so that emaj roles can perform the COPY statement.
+  DECLARE
+    v_paramsJson             JSON;
+  BEGIN
+-- Get the json structure.
+    SELECT dist_emaj._export_param_conf(p_includeDefault) INTO v_paramsJson;
+-- Store the structure into the provided file name.
+    CREATE TEMP TABLE t (params TEXT);
+    INSERT INTO t
+      SELECT line
+        FROM regexp_split_to_table(v_paramsJson::TEXT, '\n') AS line;
+    EXECUTE format ('COPY t TO %L',
+                    p_location);
+    DROP TABLE t;
+-- Return the number of recorded parameters.
+    RETURN json_array_length(v_paramsJson->'parameters');
+  END;
+$dist_emaj_export_parameters_configuration$;
+COMMENT ON FUNCTION dist_emaj.dist_emaj_export_parameters_configuration(TEXT, BOOLEAN) IS
+$$Generates and stores in a file a json structure describing the Distributed E-Maj parameters.$$;
+
+CREATE OR REPLACE FUNCTION dist_emaj._export_param_conf(p_includeDefault BOOLEAN)
+RETURNS JSON LANGUAGE plpgsql AS
+$_export_param_conf$
+-- This function generates a JSON formatted structure representing the parameters.
+-- All parameters are extracted.
+-- Input: boolean indicating whether keys which current value equals their default value must be exported.
+-- Output: the parameters content in JSON format
+  DECLARE
+    v_paramHelp              TEXT;
+    v_params                 TEXT;
+    v_paramsJson             JSON;
+    r_param                  RECORD;
+  BEGIN
+-- Build the _help attribute content.
+    SELECT string_agg(param_key || CASE WHEN param_default <> '' THEN ' (default = ' || param_default || ')' ELSE '' END,
+                      ', ' ORDER BY param_rank)
+      INTO v_paramHelp
+      FROM dist_emaj.dist_emaj_default_param;
+-- Build the JSON structure header.
+    v_params = E'{\n  "_comment": "Generated on database ' || current_database() || ' with dist_emaj version ' ||
+                           dist_emaj.dist_emaj_get_version() || ', at ' || statement_timestamp() || E'",\n' ||
+                '  "_help": "Known parameter keys: ' || v_paramHelp || E'",\n';
+-- Build the parameters description.
+    v_params = v_params || E'  "parameters": [\n';
+    FOR r_param IN
+      SELECT to_json(param_key) AS key,
+             to_json(param_value) AS value
+        FROM dist_emaj.dist_emaj_all_param
+        WHERE p_includeDefault OR
+              CASE
+                WHEN param_cast IS NULL THEN (param_value <> param_default)
+                WHEN param_cast = 'INTERVAL' THEN (param_value::INTERVAL <> param_default::INTERVAL)
+                ELSE TRUE
+              END
+        ORDER BY param_rank
+    LOOP
+      v_params = v_params || E'    {\n'
+                          ||  '      "key": ' || r_param.key || E',\n'
+                          ||  '      "value": ' || r_param.value || E'\n'
+                          || E'    },\n';
+    END LOOP;
+    v_params = v_params || E'  ]\n';
+-- Build the trailer and remove illicite commas at the end of arrays and attributes lists.
+    v_params = v_params || E'}\n';
+    v_params = regexp_replace(v_params, E',(\n *(\]|}))', '\1', 'g');
+-- Test the JSON format by casting the text structure to json and report a warning in case of problem
+-- (this should not fail, unless the function code is bogus).
+    BEGIN
+      v_paramsJson = v_params::JSON;
+      EXCEPTION WHEN OTHERS THEN
+        RAISE EXCEPTION '_export_param_conf: The generated JSON structure is not properly formatted. '
+                        'Please report the bug to the Distributed E-Maj project.';
+    END;
+--
+    RETURN v_paramsJson;
+  END;
+$_export_param_conf$;
+
+CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_import_parameters_configuration(p_paramsJson JSON,
+                                                                               p_resetOtherParameters BOOLEAN DEFAULT FALSE)
+RETURNS INT LANGUAGE plpgsql AS
+$dist_emaj_import_parameters_configuration$
+-- This function import a supplied JSON formatted structure representing Distributed E-Maj parameters to load.
+-- This structure can have been generated by the dist_emaj_export_parameters_configuration() functions and may have been adapted by the
+--   user.
+-- The function can be called by clients like Emaj_web.
+-- It calls the _import_param_conf() function to perform the dist_emaj_param table changes.
+-- Input: - the parameter configuration structure in JSON format
+--        - an optional boolean indicating whether parameters not present in the JSON structure must be reset to their default value
+--          (by default, the parameter keys not referenced in the input json structure are kept unchanged).
+-- Output: the number of parameters found in the JSON structure
+  DECLARE
+    v_nbParamInJson          INT;
+    v_nbModifiedParam        INT;
+  BEGIN
+-- Insert a BEGIN event into the history.
+    INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event)
+      VALUES ('IMPORT_PARAMETERS', 'BEGIN');
+-- Load the parameters.
+    SELECT * FROM dist_emaj._import_param_conf(p_paramsJson, p_resetOtherParameters)
+      INTO v_nbParamInJson, v_nbModifiedParam;
+-- Insert a END event into the history.
+    INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_wording)
+      VALUES ('IMPORT_PARAMETERS', 'END', v_nbParamInJson || ' imported parameters, ' || v_nbModifiedParam || ' modified parameters');
+--
+    RETURN v_nbParamInJson;
+  END;
+$dist_emaj_import_parameters_configuration$;
+COMMENT ON FUNCTION dist_emaj.dist_emaj_import_parameters_configuration(JSON, BOOLEAN) IS
+$$Import a json structure describing Distributed E-Maj parameters to load.$$;
+
+CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_import_parameters_configuration(p_location TEXT,
+                                                                               p_resetOtherParameters BOOLEAN DEFAULT FALSE)
+RETURNS INT LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS
+$dist_emaj_import_parameters_configuration$
+-- This function imports a file containing a JSON formatted structure representing Distributed E-Maj parameters to load.
+-- This structure can have been generated by the dist_emaj_export_parameters_configuration() functions and may have been adapted by the
+--   user.
+-- It calls the _import_param_conf() function to perform the dist_emaj_param table changes.
+-- Input: - input file location
+--        - an optional boolean indicating whether parameters not present in the JSON structure must be reset to their default value
+--          (by default, the parameter keys not referenced in the input json structure are kept unchanged).
+-- Output: the number of parameters found in the JSON structure
+-- The function is defined as SECURITY DEFINER so that dist_emaj roles can perform the COPY statement.
+  DECLARE
+    v_paramsText             TEXT;
+    v_paramsJson             JSON;
+    v_nbParamInJson          INT;
+    v_nbModifiedParam        INT;
+  BEGIN
+-- Insert a BEGIN event into the history.
+    INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_wording)
+      VALUES ('IMPORT_PARAMETERS', 'BEGIN', 'Input file: ' || quote_literal(p_location));
+-- Read the input file and put its content into a temporary table.
+    CREATE TEMP TABLE t (params TEXT);
+    EXECUTE format ('COPY t FROM %L',
+                    p_location);
+-- Aggregate the lines into a single text variable.
+    SELECT string_agg(params, E'\n') INTO v_paramsText
+      FROM t;
+    DROP TABLE t;
+-- Verify that the file content is a valid json structure.
+    BEGIN
+      v_paramsJson = v_paramsText::JSON;
+    EXCEPTION WHEN OTHERS THEN
+      RAISE EXCEPTION 'dist_emaj_import_parameters_configuration: The file content is not a valid JSON content.';
+    END;
+-- Load the parameters.
+    SELECT *
+      INTO v_nbParamInJson, v_nbModifiedParam
+      FROM dist_emaj._import_param_conf(v_paramsJson, p_resetOtherParameters);
+-- Insert a END event into the history.
+    INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_wording)
+      VALUES ('IMPORT_PARAMETERS', 'END', v_nbParamInJson || ' imported parameters, ' || v_nbModifiedParam || ' modified parameters');
+--
+    RETURN v_nbParamInJson;
+  END;
+$dist_emaj_import_parameters_configuration$;
+COMMENT ON FUNCTION dist_emaj.dist_emaj_import_parameters_configuration(TEXT, BOOLEAN) IS
+$$Import Distributed E-Maj parameters from a JSON formatted file.$$;
+
+CREATE OR REPLACE FUNCTION dist_emaj._import_param_conf(p_json JSON, p_resetOtherParameters BOOLEAN,
+                                                        OUT p_nbParamInJson INT, OUT p_nbModifiedParam INT)
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS
+$_import_param_conf$
+-- This function processes a JSON formatted structure representing the Distributed E-Maj parameters to load.
+-- This structure can have been generated by the dist_emaj_export_parameters_configuration() functions and may have been adapted by the
+--   user.
+-- The expected JSON structure must contain an array like:
+-- { "parameters": [
+--      { "key": "...", "value": "..." },
+--      { ... }
+--    ] }
+-- If the "value" attribute is missing or null, the parameter is removed from the dist_emaj_param table, and the parameter will be set at
+--   its default value.
+-- Input: - the parameter configuration structure in JSON format
+--        - an optional boolean indicating whether parameters not present in the JSON structure must be reset to their default value.
+-- Output: - the number of parameters found in the JSON structure
+--         - the number of really modified parameters.
+-- The function is defined as SECURITY DEFINER to disable/enable the trigger on dist_emaj_param.
+  DECLARE
+    v_parameters             JSON;
+    v_newValue               TEXT;
+    v_event                  TEXT;
+    r_msg                    RECORD;
+    r_param                  RECORD;
+  BEGIN
+-- Performs various checks on the parameters content described in the supplied JSON structure.
+    FOR r_msg IN
+      SELECT rpt_message
+        FROM dist_emaj._check_json_param_conf(p_json)
+        ORDER BY rpt_msg_type, rpt_text_var_1, rpt_text_var_2, rpt_int_var_1
+    LOOP
+      RAISE WARNING '_import_param_conf : %', r_msg.rpt_message;
+    END LOOP;
+    IF FOUND THEN
+      RAISE EXCEPTION '_import_param_conf: One or several errors have been detected in the supplied JSON structure.';
+    END IF;
+-- OK
+    v_parameters = p_json #> '{"parameters"}';
+    p_nbParamInJson = json_array_length(v_parameters);
+    p_nbModifiedParam = 0;
+-- Disable the trigger that blocks any attempt to update the emaj_param table.
+    ALTER TABLE dist_emaj.dist_emaj_param DISABLE TRIGGER dist_emaj_param_before_stmt_trg;
+-- Process each parameter.
+    FOR r_param IN
+        WITH json_param AS (
+          SELECT param->>'key' AS json_key, param->>'value' AS json_value
+            FROM json_array_elements(v_parameters) AS t(param))
+        SELECT param_key, param_value, param_default, json_value
+          FROM dist_emaj.dist_emaj_all_param
+               LEFT OUTER JOIN json_param ON (json_key = param_key)
+          ORDER BY param_rank
+      LOOP
+        v_newValue = NULL;
+        IF r_param.json_value IS NOT NULL AND r_param.json_value <> r_param.param_value THEN
+-- The parameter is present in the JSON structure and its value is different from the current parameter value.
+          v_newValue = r_param.json_value;
+        END IF;
+        IF p_resetOtherParameters AND r_param.json_value IS NULL AND r_param.param_value <> r_param.param_default THEN
+-- The parameter is not present in the JSON structure and it must be reset if needed.
+          v_newValue = r_param.param_default;
+        END IF;
+        IF v_newValue IS NOT NULL THEN
+-- The parameter value has changed. So record and trace the change.
+          IF v_newValue = r_param.param_default THEN
+-- The new parameter value equals the default value, so DELETE the existing row from emaj_param.
+            DELETE FROM dist_emaj.dist_emaj_param
+              WHERE param_key = r_param.param_key;
+            v_event = 'DELETED PARAMETER';
+          ELSIF r_param.param_value = r_param.param_default THEN
+-- The parameter has currently its default value, so INSERT a row into emaj_param.
+            INSERT INTO dist_emaj.dist_emaj_param (param_key, param_value)
+              VALUES (r_param.param_key, v_newValue);
+            v_event = 'INSERTED PARAMETER';
+          ELSE
+-- Otherwise UPDATE it.
+            UPDATE dist_emaj.dist_emaj_param
+              SET param_value = v_newValue
+              WHERE param_key = r_param.param_key;
+            v_event = 'UPDATED PARAMETER';
+          END IF;
+          INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object, hist_wording)
+            VALUES ('IMPORT_PARAMETERS', v_event, r_param.param_key,
+                    CASE WHEN r_param.param_key = 'dblink_user_password' THEN '<masked data>'
+                         ELSE 'From: ' || r_param.param_value || ' to: ' || v_newValue END);
+          p_nbModifiedParam = p_nbModifiedParam + 1;
+        END IF;
+      END LOOP;
+-- Enable the trigger that blocks any attempt to update the emaj_param table.
+    ALTER TABLE dist_emaj.dist_emaj_param ENABLE TRIGGER dist_emaj_param_before_stmt_trg;
+--
+    RETURN;
+  END;
+$_import_param_conf$;
 
 ----------------------------------------------------------------
 --                                                            --

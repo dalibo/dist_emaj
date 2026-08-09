@@ -39,6 +39,7 @@ Welcome to the Distributed E-Maj documentation!
    distEmajRollbackClient
    marksFunctions
    parameters
+   exportImportFunctions
    otherFunctions
 
 .. toctree::

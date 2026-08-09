@@ -142,6 +142,8 @@ use warnings; use strict;
                             # installation conditions that are not met during the tests
       if ($msgs{$fnctId} ne 'EXCEPTION:Distributed E-Maj installation: The current postgres version (%) is too old for this dist_emaj version. '
        && $msgs{$fnctId} !~ 'EXCEPTION:_verify_server \(\d+\): %'
+                            # internal errors (errors that should never appear and that would be due to coding error)
+       && $msgs{$fnctId} ne 'EXCEPTION:_export_param_conf: The generated JSON structure is not properly formatted. '
                             # extension drop conditions that are not met during the tests
        && $msgs{$fnctId} ne 'EXCEPTION:dist_emaj_drop_extension: The role executing this function must be a superuser.'
        && $msgs{$fnctId} ne 'WARNING:dist_emaj_drop_extension: The dist_emaj_viewer role has not been dropped (sqlstate %).'

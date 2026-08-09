@@ -36,8 +36,22 @@ Toutes ces fonctions sont appelables par les rôles disposant des privilèges *d
 | <dist_emaj_drop_server>`                         | | [ p_ifExists BOOLEAN ]      |                                       |
 |                                                  | | [ p_cascade BOOLEAN ]       |                                       |
 +--------------------------------------------------+-------------------------------+---------------------------------------+
+| :ref:`dist_emaj_export_parameters_configuration  | [ p_includeDefault BOOLEAN ]  | paramètres JSON                       |
+| <export_param_conf>`                             |                               |                                       |
++--------------------------------------------------+-------------------------------+---------------------------------------+
+| :ref:`dist_emaj_export_parameters_configuration  | | p_location TEXT             | nb.paramètres INT                     |
+| <export_param_conf>`                             | | [ p_includeDefault BOOLEAN ]|                                       |
++--------------------------------------------------+-------------------------------+---------------------------------------+
 | :ref:`dist_emaj_get_version                      |                               | version TEXT                          |
 | <dist_emaj_get_version>` (V)                     |                               |                                       |
++--------------------------------------------------+-------------------------------+---------------------------------------+
+| :ref:`dist_emaj_import_parameters_configuration  | | p_paramsJson JSON           | nb.paramètres INT                     |
+| <import_param_conf>`                             | | [ p_resetOtherParameters    |                                       |
+|                                                  | |  BOOLEAN) ]                 |                                       |
++--------------------------------------------------+-------------------------------+---------------------------------------+
+| :ref:`dist_emaj_import_parameters_configuration  | | p_location TEXT             | nb.paramètres INT                     |
+| <import_param_conf>`                             | | [ p_resetOtherParameters    |                                       |
+|                                                  | |  BOOLEAN)]                  |                                       |
 +--------------------------------------------------+-------------------------------+---------------------------------------+
 | :ref:`dist_emaj_purge_histories                  | [ p_retentionDelay INTERVAL ] | bilan TEXT                            |
 | <dist_emaj_purge_histories>`                     |                               |                                       |

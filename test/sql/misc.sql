@@ -2,6 +2,7 @@
 --   dist_emaj_set_param(),
 --   dist_emaj_verify_all(),
 --   dist_emaj_delete_before_mark_cluster(),
+--   dist_emaj_import_parameters_configuration() and dist_emaj_export_parameters_configuration(),
 --   dist_emaj_purge_histories().
 --
 
@@ -14,6 +15,11 @@
 
 -- set sequence restart value
 select public.handle_dist_emaj_sequences(4000);
+
+-- Define and create the temp file directory to be used by the script.
+\setenv EMAJTESTTMPDIR '/tmp/emaj_'`echo $PGVER`'/misc'
+\set EMAJTESTTMPDIR `echo $EMAJTESTTMPDIR`
+\! mkdir -p $EMAJTESTTMPDIR
 
 -----------------------------
 -- Test dist_emaj_set_param()
@@ -102,6 +108,76 @@ select hist_id, hist_function, hist_event, hist_object, hist_wording
   from dist_emaj.dist_emaj_hist
   where hist_id >= 4000 and hist_function in ('DELETE_BEFORE_MARK_CLUSTER', 'SYNC_MARKS_CLUSTER', 'PURGE_HISTORIES')
   order by 1;
+
+-----------------------------
+-- dist_emaj_export_parameters_configuration() and dist_emaj_import_parameters_configuration() tests.
+-----------------------------
+
+-- Direct export.
+--   OK.
+SELECT json_array_length(dist_emaj.dist_emaj_export_parameters_configuration()->'parameters');
+SELECT json_array_length(dist_emaj.dist_emaj_export_parameters_configuration(TRUE)->'parameters');
+SELECT dist_emaj.dist_emaj_set_param('history_retention', '2 days');
+SELECT dist_emaj.dist_emaj_export_parameters_configuration()->'parameters';
+
+-- Export in file.
+--   Error.
+SELECT dist_emaj.dist_emaj_export_parameters_configuration('/tmp/dummy/location/file');
+--   OK.
+SELECT dist_emaj.dist_emaj_export_parameters_configuration(:'EMAJTESTTMPDIR' || '/orig_param_config');
+\! wc -l $EMAJTESTTMPDIR/orig_param_config
+\! grep -v ', at ' $EMAJTESTTMPDIR/orig_param_config
+
+-- Direct import.
+--   Error.
+--     No "parameters" array.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "dummy_json": null }'::JSON);
+--     Unknown attributes.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ { "key": "history_retention", "unknown_attribute_1": null, "unknown_attribute_2": null} ] }'::JSON);
+--     Missing or null "key" attributes.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ { "value": "no_key"} ] }'::JSON);
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ { "key": null} ] }'::JSON);
+--     Invalid key.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ { "key": "unknown_param" } ] }'::JSON);
+--     Duplicate key.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ { "key": "history_retention" }, { "key": "history_retention" } ] }'::JSON);
+--     Bad interval format.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ { "key": "history_retention", "value": "NOT an interval" } ] }'::JSON);
+
+--   Ok.
+--     New local value.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ { "key": "history_retention", "value": "1 day"} ] }'::JSON);
+--     Modified local value.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ { "key": "history_retention", "value": "2 days"} ] }'::JSON);
+--     "null" "value" attribute.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ { "key": "history_retention", "value": null} ] }'::JSON);
+--     Missing "value" attribute.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ { "key": "history_retention"} ] }'::JSON);
+SELECT json_array_length(dist_emaj.dist_emaj_export_parameters_configuration()->'parameters');
+--   Reset other parameters.
+SELECT dist_emaj.dist_emaj_set_param('history_retention', '1 day');
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ ] }'::JSON, FALSE);
+SELECT * FROM dist_emaj.dist_emaj_param WHERE param_key = 'history_retention';
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ ] }'::JSON, TRUE);
+SELECT * FROM dist_emaj.dist_emaj_param WHERE param_key = 'history_retention';
+
+-- Import from file.
+--   Error.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('/tmp/dummy/location/file');
+\! echo 'not a json content' >$EMAJTESTTMPDIR/bad_param_config
+SELECT dist_emaj.dist_emaj_import_parameters_configuration(:'EMAJTESTTMPDIR' || '/bad_param_config');
+\! echo '{ "dummy_json": null }' >$EMAJTESTTMPDIR/bad_param_config
+SELECT dist_emaj.dist_emaj_import_parameters_configuration(:'EMAJTESTTMPDIR' || '/bad_param_config');
+\! echo '{ "parameters": [ { "key": "bad_key", "value": null} ] }' >$EMAJTESTTMPDIR/bad_param_config
+SELECT dist_emaj.dist_emaj_import_parameters_configuration(:'EMAJTESTTMPDIR' || '/bad_param_config');
+
+--   Ok.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration(:'EMAJTESTTMPDIR' || '/orig_param_config', TRUE);
+SELECT json_array_length(dist_emaj.dist_emaj_export_parameters_configuration()->'parameters');
+
+SELECT dist_emaj.dist_emaj_import_parameters_configuration(:'EMAJTESTTMPDIR' || '/orig_param_config', FALSE);
+
+select hist_id, hist_function, hist_wording from dist_emaj.dist_emaj_hist where hist_id >= 4000 and hist_function like '%PARAM%' order by hist_id;
 
 -----------------------------
 -- dist_emaj_purge_histories() tests

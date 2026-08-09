@@ -2,6 +2,7 @@
 --   dist_emaj_set_param(),
 --   dist_emaj_verify_all(),
 --   dist_emaj_delete_before_mark_cluster(),
+--   dist_emaj_import_parameters_configuration() and dist_emaj_export_parameters_configuration(),
 --   dist_emaj_purge_histories().
 --
 -- do not display DETAIL and CONTEXT outputs when an error is raised (\errverbose can be used to debug a statement)
@@ -16,6 +17,10 @@ select public.handle_dist_emaj_sequences(4000);
  
 (1 row)
 
+-- Define and create the temp file directory to be used by the script.
+\setenv EMAJTESTTMPDIR '/tmp/emaj_'`echo $PGVER`'/misc'
+\set EMAJTESTTMPDIR `echo $EMAJTESTTMPDIR`
+\! mkdir -p $EMAJTESTTMPDIR
 -----------------------------
 -- Test dist_emaj_set_param()
 -----------------------------
@@ -254,6 +259,223 @@ select hist_id, hist_function, hist_event, hist_object, hist_wording
 (23 rows)
 
 -----------------------------
+-- dist_emaj_export_parameters_configuration() and dist_emaj_import_parameters_configuration() tests.
+-----------------------------
+-- Direct export.
+--   OK.
+SELECT json_array_length(dist_emaj.dist_emaj_export_parameters_configuration()->'parameters');
+ json_array_length 
+-------------------
+                 0
+(1 row)
+
+SELECT json_array_length(dist_emaj.dist_emaj_export_parameters_configuration(TRUE)->'parameters');
+ json_array_length 
+-------------------
+                 1
+(1 row)
+
+SELECT dist_emaj.dist_emaj_set_param('history_retention', '2 days');
+ dist_emaj_set_param 
+---------------------
+                   1
+(1 row)
+
+SELECT dist_emaj.dist_emaj_export_parameters_configuration()->'parameters';
+             ?column?              
+-----------------------------------
+ [                                +
+     {                            +
+       "key": "history_retention",+
+       "value": "2 days"          +
+     }                            +
+   ]
+(1 row)
+
+-- Export in file.
+--   Error.
+SELECT dist_emaj.dist_emaj_export_parameters_configuration('/tmp/dummy/location/file');
+ERROR:  could not open file "/tmp/dummy/location/file" for writing: No such file or directory
+--   OK.
+SELECT dist_emaj.dist_emaj_export_parameters_configuration(:'EMAJTESTTMPDIR' || '/orig_param_config');
+ dist_emaj_export_parameters_configuration 
+-------------------------------------------
+                                         1
+(1 row)
+
+\! wc -l $EMAJTESTTMPDIR/orig_param_config
+11 /tmp/emaj_17/misc/orig_param_config
+\! grep -v ', at ' $EMAJTESTTMPDIR/orig_param_config
+{
+  "_help": "Known parameter keys: history_retention (default = 1 year)",
+  "parameters": [
+    {
+      "key": "history_retention",
+      "value": "2 days"
+    }
+  ]
+}
+
+-- Direct import.
+--   Error.
+--     No "parameters" array.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "dummy_json": null }'::JSON);
+WARNING:  _import_param_conf : The JSON structure does not contain any "parameters" array.
+ERROR:  _import_param_conf: One or several errors have been detected in the supplied JSON structure.
+--     Unknown attributes.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ { "key": "history_retention", "unknown_attribute_1": null, "unknown_attribute_2": null} ] }'::JSON);
+WARNING:  _import_param_conf : For the parameter "history_retention", the attribute "unknown_attribute_1" is unknown.
+WARNING:  _import_param_conf : For the parameter "history_retention", the attribute "unknown_attribute_2" is unknown.
+ERROR:  _import_param_conf: One or several errors have been detected in the supplied JSON structure.
+--     Missing or null "key" attributes.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ { "value": "no_key"} ] }'::JSON);
+WARNING:  _import_param_conf : The #1 parameter has no "key" attribute or a "key" set to null.
+ERROR:  _import_param_conf: One or several errors have been detected in the supplied JSON structure.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ { "key": null} ] }'::JSON);
+WARNING:  _import_param_conf : The #1 parameter has no "key" attribute or a "key" set to null.
+ERROR:  _import_param_conf: One or several errors have been detected in the supplied JSON structure.
+--     Invalid key.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ { "key": "unknown_param" } ] }'::JSON);
+WARNING:  _import_param_conf : "unknown_param" is not a known Distributed E-Maj parameter.
+ERROR:  _import_param_conf: One or several errors have been detected in the supplied JSON structure.
+--     Duplicate key.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ { "key": "history_retention" }, { "key": "history_retention" } ] }'::JSON);
+WARNING:  _import_param_conf : The JSON structure references several times the parameter "history_retention".
+ERROR:  _import_param_conf: One or several errors have been detected in the supplied JSON structure.
+--     Bad interval format.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ { "key": "history_retention", "value": "NOT an interval" } ] }'::JSON);
+WARNING:  _import_param_conf : For key "history_retention", the value ("NOT an interval") is not a valid time interval.
+ERROR:  _import_param_conf: One or several errors have been detected in the supplied JSON structure.
+--   Ok.
+--     New local value.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ { "key": "history_retention", "value": "1 day"} ] }'::JSON);
+ dist_emaj_import_parameters_configuration 
+-------------------------------------------
+                                         1
+(1 row)
+
+--     Modified local value.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ { "key": "history_retention", "value": "2 days"} ] }'::JSON);
+ dist_emaj_import_parameters_configuration 
+-------------------------------------------
+                                         1
+(1 row)
+
+--     "null" "value" attribute.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ { "key": "history_retention", "value": null} ] }'::JSON);
+ dist_emaj_import_parameters_configuration 
+-------------------------------------------
+                                         1
+(1 row)
+
+--     Missing "value" attribute.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ { "key": "history_retention"} ] }'::JSON);
+ dist_emaj_import_parameters_configuration 
+-------------------------------------------
+                                         1
+(1 row)
+
+SELECT json_array_length(dist_emaj.dist_emaj_export_parameters_configuration()->'parameters');
+ json_array_length 
+-------------------
+                 1
+(1 row)
+
+--   Reset other parameters.
+SELECT dist_emaj.dist_emaj_set_param('history_retention', '1 day');
+ dist_emaj_set_param 
+---------------------
+                   1
+(1 row)
+
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ ] }'::JSON, FALSE);
+ dist_emaj_import_parameters_configuration 
+-------------------------------------------
+                                         0
+(1 row)
+
+SELECT * FROM dist_emaj.dist_emaj_param WHERE param_key = 'history_retention';
+     param_key     | param_value 
+-------------------+-------------
+ history_retention | 1 day
+(1 row)
+
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('{ "parameters": [ ] }'::JSON, TRUE);
+ dist_emaj_import_parameters_configuration 
+-------------------------------------------
+                                         0
+(1 row)
+
+SELECT * FROM dist_emaj.dist_emaj_param WHERE param_key = 'history_retention';
+ param_key | param_value 
+-----------+-------------
+(0 rows)
+
+-- Import from file.
+--   Error.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration('/tmp/dummy/location/file');
+ERROR:  could not open file "/tmp/dummy/location/file" for reading: No such file or directory
+\! echo 'not a json content' >$EMAJTESTTMPDIR/bad_param_config
+SELECT dist_emaj.dist_emaj_import_parameters_configuration(:'EMAJTESTTMPDIR' || '/bad_param_config');
+ERROR:  dist_emaj_import_parameters_configuration: The file content is not a valid JSON content.
+\! echo '{ "dummy_json": null }' >$EMAJTESTTMPDIR/bad_param_config
+SELECT dist_emaj.dist_emaj_import_parameters_configuration(:'EMAJTESTTMPDIR' || '/bad_param_config');
+WARNING:  _import_param_conf : The JSON structure does not contain any "parameters" array.
+ERROR:  _import_param_conf: One or several errors have been detected in the supplied JSON structure.
+\! echo '{ "parameters": [ { "key": "bad_key", "value": null} ] }' >$EMAJTESTTMPDIR/bad_param_config
+SELECT dist_emaj.dist_emaj_import_parameters_configuration(:'EMAJTESTTMPDIR' || '/bad_param_config');
+WARNING:  _import_param_conf : "bad_key" is not a known Distributed E-Maj parameter.
+ERROR:  _import_param_conf: One or several errors have been detected in the supplied JSON structure.
+--   Ok.
+SELECT dist_emaj.dist_emaj_import_parameters_configuration(:'EMAJTESTTMPDIR' || '/orig_param_config', TRUE);
+ dist_emaj_import_parameters_configuration 
+-------------------------------------------
+                                         1
+(1 row)
+
+SELECT json_array_length(dist_emaj.dist_emaj_export_parameters_configuration()->'parameters');
+ json_array_length 
+-------------------
+                 1
+(1 row)
+
+SELECT dist_emaj.dist_emaj_import_parameters_configuration(:'EMAJTESTTMPDIR' || '/orig_param_config', FALSE);
+ dist_emaj_import_parameters_configuration 
+-------------------------------------------
+                                         1
+(1 row)
+
+select hist_id, hist_function, hist_wording from dist_emaj.dist_emaj_hist where hist_id >= 4000 and hist_function like '%PARAM%' order by hist_id;
+ hist_id |   hist_function   |                   hist_wording                    
+---------+-------------------+---------------------------------------------------
+    4000 | SET_PARAM         | From: 1 year to: 1 MONTH
+    4001 | SET_PARAM         | From: 1 MONTH to: 2 MONTHS
+    4002 | SET_PARAM         | From: 2 MONTHS to: 1 year
+    4076 | SET_PARAM         | From: 1 year to: 2 days
+    4084 | IMPORT_PARAMETERS | 
+    4085 | IMPORT_PARAMETERS | From: 2 days to: 1 day
+    4086 | IMPORT_PARAMETERS | 1 imported parameters, 1 modified parameters
+    4087 | IMPORT_PARAMETERS | 
+    4088 | IMPORT_PARAMETERS | From: 1 day to: 2 days
+    4089 | IMPORT_PARAMETERS | 1 imported parameters, 1 modified parameters
+    4090 | IMPORT_PARAMETERS | 
+    4091 | IMPORT_PARAMETERS | 1 imported parameters, 0 modified parameters
+    4092 | IMPORT_PARAMETERS | 
+    4093 | IMPORT_PARAMETERS | 1 imported parameters, 0 modified parameters
+    4094 | SET_PARAM         | From: 2 days to: 1 day
+    4095 | IMPORT_PARAMETERS | 
+    4096 | IMPORT_PARAMETERS | 0 imported parameters, 0 modified parameters
+    4097 | IMPORT_PARAMETERS | 
+    4098 | IMPORT_PARAMETERS | From: 1 day to: 1 year
+    4099 | IMPORT_PARAMETERS | 0 imported parameters, 1 modified parameters
+    4104 | IMPORT_PARAMETERS | Input file: '/tmp/emaj_17/misc/orig_param_config'
+    4105 | IMPORT_PARAMETERS | From: 1 year to: 2 days
+    4106 | IMPORT_PARAMETERS | 1 imported parameters, 1 modified parameters
+    4107 | IMPORT_PARAMETERS | Input file: '/tmp/emaj_17/misc/orig_param_config'
+    4108 | IMPORT_PARAMETERS | 1 imported parameters, 0 modified parameters
+(25 rows)
+
+-----------------------------
 -- dist_emaj_purge_histories() tests
 -----------------------------
 -- Use the default 1 YEAR retention delay. There is nothing to purge.
@@ -309,7 +531,7 @@ It has processed 6 groups spread into 2 servers.
 select dist_emaj.dist_emaj_purge_histories('0 SECOND');
    dist_emaj_purge_histories    
 --------------------------------
- 40 dist_emaj_hist rows deleted
+ 62 dist_emaj_hist rows deleted
 (1 row)
 
 --
@@ -320,7 +542,7 @@ select dist_emaj.dist_emaj_purge_histories('0 SECOND');
 select hist_id, hist_function, hist_wording from dist_emaj.dist_emaj_hist where hist_id >= 4000 and hist_function = 'PURGE_HISTORIES' order by hist_id;
  hist_id |  hist_function  |          hist_wording          
 ---------+-----------------+--------------------------------
-    4097 | PURGE_HISTORIES | 40 dist_emaj_hist rows deleted
+    4130 | PURGE_HISTORIES | 62 dist_emaj_hist rows deleted
 (1 row)
 
 select rlbk_id, rlbk_time_id from dist_emaj.dist_emaj_rlbk order by rlbk_id;
