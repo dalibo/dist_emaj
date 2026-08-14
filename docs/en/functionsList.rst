@@ -42,6 +42,12 @@ All these functions can be called by roles with *dist_emaj_adm* privileges. The 
 | :ref:`dist_emaj_export_parameters_configuration  | | p_location TEXT             | # parameters INT                 |
 | <export_param_conf>`                             | | [ p_includeDefault BOOLEAN ]|                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
+| :ref:`dist_emaj_export_clusters_configuration    | [ p_clusters TEXT[] ]         | clusters JSON                    |
+| <export_clusters_conf>`                          |                               |                                  |
++--------------------------------------------------+-------------------------------+----------------------------------+
+| :ref:`dist_emaj_export_clusters_configuration    | | p_location TEXT             | # clusters INT                   |
+| <export_clusters_conf>`                          | | [ p_clusters TEXT[] ]       |                                  |
++--------------------------------------------------+-------------------------------+----------------------------------+
 | :ref:`dist_emaj_get_version                      |                               | version TEXT                     |
 | <dist_emaj_get_version>` (V)                     |                               |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+

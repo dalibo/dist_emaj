@@ -981,6 +981,156 @@ $dist_emaj_remove_group$;
 COMMENT ON FUNCTION dist_emaj.dist_emaj_remove_group(TEXT, TEXT, TEXT, BOOLEAN) IS
 $$Removes a table group from a Distributed E-Maj cluster.$$;
 
+CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_export_clusters_configuration(p_clusters TEXT[] DEFAULT NULL)
+RETURNS JSON LANGUAGE plpgsql AS
+$dist_emaj_export_clusters_configuration$
+-- This function returns a JSON formatted structure representing some or all configured clusters
+-- The function can be called by clients like Emaj_web.
+-- This is just a wrapper of the internal _export_clusters_conf() function.
+-- Input: an optional array of cluster names, NULL means all clusters.
+-- Output: the table groups content in JSON format
+  BEGIN
+    RETURN dist_emaj._export_clusters_conf(p_clusters);
+  END;
+$dist_emaj_export_clusters_configuration$;
+COMMENT ON FUNCTION dist_emaj.dist_emaj_export_clusters_configuration(TEXT[]) IS
+$$Generates a json structure describing configured clusters.$$;
+
+CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_export_clusters_configuration(p_location TEXT, p_clusters TEXT[] DEFAULT NULL)
+RETURNS INT LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS
+$dist_emaj_export_clusters_configuration$
+-- This function stores some or all configured clusters configuration into a file on the server.
+-- The JSON structure is built by the _export_clusters_conf() function.
+-- Input: an optional array of cluster names, NULL means all clusters.
+-- Output: the number of clusters recorded in the file.
+-- The function is defined as SECURITY DEFINER so that dist_emaj roles can perform the COPY statement.
+  DECLARE
+    v_clustersJson             JSON;
+  BEGIN
+-- Get the json structure.
+    SELECT dist_emaj._export_clusters_conf(p_clusters) INTO v_clustersJson;
+-- Store the structure into the provided file name.
+    CREATE TEMP TABLE t (clusters TEXT);
+    INSERT INTO t
+      SELECT line
+        FROM regexp_split_to_table(v_clustersJson::TEXT, '\n') AS line;
+    EXECUTE format ('COPY t TO %L',
+                    p_location);
+    DROP TABLE t;
+-- Return the number of recorded clusters.
+    RETURN json_array_length(v_clustersJson->'clusters');
+  END;
+$dist_emaj_export_clusters_configuration$;
+COMMENT ON FUNCTION dist_emaj.dist_emaj_export_clusters_configuration(TEXT, TEXT[]) IS
+$$Generates and stores in a file a json structure describing configured clusters.$$;
+
+CREATE OR REPLACE FUNCTION dist_emaj._export_clusters_conf(p_clusters TEXT[] DEFAULT NULL)
+RETURNS JSON LANGUAGE plpgsql AS
+$_export_clusters_conf$
+-- This function generates a JSON formatted structure representing the current configuration of some or all clusters.
+-- Input: an optional array of cluster names, NULL means all clusters.
+-- Output: the table groups configuration in JSON format
+  DECLARE
+    v_clustersText           TEXT;
+    v_unknownClustersList    TEXT;
+    v_clustersJson           JSON;
+    r_cluster                RECORD;
+    r_group                  RECORD;
+    r_server                 RECORD;
+  BEGIN
+-- Build the comment heading the JSON structure.
+    v_clustersText = E'{\n  "_comment": "Generated on database ' || current_database() || ' with dist_emaj version ' ||
+                           dist_emaj.dist_emaj_get_version() || ', at ' || statement_timestamp();
+    IF p_clusters IS NULL THEN
+      v_clustersText = v_clustersText || E', including all clusters",\n';
+    ELSE
+      v_clustersText = v_clustersText || E', including a clusters subset",\n';
+    END IF;
+-- Check the cluster names array, if supplied. All the listed clusters must exist.
+    IF p_clusters IS NOT NULL THEN
+      SELECT string_agg(clst_name, ', ' ORDER BY clst_name)
+        INTO v_unknownClustersList
+        FROM unnest(p_clusters) AS clst(clst_name)
+        WHERE NOT EXISTS
+               (SELECT clst_name
+                  FROM dist_emaj.dist_emaj_cluster
+                  WHERE dist_emaj_cluster.clst_name = clst.clst_name
+               );
+      IF v_unknownClustersList IS NOT NULL THEN
+        RAISE EXCEPTION '_export_clusters_conf: The clusters % are unknown.', v_unknownClustersList;
+      END IF;
+    END IF;
+-- Build the servers description.
+    v_clustersText = v_clustersText
+                || E'  "servers": [\n';
+    FOR r_server IN
+      SELECT DISTINCT srv_name, srv_connect_string, srv_rlbk_parallel_session
+        FROM dist_emaj.dist_emaj_server_aggregates
+        WHERE (p_clusters IS NULL OR clst_name = ANY(p_clusters))
+        ORDER BY srv_name
+    LOOP
+      v_clustersText = v_clustersText
+                  || E'    {\n'
+                  ||  '      "server": ' || to_json(r_server.srv_name) || E',\n'
+                  ||  '      "connect_string": ' || to_json(r_server.srv_connect_string) || E',\n'
+                  ||  '      "rollback_parallel_sessions": ' || to_json(r_server.srv_rlbk_parallel_session) || E',\n'
+                  || E'    },\n';
+    END LOOP;
+    v_clustersText = v_clustersText
+                || E'  ],\n';
+
+-- Build the clusters description.
+    v_clustersText = v_clustersText
+                || E'  "clusters": [\n';
+    FOR r_cluster IN
+      SELECT clst_name
+        FROM dist_emaj.dist_emaj_cluster
+        WHERE (p_clusters IS NULL OR clst_name = ANY(p_clusters))
+        ORDER BY clst_name
+    LOOP
+      v_clustersText = v_clustersText
+                  || E'    {\n'
+                  ||  '      "cluster": ' || to_json(r_cluster.clst_name) || E',\n';
+-- Build the groups list, if any.
+      v_clustersText = v_clustersText
+                  || E'      "groups": [\n';
+      FOR r_group IN
+        SELECT clgrp_server, clgrp_group
+          FROM dist_emaj.dist_emaj_cluster_group
+          WHERE clgrp_cluster = r_cluster.clst_name
+          ORDER BY clgrp_server, clgrp_group
+      LOOP
+        v_clustersText = v_clustersText
+                    || E'        {\n'
+                    ||  '          "server": ' || to_json(r_group.clgrp_server) || E',\n'
+                    ||  '          "group": ' || to_json(r_group.clgrp_group) || E',\n'
+                    || E'        },\n';
+      END LOOP;
+      v_clustersText = v_clustersText
+                  || E'      ],\n';
+      v_clustersText = v_clustersText
+                  || E'    },\n';
+    END LOOP;
+    v_clustersText = v_clustersText
+                || E'  ]\n';
+-- Build the trailer and remove illicite commas at the end of arrays and attributes lists.
+    v_clustersText = v_clustersText
+                || E'}\n';
+    v_clustersText = regexp_replace(v_clustersText, E',(\n *(\]|}))', '\1', 'g');
+-- Test the JSON format by casting the text structure to json and report a warning in case of problem
+-- (this should not fail, unless the function code is bogus).
+    BEGIN
+      v_clustersJson = v_clustersText::JSON;
+      EXCEPTION WHEN OTHERS THEN
+        RAISE EXCEPTION '_export_clusters_conf: The generated JSON structure is not properly formatted. '
+                        'Please report the bug to the Distributed E-Maj project.';
+    END;
+--
+    RETURN v_clustersJson;
+  END;
+$_export_clusters_conf$;
+
 CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_delete_before_mark_cluster(p_cluster TEXT, p_mark TEXT)
 RETURNS INT LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS

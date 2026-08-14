@@ -2,14 +2,19 @@
 -- It tests in particular:
 --   dist_emaj_create_server(), dist_emaj_drop_server(),
 --   dist_emaj_create_cluster(), dist_emaj_drop_cluster(),
---   dist_emaj_assign_group(), dist_emaj_remove_group()
-
+--   dist_emaj_assign_group(), dist_emaj_remove_group(),
+--   dist_emaj_export_clusters_configuration(), dist_emaj_import_clusters_configuration()
 --
 -- Prepare the test context
 --
 
 -- set sequence restart value
 select public.handle_dist_emaj_sequences(1000);
+
+-- Define and create the temp file directory to be used by the script.
+\setenv EMAJTESTTMPDIR '/tmp/emaj_'`echo $PGVER`'/create_drop'
+\set EMAJTESTTMPDIR `echo $EMAJTESTTMPDIR`
+\! mkdir -p $EMAJTESTTMPDIR
 
 --
 -- Test dist_emaj_create_server()
@@ -161,3 +166,32 @@ select hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_word
 select * from dist_emaj.dist_emaj_cluster order by 1;
 select * from dist_emaj.dist_emaj_server order by 1;
 select * from dist_emaj.dist_emaj_cluster_group order by 1,2,3;
+
+-----------------------------
+-- dist_emaj_export_clusters_configuration() and dist_emaj_import_clusters_configuration() tests.
+-----------------------------
+--
+-- Direct export.
+--
+--   Bad selected clusters array.
+SELECT dist_emaj.dist_emaj_export_clusters_configuration(ARRAY['my_cluster', 'unknown1', 'unknown2']);
+
+-- Ok.
+SELECT json_array_length(dist_emaj.dist_emaj_export_clusters_configuration()->'clusters');
+SELECT json_array_length(dist_emaj.dist_emaj_export_clusters_configuration()->'servers');
+SELECT json_array_length(dist_emaj.dist_emaj_export_clusters_configuration(ARRAY['my_cluster', 'empty_cluster'])->'clusters');
+
+--
+-- Export to a file.
+--
+--   Error.
+SELECT dist_emaj.dist_emaj_export_clusters_configuration('/tmp/dummy/location/file');
+
+--   Ok.
+SELECT dist_emaj.dist_emaj_export_clusters_configuration(:'EMAJTESTTMPDIR' || '/orig_clusters_config_all.json');
+SELECT dist_emaj.dist_emaj_export_clusters_configuration(:'EMAJTESTTMPDIR' || '/orig_clusters_config_partial.json', ARRAY['my_cluster']);
+\! wc -l $EMAJTESTTMPDIR/*.json
+\! grep -v ', at ' $EMAJTESTTMPDIR/orig_clusters_config_all.json
+
+-- Remove the temp directory.
+\! rm -R $EMAJTESTTMPDIR

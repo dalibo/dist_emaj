@@ -2,7 +2,8 @@
 -- It tests in particular:
 --   dist_emaj_create_server(), dist_emaj_drop_server(),
 --   dist_emaj_create_cluster(), dist_emaj_drop_cluster(),
---   dist_emaj_assign_group(), dist_emaj_remove_group()
+--   dist_emaj_assign_group(), dist_emaj_remove_group(),
+--   dist_emaj_export_clusters_configuration(), dist_emaj_import_clusters_configuration()
 --
 -- Prepare the test context
 --
@@ -13,6 +14,10 @@ select public.handle_dist_emaj_sequences(1000);
  
 (1 row)
 
+-- Define and create the temp file directory to be used by the script.
+\setenv EMAJTESTTMPDIR '/tmp/emaj_'`echo $PGVER`'/create_drop'
+\set EMAJTESTTMPDIR `echo $EMAJTESTTMPDIR`
+\! mkdir -p $EMAJTESTTMPDIR
 --
 -- Test dist_emaj_create_server()
 --
@@ -420,3 +425,113 @@ select * from dist_emaj.dist_emaj_cluster_group order by 1,2,3;
  my_cluster    | emaj_2       | phil's group#3", |                      1015
 (6 rows)
 
+-----------------------------
+-- dist_emaj_export_clusters_configuration() and dist_emaj_import_clusters_configuration() tests.
+-----------------------------
+--
+-- Direct export.
+--
+--   Bad selected clusters array.
+SELECT dist_emaj.dist_emaj_export_clusters_configuration(ARRAY['my_cluster', 'unknown1', 'unknown2']);
+ERROR:  _export_clusters_conf: The clusters unknown1, unknown2 are unknown.
+CONTEXT:  PL/pgSQL function dist_emaj._export_clusters_conf(text[]) line 32 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_export_clusters_configuration(text[]) line 8 at RETURN
+-- Ok.
+SELECT json_array_length(dist_emaj.dist_emaj_export_clusters_configuration()->'clusters');
+ json_array_length 
+-------------------
+                 2
+(1 row)
+
+SELECT json_array_length(dist_emaj.dist_emaj_export_clusters_configuration()->'servers');
+ json_array_length 
+-------------------
+                 2
+(1 row)
+
+SELECT json_array_length(dist_emaj.dist_emaj_export_clusters_configuration(ARRAY['my_cluster', 'empty_cluster'])->'clusters');
+ json_array_length 
+-------------------
+                 2
+(1 row)
+
+--
+-- Export to a file.
+--
+--   Error.
+SELECT dist_emaj.dist_emaj_export_clusters_configuration('/tmp/dummy/location/file');
+ERROR:  could not open file "/tmp/dummy/location/file" for writing: No such file or directory
+HINT:  COPY TO instructs the PostgreSQL server process to write a file. You may want a client-side facility such as psql's \copy.
+CONTEXT:  SQL statement "COPY t TO '/tmp/dummy/location/file'"
+PL/pgSQL function dist_emaj.dist_emaj_export_clusters_configuration(text,text[]) line 17 at EXECUTE
+--   Ok.
+SELECT dist_emaj.dist_emaj_export_clusters_configuration(:'EMAJTESTTMPDIR' || '/orig_clusters_config_all.json');
+ dist_emaj_export_clusters_configuration 
+-----------------------------------------
+                                       2
+(1 row)
+
+SELECT dist_emaj.dist_emaj_export_clusters_configuration(:'EMAJTESTTMPDIR' || '/orig_clusters_config_partial.json', ARRAY['my_cluster']);
+ dist_emaj_export_clusters_configuration 
+-----------------------------------------
+                                       1
+(1 row)
+
+\! wc -l $EMAJTESTTMPDIR/*.json
+  52 /tmp/emaj_19/create_drop/orig_clusters_config_all.json
+  47 /tmp/emaj_19/create_drop/orig_clusters_config_partial.json
+  99 total
+\! grep -v ', at ' $EMAJTESTTMPDIR/orig_clusters_config_all.json
+{
+  "servers": [
+    {
+      "server": "emaj_1",
+      "connect_string": "host=localhost port=5419 dbname=regression_1 user=_regress_emaj_adm password=adm",
+      "rollback_parallel_sessions": 2
+    },
+    {
+      "server": "emaj_2",
+      "connect_string": "postgresql://_regress_emaj_adm:adm@localhost:5419/regression_2",
+      "rollback_parallel_sessions": 2
+    }
+  ],
+  "clusters": [
+    {
+      "cluster": "empty_cluster",
+      "groups": [
+      ]
+    },
+    {
+      "cluster": "my_cluster",
+      "groups": [
+        {
+          "server": "emaj_1",
+          "group": "myGroup1"
+        },
+        {
+          "server": "emaj_1",
+          "group": "myGroup2"
+        },
+        {
+          "server": "emaj_2",
+          "group": "myGroup4"
+        },
+        {
+          "server": "emaj_2",
+          "group": "myGroup5"
+        },
+        {
+          "server": "emaj_2",
+          "group": "myGroup6"
+        },
+        {
+          "server": "emaj_2",
+          "group": "phil's group#3\\","
+        }
+      ]
+    }
+  ]
+}
+
+-- Remove the temp directory.
+\! rm -R $EMAJTESTTMPDIR

@@ -11,10 +11,41 @@ Several functions allow importing or exporting these configurations to or from a
 JSON Structures
 ---------------
 
-.. _tables_groups_json:
+.. _clusters_json:
 
 JSON Structure for Clusters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+The JSON structure describing clusters is a set of two attributes of type array: ``servers`` describes the servers holding the tables groups, ``clusters`` describes the clusters with the table groups they own. It has the following format::
+
+   {
+      "servers": [
+         {
+            "server": "sss",
+            "connect_string": "ccc",
+            "rollback_parallel_sessions": n
+         },
+         {
+         ...
+         }
+      ],
+      "clusters": [
+         {
+            "cluster": "cccc",
+            "groups": [
+                {
+                "server": "sss",
+                "group": "ggg"
+                },
+                {
+                ...
+                }
+            ],
+         },
+         ...
+         }
+      ]
+   }
 
 .. _parameters_json:
 
@@ -36,6 +67,57 @@ The JSON structure describing parameters is an array named ``parameters``, conta
    }
 
 Parameters not described in the structure retain their default values.
+
+----
+
+.. _export_clusters_conf:
+
+Exporting a Clusters Configuration
+----------------------------------
+
+The ``emaj_export_clusters_configuration()`` function exports the description of one or more clusters as a *JSON* structure. 2 variants exist.
+
+A clusters configuration can be written to **a flat file** with::
+
+   SELECT emaj_export_clusters_configuration(p_location, p_clusters);
+
+If the **file path is omitted** or set to *NULL*, the function directly returns the **JSON structure** containing the configuration::
+
+   SELECT emaj_export_clusters_configuration(p_clusters);
+
+**Input Parameters**
+
+- ``p_location`` (*TEXT*, optional): **Output file** location.
+- ``p_clusters`` (*TEXT[]*, optional): Array of **clusters** to export. If omitted or set to *NULL*, the configuration of **all** clusters is exported.
+
+**Returned data**
+
+When the function writes the configuration into a flat file, it returns the number of exported clusters.
+
+Otherwise, it returns the *JSON* structure containing the clusters configuration.
+
+**Notes**
+
+If present, the file path must be writable by the PostgreSQL instance.
+
+If the ``p_clusters`` parameter is set, the "servers" structure only contains the servers holding table groups owned by the selected clusters.
+
+The second variant allows visualization or storage in a relational table. For example::
+
+   INSERT INTO my_table (my_clusters_json)
+       VALUES (emaj_export_clusters_configuration());
+
+The generated *JSON* structure contains the :ref:`"servers" and "clusters"<clusters_json>` attributes described above, preceded by a ``_comment`` attribute. ::
+
+   {
+   	   "_comment": "Generated on database <db> with Distributed E-Maj version <version> at <date_heure>, including ...",
+   	   "servers": [
+          ...
+   	   ]
+   	   "clusters": [
+          ...
+   	   ]
+   }
 
 ----
 

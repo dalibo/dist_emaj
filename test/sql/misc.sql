@@ -210,3 +210,6 @@ select min(time_id) from dist_emaj.dist_emaj_time_stamp;
 
 --
 reset session_authorization;
+
+-- Remove the temp directory.
+\! rm -R $EMAJTESTTMPDIR
