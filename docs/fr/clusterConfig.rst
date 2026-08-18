@@ -4,13 +4,13 @@ Configurer les clusters Distributed E-Maj
 Pour configurer un *cluster*, il faut procéder aux étapes suivantes :
 
 - créer un objet *cluster*,
-- créer les objets *serveur* décrivant les bases de données hébergeant les groupes de tables membres du *cluster*,
-- assigner au *cluster* les groupes de tables associés à leur *serveur*.
+- créer les objets *database* décrivant les bases de données hébergeant les groupes de tables membres du *cluster*,
+- assigner au *cluster* les groupes de tables associés à leur *database*.
 
 Une fonction est dédiée à chacune de ces étapes. Symétriquement, des fonctions permettent de :
 
 - retirer un groupe de tables de son *cluster*,
-- supprimer un *serveur*,
+- supprimer une *database*,
 - supprimer un *cluster*.
 
 ----
@@ -44,30 +44,30 @@ Le paramètre ``p_ifNotExists`` facilite l'écriture de scripts d'administration
 
 ----
 
-.. _dist_emaj_create_server:
+.. _dist_emaj_create_database:
 
-Créer ou modifier un serveur
-----------------------------
+Créer ou modifier une database
+------------------------------
 
-L'objet *serveur* décrit les moyens d'atteindre un groupe de tables assigné à un cluster. Il représente donc une base de données PostgreSQL munie d'une extension *emaj*.
+L'objet *database* décrit les moyens d'atteindre un groupe de tables assigné à un cluster. Il représente donc une base de données PostgreSQL munie d'une extension *emaj*.
 
-Pour créer ou modifier un *serveur*, exécuter la requête SQL : ::
+Pour créer ou modifier une *database*, exécuter la requête SQL : ::
 
-   SELECT dist_emaj.dist_emaj_create_server(p_server, p_connectString, p_rollbackParallelSession, p_ifNotExists);
+   SELECT dist_emaj.dist_emaj_create_database(p_database, p_connectString, p_rollbackParallelSession, p_ifNotExists);
 
 **Paramètres en entrée**
 
-- ``p_server`` (*TEXT*) : **Nom du serveur** à créer.
-- ``p_connectString`` (*TEXT*) : **Chaîne de connexion** au *serveur*.
-- ``p_rollbackParallelSession`` (*INT*) : Nombre de **sessions simultanées** à utiliser pour ce serveur par les opérations de **rollbacks distribués**.
+- ``p_database`` (*TEXT*) : **Nom de la database** à créer.
+- ``p_connectString`` (*TEXT*) : **Chaîne de connexion** à la *database*.
+- ``p_rollbackParallelSession`` (*INT*) : Nombre de **sessions simultanées** à utiliser pour cette database par les opérations de **rollbacks distribués**.
 - ``p_ifNotExists`` (*BOOLEAN*, optionnel) :
 
-   - *FALSE*, valeur par défaut : Si le serveur existe déjà, la fonction génère une **exception**.
-   - *TRUE* : Si le serveur existe déjà, la fonction enregistre les nouveaux paramètres de connexion et se termine sans erreur.
+   - *FALSE*, valeur par défaut : Si la database existe déjà, la fonction génère une **exception**.
+   - *TRUE* : Si la database existe déjà, la fonction enregistre les nouveaux attributs et se termine sans erreur.
 
 **Données retournées**
 
-La fonction retourne le nombre de *serveur* créé (0 ou 1).
+La fonction retourne le nombre de *database* créée (0 ou 1).
 
 **Notes**
 
@@ -75,15 +75,15 @@ La chaîne de connexion fournie par le paramètre ``p_connectString`` est utilis
 
    'host=localhost port=5432 dbname=ma_base user=mon_role_emaj_adm password=mot_de_passe'
    'postgresql://mon_role_emaj_adm:mot_de_passe@localhost:5432/ma_base'
-   'service=server_1'
+   'service=database_1'
 
 .. caution::
 
-   Privilégiez les configurations d'accès qui évitent les mots de passe dans les chaînes de configuration (fichier *.pgpass*, services). Si toutefois vos scripts de configuration des *serveurs* contiennent des mots de passe en clair, prenez soin de protéger les accès à ces scripts.
+   Privilégiez les configurations d'accès qui évitent les mots de passe dans les chaînes de configuration (fichier *.pgpass*, services). Si toutefois vos scripts de configuration des *databases* contiennent des mots de passe en clair, prenez soin de protéger les accès à ces scripts.
 
-Le rôle utilisé pour se connecter à un *serveur* doit disposer du droit *emaj_adm* sur ce *serveur*.
+Le rôle utilisé pour se connecter à une *database* doit disposer du droit *emaj_adm* sur cette *database*.
 
-La fonction ne vérifie pas la validité des paramètres d'accès au *serveur* fournis. Pour vérifier l'accès effectif au *serveur*, on peut utiliser les fonctions :ref:`dist_emaj_verify_cluster()<dist_emaj_verify_cluster>` ou :ref:`dist_emaj_verify_all()<dist_emaj_verify_all>`, une fois les groupes de tables assignés au cluster.
+La fonction ne vérifie pas la validité des paramètres d'accès à la *database* fournis. Pour vérifier l'accès effectif à la *database*, on peut utiliser les fonctions :ref:`dist_emaj_verify_cluster()<dist_emaj_verify_cluster>` ou :ref:`dist_emaj_verify_all()<dist_emaj_verify_all>`, une fois les groupes de tables assignés au cluster.
 
 Le paramètre ``p_ifNotExists`` facilite l'écriture de scripts d'administration idempotents.
 
@@ -96,12 +96,12 @@ Assigner un groupe de tables à un cluster
 
 Pour assigner un groupe de tables à un *cluster*, exécuter la requête SQL suivante : ::
 
-   SELECT dist_emaj.dist_emaj_assign_group(p_cluster, p_server, p_group, p_ifNotExists);
+   SELECT dist_emaj.dist_emaj_assign_group(p_cluster, p_database, p_group, p_ifNotExists);
 
 **Paramètres en entrée**
 
 - ``p_cluster`` (*TEXT*) : **Nom du cluster**.
-- ``p_server`` (*TEXT*) : **Nom du serveur** hébergeant le groupe de tables.
+- ``p_database`` (*TEXT*) : **Nom de la database** hébergeant le groupe de tables.
 - ``p_group`` (*TEXT*) : **Nom du groupe** de tables.
 - ``p_ifNotExists`` (*BOOLEAN*, optionnel) :
 
@@ -127,12 +127,12 @@ Sortir un groupe de tables de son cluster
 
 Pour sortir un groupe de tables d'un *cluster*, exécuter la requête SQL suivante : ::
 
-   SELECT dist_emaj.dist_emaj_remove_group(p_cluster, p_server, p_group, p_ifAssigned);
+   SELECT dist_emaj.dist_emaj_remove_group(p_cluster, p_database, p_group, p_ifAssigned);
 
 **Paramètres en entrée**
 
 - ``p_cluster`` (*TEXT*) : **Nom du cluster**.
-- ``p_server`` (*TEXT*) : **Nom du serveur** hébergeant le groupe de tables.
+- ``p_database`` (*TEXT*) : **Nom de la database** hébergeant le groupe de tables.
 - ``p_group`` (*TEXT*) : **Nom du groupe** de tables.
 - ``p_ifAssigned`` (*BOOLEAN*, optionnel) :
 
@@ -149,30 +149,30 @@ Le paramètre ``p_ifAssigned`` facilite l'écriture de scripts d'administration 
 
 ----
 
-.. _dist_emaj_drop_server:
+.. _dist_emaj_drop_database:
 
-Supprimer un serveur
---------------------
+Supprimer une database
+----------------------
 
-Pour supprimer un *serveur*, exécuter la requête SQL : ::
+Pour supprimer une *database*, exécuter la requête SQL : ::
 
-   SELECT dist_emaj.dist_emaj_drop_server(p_server, p_ifExists, p_cascade);
+   SELECT dist_emaj.dist_emaj_drop_database(p_database, p_ifExists, p_cascade);
 
 **Paramètres en entrée**
 
-- ``p_server`` (*TEXT*) : **Nom du serveur** à supprimer.
+- ``p_database`` (*TEXT*) : **Nom de la database** à supprimer.
 - ``p_ifExists`` (*BOOLEAN*, optionnel) :
 
-   - *FALSE*, valeur par défaut : Si le *serveur* n'existe pas, la fonction génère une **exception**.
-   - *TRUE* : Si le *serveur* n'existe pas, la fonction se termine sans erreur.
+   - *FALSE*, valeur par défaut : Si la *database* n'existe pas, la fonction génère une **exception**.
+   - *TRUE* : Si la *database* n'existe pas, la fonction se termine sans erreur.
 - ``p_cascade``  (*BOOLEAN*, optionnel) :
 
-   - *FALSE*, valeur par défaut : Si le *serveur* est référencé par des groupes de tables assignés, la fonction génère une **exception**.
-   - *TRUE* : Si le *serveur* est référencé par des groupes de tables assignés, ces groupes sont automatiquement retirés de leur cluster et la fonction se termine sans erreur.
+   - *FALSE*, valeur par défaut : Si la *database* est référencée par des groupes de tables assignés, la fonction génère une **exception**.
+   - *TRUE* : Si la *database* est référencée par des groupes de tables assignés, ces groupes sont automatiquement retirés de leur cluster et la fonction se termine sans erreur.
 
 **Données retournées**
 
-La fonction retourne le nombre de *serveur* supprimé par la fonction (0 ou 1).
+La fonction retourne le nombre de *database* supprimée par la fonction (0 ou 1).
 
 **Notes**
 

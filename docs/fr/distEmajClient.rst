@@ -85,20 +85,20 @@ Notes
 
 L'action est effectuée au sein d'une **transaction globale** et les groupes de tables sont **verrouillés** pour l'occasion. Ceci garantit ainsi :
 
-- que l'action est correctement réalisée pour **tous les groupes de tables** des différents serveurs ou qu'elle n'est réalisée pour aucun des groupes, en cas d'anomalie,
+- que l'action est correctement réalisée pour **tous les groupes de tables** des différentes databases ou qu'elle n'est réalisée pour aucun des groupes, en cas d'anomalie,
 - la marque distribuée posée représente **un même point dans le temps** et **un mếme état stable** pour toutes les groupes de tables du *cluster*.
 
 **Déroulement**
 
-L'outil contrôle d'abord les paramètres et options saisis, puis ouvre une connexion et démarre une transaction sur chacun des *serveurs* hébergeant les groupes de tables concernés.
+L'outil contrôle d'abord les paramètres et options saisis, puis ouvre une connexion et démarre une transaction sur chacune des *databases* hébergeant les groupes de tables concernés.
 
 Ensuite, pour chacune des trois actions possibles, l'opération est découpée en 4 étapes :
 
-- **initialisation** : chaque *serveur* est accédé en séquence, pour qu'il vérifie sa capacité à exécuter l'opération demandée (état des groupes, validité du nom de la nouvelle marque, etc). En cas d'anomalie, l'opération est arrêtée.
-- **verrouillage** : un verrou est posé sur les groupes de tables de chaque *serveur*. Des appels asynchrones permettent de paralléliser cette action.
-- **exécution** : une fois tous les verrous posés, chaque *serveur* est à nouveau sollicité pour l'exécution de l'action proprement dite, là aussi de manière asynchrone.
+- **initialisation** : chaque *database* est accédée en séquence, pour vérifier sa capacité à exécuter l'opération demandée (état des groupes, validité du nom de la nouvelle marque, etc). En cas d'anomalie, l'opération est arrêtée.
+- **verrouillage** : un verrou est posé sur les groupes de tables de chaque *database*. Des appels asynchrones permettent de paralléliser cette action.
+- **exécution** : une fois tous les verrous posés, chaque *database* est à nouveau sollicitée pour l'exécution de l'action proprement dite, là aussi de manière asynchrone.
 - **validation** : une fois toutes les étapes d'exécution terminées, la transaction globale est validée par un *COMMIT à deux phases*.
 
 Les marques distribuées sont enregistrées dans la base de l'extension *dist_emaj*. L'opération est également tracée dans la table dist_emaj.dist_emaj_hist.
 
-Les extensions *emaj* des *serveurs* n'ont pas connaissance du caractère distribué des actions effectuées. Les fonctions E-Maj exécutées sont les mêmes que celles utilisées en contexte "non distribué". En conséquence, les mêmes contrôles et les mêmes opérations élémentaires sont réalisés ; la même tracabilité est assurée.
+Les extensions *emaj* des *databases* n'ont pas connaissance du caractère distribué des actions effectuées. Les fonctions E-Maj exécutées sont les mêmes que celles utilisées en contexte "non distribué". En conséquence, les mêmes contrôles et les mêmes opérations élémentaires sont réalisés ; la même tracabilité est assurée.

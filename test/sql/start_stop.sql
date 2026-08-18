@@ -27,13 +27,13 @@ select public.handle_dist_emaj_sequences(2000);
 -- Start and stop tests
 --
 
--- Errors on a server
+-- Errors on a database
 --   missing groups (simulated from dist_emaj)
 insert into dist_emaj.dist_emaj_cluster_group values
   ('my_cluster', 'emaj_1', 'extraGroup_1'),
   ('my_cluster', 'emaj_1', 'extraGroup_2');
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action start --cluster my_cluster --mark 'START'
-delete from dist_emaj.dist_emaj_cluster_group where clgrp_cluster = 'my_cluster' and clgrp_server = 'emaj_1' and clgrp_group like 'extraGroup%';
+delete from dist_emaj.dist_emaj_cluster_group where clgrp_cluster = 'my_cluster' and clgrp_database = 'emaj_1' and clgrp_group like 'extraGroup%';
 
 -- Start a cluster (with a comment and useless --reset-logs and --idle-groups-allowed)
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action start --cluster my_cluster --mark 'START' --comment "Comment on start mark" --verbose --regression-test --rl --iga
@@ -138,7 +138,7 @@ select hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_word
   from dist_emaj.dist_emaj_hist where hist_id >= 2000 order by 1;
 select mark_cluster, regexp_replace(mark_name,E'\\d\\d\.\\d\\d\\.\\d\\d\\.\\d\\d\\d\\d', '%', 'g'), mark_time_id
   from dist_emaj.dist_emaj_mark order by 1, 3;
-select mark_time_id, mark_server, mark_group, mark_local_time_id
+select mark_time_id, mark_database, mark_group, mark_local_time_id
   from dist_emaj.dist_emaj_mark_group order by 1, 2, 3;
 
 -- Check emaj tables

@@ -1,7 +1,7 @@
 Impacts des actions E-Maj locales
 =================================
 
-Sur un *serveur* E-Maj, aucune information n'indique si un groupe de tables est assigné à un quelconque *cluster* Distributed E-Maj. Si un groupe de tables est assigné à un *cluster*, il est donc de la **responsabilité de l'administrateur** E-Maj de ne pas réaliser d'actions sur le groupe de tables pouvant empêcher ensuite la réalisation d'actions au niveau du *cluster*.
+Sur une *database* E-Maj, aucune information n'indique si un groupe de tables est assigné à un quelconque *cluster* Distributed E-Maj. Si un groupe de tables est assigné à un *cluster*, il est donc de la **responsabilité de l'administrateur** E-Maj de ne pas réaliser d'actions sur le groupe de tables pouvant empêcher ensuite la réalisation d'actions au niveau du *cluster*.
 
 Les conséquences potentielles d'actions E-Maj locales sur un *cluster* sont décrites ci-dessous.
 
@@ -50,8 +50,8 @@ Si cette marque correspond à une *marque distribuée* de *cluster* :
 - le renommage de la marque ne change pas le nom de la *marque distribuée* associée,
 - un *rollback distribué* ciblant cette *marque distribuée* reste possible :
 
-   - si le groupe de tables est le seul du *serveur* assigné au *cluster*,
-   - ou si le même renommage est effectué pour **tous les groupes de tables du serveur**.
+   - si le groupe de tables est le seul de la *database* assigné au *cluster*,
+   - ou si le même renommage est effectué pour **tous les groupes de tables de la database**.
 
 ----
 

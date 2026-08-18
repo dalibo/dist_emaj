@@ -47,7 +47,7 @@ La fonction vérifie que :
 
 - le cluster existe,
 - le cluster a au moins un groupe de table assigné (contrôle à la demande),
-- tous les serveurs accédés par le *cluster* sont accessibles par dblink, contiennent l'extension *emaj* et peuvent gérer des transactions globales,
+- toutes les databases accédées par le *cluster* sont accessibles par dblink, contiennent l'extension *emaj* et peuvent gérer des transactions globales,
 - tous les groupes de tables assignés au *cluster* existent.
 
 La fonction procède aussi à une mise à jour de l'état des opérations de *rollback distribués* réputés en cours.
@@ -77,7 +77,7 @@ La fonction retourne un ensemble de messages textuels qui décrivent les éventu
 
 La fonction vérifie que :
 
-- tous les *serveurs* :
+- toutes les *databases* :
 
    - sont accessibles par *dblink*,
    - contiennent une extension *emaj* dans une version valide,
@@ -88,7 +88,7 @@ Si aucune anomalie n'est détectée, la fonction retourne une unique ligne conte
 
    'No error detected'
 
-De plus, la fonction génère un message d'avertissement pour tout *cluster* n'ayant aucun groupe de tables assigné et pour tout *serveur* n'ayant aucun groupe de tables qui le référence.
+De plus, la fonction génère un message d'avertissement pour tout *cluster* n'ayant aucun groupe de tables assigné et pour toute *database* n'ayant aucun groupe de tables qui la référence.
 
 La fonction procède aussi à une mise à jour de l'état des opérations de *rollback distribués* réputés en cours.
 

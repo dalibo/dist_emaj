@@ -25,7 +25,7 @@ select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_clus
 select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_mark) as t;
 select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_mark_group) as t;
 select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_rlbk) as t;
-select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_rlbk_server) as t;
+select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_rlbk_database) as t;
 
 -----------------------------
 -- forbiden table accesses (just test 1 delete)
@@ -33,18 +33,18 @@ select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_rlbk
 delete from dist_emaj.dist_emaj_hist;
 
 -----------------------------
--- dist_emaj_server specific case
+-- dist_emaj_database specific case
 -----------------------------
 
 -- authorized
-select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_server) as t;
-select srv_name, srv_rlbk_parallel_session from dist_emaj.dist_emaj_server order by 1;
-select clst_name, srv_name, srv_rlbk_parallel_session, srv_groups_array from dist_emaj.dist_emaj_server_aggregates order by 1, 2;
+select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_database) as t;
+select db_name, db_rlbk_parallel_session from dist_emaj.dist_emaj_database order by 1;
+select clst_name, db_name, db_rlbk_parallel_session, db_groups_array from dist_emaj.dist_emaj_database_aggregates order by 1, 2;
 
 -- forbidden
-select * from dist_emaj.dist_emaj_server;
-delete from dist_emaj.dist_emaj_server;
-select * from dist_emaj.dist_emaj_server_aggregates;
+select * from dist_emaj.dist_emaj_database;
+delete from dist_emaj.dist_emaj_database;
+select * from dist_emaj.dist_emaj_database_aggregates;
 
 -----------------------------
 -- authorized functions

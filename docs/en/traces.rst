@@ -47,7 +47,7 @@ The *hist_function* column can take the following values.
 +----------------------------------+------------------------------------------------------------------------------------------+
 | CREATE_CLUSTER                   | Creation of a cluster                                                                    |
 +----------------------------------+------------------------------------------------------------------------------------------+
-| CREATE_SERVER                    | Creation of a server                                                                     |
+| CREATE_DATABASE                  | Creation of a database                                                                   |
 +----------------------------------+------------------------------------------------------------------------------------------+
 | DELETE_BEFORE_MARK_CLUSTER       | Deletion of distributed marks prior to a mark for a cluster                              |
 +----------------------------------+------------------------------------------------------------------------------------------+
@@ -57,7 +57,7 @@ The *hist_function* column can take the following values.
 +----------------------------------+------------------------------------------------------------------------------------------+
 | DROP_CLUSTER                     | Deletion of a cluster                                                                    |
 +----------------------------------+------------------------------------------------------------------------------------------+
-| DROP_SERVER                      | Deletion of a server                                                                     |
+| DROP_DATABASE                    | Deletion of a database                                                                   |
 +----------------------------------+------------------------------------------------------------------------------------------+
 | PURGE_HISTORIES                  | Deletion of events from *dist_emaj_hist* table older than the retention period           |
 +----------------------------------+------------------------------------------------------------------------------------------+
@@ -107,7 +107,7 @@ The *hist_event* column can take the following values.
 
 ----
 
-E-Maj Servers
--------------
+E-Maj Databases
+---------------
 
-Each E-Maj server logs the elementary operations that concern it on its own side. (See the E-Maj documentation).
+Each E-Maj database logs the elementary operations that concern it on its own side. (See the E-Maj documentation).

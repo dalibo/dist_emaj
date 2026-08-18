@@ -57,19 +57,19 @@ truncate dist_emaj.dist_emaj_default_param;
 select dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_1', 'extraGroup_1');
 select dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_1', 'extraGroup_2');
 -- add non emaj adm user
-update dist_emaj.dist_emaj_server
-  set srv_connect_string = replace(srv_connect_string, '_regress_emaj_adm:adm', '_regress_dist_emaj_anonym:anonym')
-  where srv_name = 'emaj_2';
+update dist_emaj.dist_emaj_database
+  set db_connect_string = replace(db_connect_string, '_regress_emaj_adm:adm', '_regress_dist_emaj_anonym:anonym')
+  where db_name = 'emaj_2';
 
 select * from dist_emaj.dist_emaj_verify_all();
 
 -- clean up errors and recheck
-update dist_emaj.dist_emaj_server
-  set srv_connect_string = replace(srv_connect_string, '_regress_dist_emaj_anonym:anonym', '_regress_emaj_adm:adm')
-  where srv_name = 'emaj_2';
+update dist_emaj.dist_emaj_database
+  set db_connect_string = replace(db_connect_string, '_regress_dist_emaj_anonym:anonym', '_regress_emaj_adm:adm')
+  where db_name = 'emaj_2';
 select dist_emaj.dist_emaj_remove_group('my_cluster', 'emaj_1', 'extraGroup_1');
 select dist_emaj.dist_emaj_remove_group('my_cluster', 'emaj_1', 'extraGroup_2');
-select dist_emaj.dist_emaj_drop_server('no_emaj');
+select dist_emaj.dist_emaj_drop_database('no_emaj');
 drop database regression_no_emaj;
 
 select * from dist_emaj.dist_emaj_verify_all();

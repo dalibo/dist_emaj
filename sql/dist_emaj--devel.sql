@@ -147,19 +147,19 @@ COMMENT ON TABLE dist_emaj.dist_emaj_time_stamp IS
 $$Contains the time stamps of major Distributed E-Maj events.$$;
 
 -- Table containing the E-Maj servers characteristics.
-CREATE TABLE dist_emaj.dist_emaj_server (
-  srv_name                     TEXT NOT NULL,              -- server name
-  srv_connect_string           TEXT NOT NULL,              -- libpq server connect string (may include ip address or unix socket, ip port,
-                                                           --   database name, role and password, or a service name)
-  srv_rlbk_parallel_session    SMALLINT NOT NULL           -- maximum number of sessions a rollback may use on this server
-                               CHECK (srv_rlbk_parallel_session > 0),
-  srv_creation_time_id         BIGINT,                     -- time stamp at server create time
-  srv_last_alter_time_id       BIGINT,                     -- time stamp of the latest server properties change
-                                                           --   (NULL at server creation time)
-  PRIMARY KEY (srv_name)
+CREATE TABLE dist_emaj.dist_emaj_database (
+  db_name                      TEXT NOT NULL,              -- database name
+  db_connect_string            TEXT NOT NULL,              -- libpq database connect string (may include ip address or unix socket,
+                                                           --   ip port, database name, role and password, or a service name)
+  db_rlbk_parallel_session     SMALLINT NOT NULL           -- maximum number of sessions a rollback may use on this database
+                               CHECK (db_rlbk_parallel_session > 0),
+  db_creation_time_id          BIGINT,                     -- time stamp at database create time
+  db_last_alter_time_id        BIGINT,                     -- time stamp of the latest database properties change
+                                                           --   (NULL at database creation time)
+  PRIMARY KEY (db_name)
   );
-COMMENT ON TABLE dist_emaj.dist_emaj_server IS
-$$Contains the E-Maj servers characteristics.$$;
+COMMENT ON TABLE dist_emaj.dist_emaj_database IS
+$$Contains the E-Maj databases characteristics.$$;
 
 -- Table containing the E-Maj table groups clusters.
 CREATE TABLE dist_emaj.dist_emaj_cluster (
@@ -175,12 +175,12 @@ $$Contains the E-Maj table groups clusters.$$;
 -- Table describing the relationship between clusters and E-Maj table groups.
 CREATE TABLE dist_emaj.dist_emaj_cluster_group (
   clgrp_cluster                TEXT NOT NULL,              -- cluster name
-  clgrp_server                 TEXT NOT NULL,              -- name of the server hosting the table group
-  clgrp_group                  TEXT NOT NULL,              -- table group name on the foreign server
+  clgrp_database               TEXT NOT NULL,              -- name of the database hosting the table group
+  clgrp_group                  TEXT NOT NULL,              -- table group name on the foreign database
   clgrp_last_assign_time_id    BIGINT,                     -- time stamp of the latest group assignment to the cluster
-  PRIMARY KEY (clgrp_cluster, clgrp_server, clgrp_group),
+  PRIMARY KEY (clgrp_cluster, clgrp_database, clgrp_group),
   FOREIGN KEY (clgrp_cluster) REFERENCES dist_emaj.dist_emaj_cluster (clst_name),
-  FOREIGN KEY (clgrp_server) REFERENCES dist_emaj.dist_emaj_server (srv_name)
+  FOREIGN KEY (clgrp_database) REFERENCES dist_emaj.dist_emaj_database (db_name)
   );
 COMMENT ON TABLE dist_emaj.dist_emaj_cluster_group IS
 $$Describes the relationship between clusters and E-Maj table groups.$$;
@@ -202,12 +202,12 @@ CREATE UNIQUE INDEX dist_emaj_mark_idx1 ON dist_emaj.dist_emaj_mark(mark_time_id
 -- Table describing the relationship between distributed marks and E-Maj table groups.
 CREATE TABLE dist_emaj.dist_emaj_mark_group (
   mark_time_id                 BIGINT NOT NULL,            -- time stamp of the distributed mark
-  mark_server                  TEXT NOT NULL,              -- server hosting the table group
-  mark_group                   TEXT NOT NULL,              -- table group name on the foreign server
-  mark_local_time_id           BIGINT,                     -- local time stamp of the mark on the foreign server
-  PRIMARY KEY (mark_time_id, mark_server, mark_group),
+  mark_database                TEXT NOT NULL,              -- database hosting the table group
+  mark_group                   TEXT NOT NULL,              -- table group name on the foreign database
+  mark_local_time_id           BIGINT,                     -- local time stamp of the mark on the foreign database
+  PRIMARY KEY (mark_time_id, mark_database, mark_group),
   FOREIGN KEY (mark_time_id) REFERENCES dist_emaj.dist_emaj_mark (mark_time_id) ON DELETE CASCADE,
-  FOREIGN KEY (mark_server) REFERENCES dist_emaj.dist_emaj_server (srv_name)
+  FOREIGN KEY (mark_database) REFERENCES dist_emaj.dist_emaj_database (db_name)
   );
 COMMENT ON TABLE dist_emaj.dist_emaj_mark_group IS
 $$Describes the relationship between distributed marks and E-Maj table groups.$$;
@@ -239,15 +239,15 @@ CREATE INDEX dist_emaj_rlbk_idx1 ON dist_emaj.dist_emaj_rlbk (rlbk_status)
     WHERE rlbk_status IN ('PLANNING', 'LOCKING', 'EXECUTING', 'COMPLETED');
 
 -- Table containing local rollback data linked to distributed rollback operations.
-CREATE TABLE dist_emaj.dist_emaj_rlbk_server (
-  rlbs_rlbk_id                 INT         NOT NULL,       -- distributed rollback id
-  rlbs_server                  TEXT        NOT NULL,       -- server name
-  rlbs_local_rlbk_id           INT,                        -- local rollback id
-  PRIMARY KEY (rlbs_rlbk_id, rlbs_server),
-  FOREIGN KEY (rlbs_rlbk_id) REFERENCES dist_emaj.dist_emaj_rlbk (rlbk_id) ON DELETE CASCADE,
-  FOREIGN KEY (rlbs_server) REFERENCES dist_emaj.dist_emaj_server (srv_name)
+CREATE TABLE dist_emaj.dist_emaj_rlbk_database (
+  rlbd_rlbk_id                 INT         NOT NULL,       -- distributed rollback id
+  rlbd_database                TEXT        NOT NULL,       -- database name
+  rlbd_local_rlbk_id           INT,                        -- local rollback id
+  PRIMARY KEY (rlbd_rlbk_id, rlbd_database),
+  FOREIGN KEY (rlbd_rlbk_id) REFERENCES dist_emaj.dist_emaj_rlbk (rlbk_id) ON DELETE CASCADE,
+  FOREIGN KEY (rlbd_database) REFERENCES dist_emaj.dist_emaj_database (db_name)
   );
-COMMENT ON TABLE dist_emaj.dist_emaj_rlbk_server IS
+COMMENT ON TABLE dist_emaj.dist_emaj_rlbk_database IS
 $$Contains local rollback data linked to distributed rollback operations.$$;
 
 ----------------------------------------------------------------
@@ -264,17 +264,17 @@ CREATE VIEW dist_emaj.dist_emaj_all_param AS
 COMMENT ON VIEW dist_emaj.dist_emaj_all_param IS
 $$View on all parameters.$$;
 
--- View used by clients to get servers characteristics.
-CREATE VIEW dist_emaj.dist_emaj_server_aggregates AS
-  SELECT clgrp_cluster AS clst_name, srv_name, srv_connect_string, srv_rlbk_parallel_session,
-         array_agg(clgrp_group ORDER BY clgrp_group) AS srv_groups_array,
-         string_agg(quote_literal(clgrp_group), ', ' ORDER BY clgrp_group) AS srv_groups_list,
-         count(*) AS srv_nb_group
+-- View used by clients to get databases characteristics.
+CREATE VIEW dist_emaj.dist_emaj_database_aggregates AS
+  SELECT clgrp_cluster AS clst_name, db_name, db_connect_string, db_rlbk_parallel_session,
+         array_agg(clgrp_group ORDER BY clgrp_group) AS db_groups_array,
+         string_agg(quote_literal(clgrp_group), ', ' ORDER BY clgrp_group) AS db_groups_list,
+         count(*) AS db_nb_group
     FROM dist_emaj.dist_emaj_cluster_group
-         JOIN dist_emaj.dist_emaj_server ON (dist_emaj_server.srv_name = dist_emaj_cluster_group.clgrp_server)
-    GROUP BY clst_name, srv_name, srv_connect_string;
-COMMENT ON VIEW dist_emaj.dist_emaj_server_aggregates IS
-$$View on servers characteristics.$$;
+         JOIN dist_emaj.dist_emaj_database ON (dist_emaj_database.db_name = dist_emaj_cluster_group.clgrp_database)
+    GROUP BY clst_name, db_name, db_connect_string;
+COMMENT ON VIEW dist_emaj.dist_emaj_database_aggregates IS
+$$View on databases characteristics.$$;
 
 ----------------------------------------------------------------
 --                                                            --
@@ -429,7 +429,7 @@ $_check_dist_mark$
   DECLARE
     v_markTimeId             BIGINT;
     v_errGroupsList          TEXT;
-    v_errServersList         TEXT;
+    v_errDatabasesList       TEXT;
   BEGIN
 -- Check that the cluster exists.
     PERFORM 0
@@ -458,9 +458,9 @@ $_check_dist_mark$
     SELECT string_agg(group_id, ', ' ORDER BY group_id) FILTER (WHERE mark_local_time_id IS NULL)
       INTO v_errGroupsList
       FROM (
-        SELECT clgrp_server || '.' || clgrp_group AS group_id, mark_local_time_id
+        SELECT clgrp_database || '.' || clgrp_group AS group_id, mark_local_time_id
           FROM dist_emaj.dist_emaj_cluster_group
-               LEFT OUTER JOIN dist_emaj.dist_emaj_mark_group ON (mark_time_id = v_markTimeId AND mark_server = clgrp_server
+               LEFT OUTER JOIN dist_emaj.dist_emaj_mark_group ON (mark_time_id = v_markTimeId AND mark_database = clgrp_database
                                                             AND mark_group = clgrp_group)
           WHERE clgrp_cluster = p_cluster
       ) AS t;
@@ -468,22 +468,22 @@ $_check_dist_mark$
       RAISE EXCEPTION '_check_dist_mark: The mark "%" is unknown for groups "%" (or has not the same timestamp).',
                       p_mark, v_errGroupsList;
     END IF;
--- Verify that all table groups of each server have the same local time id.
-    SELECT string_agg(clgrp_server, ', ' ORDER BY clgrp_server) FILTER (WHERE  distinct_local_time_id > 1)
-      INTO v_errServersList
+-- Verify that all table groups of each database have the same local time id.
+    SELECT string_agg(clgrp_database, ', ' ORDER BY clgrp_database) FILTER (WHERE  distinct_local_time_id > 1)
+      INTO v_errDatabasesList
       FROM (
-        SELECT clgrp_server, count(DISTINCT mark_local_time_id) AS distinct_local_time_id
+        SELECT clgrp_database, count(DISTINCT mark_local_time_id) AS distinct_local_time_id
           FROM dist_emaj.dist_emaj_cluster_group
-               JOIN dist_emaj.dist_emaj_mark_group ON (mark_time_id = v_markTimeId AND mark_server = clgrp_server
+               JOIN dist_emaj.dist_emaj_mark_group ON (mark_time_id = v_markTimeId AND mark_database = clgrp_database
                                                  AND mark_group = clgrp_group)
           WHERE clgrp_cluster = p_cluster
-          GROUP BY clgrp_server
+          GROUP BY clgrp_database
       ) AS t;
-    IF v_errServersList IS NOT NULL THEN
-      RAISE EXCEPTION '_check_dist_mark: On servers %, the mark "%" does not represent the same timestamp for all groups.',
-                      v_errServersList, p_mark;
+    IF v_errDatabasesList IS NOT NULL THEN
+      RAISE EXCEPTION '_check_dist_mark: On databases %, the mark "%" does not represent the same timestamp for all groups.',
+                      v_errDatabasesList, p_mark;
     END IF;
--- Build and return the servers characteristics.
+-- Build and return the databases characteristics.
     RETURN v_markTimeId;
   END;
 $_check_dist_mark$;
@@ -580,143 +580,143 @@ $_check_json_param_conf$;
 
 ----------------------------------------------------------------
 --                                                            --
---          Functions to manage servers and clusters          --
+--          Functions to manage databases and clusters          --
 --                                                            --
 ----------------------------------------------------------------
 
-CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_create_server(p_server TEXT, p_connectString TEXT, p_rollbackParallelSession INT,
-                                                             p_ifNotExists BOOLEAN DEFAULT FALSE)
+CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_create_database(p_database TEXT, p_connectString TEXT, p_rollbackParallelSession INT,
+                                                               p_ifNotExists BOOLEAN DEFAULT FALSE)
 RETURNS INT LANGUAGE plpgsql AS
-$dist_emaj_create_server$
--- This function creates or modifies a server.
+$dist_emaj_create_database$
+-- This function creates or modifies a database.
 -- The function doesn't check that connection string is valid. But the dist_emaj_verify_cluster() function does.
--- Input: server name,
---        the connect string to establish connections to the server, in the libpq format,
+-- Input: database name,
+--        the connect string to establish connections to the database, in the libpq format,
 --        the number of parallel sessions that could be opened for distributed rollback operations,
---        boolean indicating whether the function is allowed to update the server if it already exists.
--- Output: number of created or modified servers (0 or 1)
+--        boolean indicating whether the function is allowed to update the database if it already exists.
+-- Output: number of created or modified databases (0 or 1)
   DECLARE
     v_exist                  BOOLEAN;
     v_timeId                 BIGINT;
   BEGIN
 -- Insert a BEGIN event into the history.
     INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object)
-      VALUES ('CREATE_SERVER', 'BEGIN', p_server);
--- Check that the server name is valid.
-    IF p_server IS NULL OR p_server = '' THEN
-      RAISE EXCEPTION 'dist_emaj_create_server: The server name can''t be NULL or empty.';
+      VALUES ('CREATE_DATABASE', 'BEGIN', p_database);
+-- Check that the database name is valid.
+    IF p_database IS NULL OR p_database = '' THEN
+      RAISE EXCEPTION 'dist_emaj_create_database: The database name can''t be NULL or empty.';
     END IF;
 -- Check that the connect string is not null.
     IF p_connectString IS NULL THEN
-      RAISE EXCEPTION 'dist_emaj_create_server: The connect string can''t be NULL.';
+      RAISE EXCEPTION 'dist_emaj_create_database: The connect string can''t be NULL.';
     END IF;
 -- Check that the p_rollbackParallelSession is valid.
     IF p_rollbackParallelSession IS NULL OR p_rollbackParallelSession <= 0 THEN
-      RAISE EXCEPTION 'dist_emaj_create_server: The number of rollback parallel sessions must be greater than 0.';
+      RAISE EXCEPTION 'dist_emaj_create_database: The number of rollback parallel sessions must be greater than 0.';
     END IF;
--- Determine whether the server already exists in dist_emaj_server table.
+-- Determine whether the database already exists in dist_emaj_database table.
     v_exist = EXISTS
                 (SELECT 0
-                   FROM dist_emaj.dist_emaj_server
-                   WHERE srv_name = p_server
+                   FROM dist_emaj.dist_emaj_database
+                   WHERE db_name = p_database
                 );
--- Abort if the server already exists and it should not.
+-- Abort if the database already exists and it should not.
     IF v_exist AND NOT p_ifNotExists THEN
-      RAISE EXCEPTION 'dist_emaj_create_server: The server "%" already exists.', p_server;
+      RAISE EXCEPTION 'dist_emaj_create_database: The database "%" already exists.', p_database;
     END IF;
 -- OK
     IF NOT v_exist THEN
--- The server doesn't exist yet. So create it.
+-- The database doesn't exist yet. So create it.
 -- Get the time stamp of the operation.
-      SELECT dist_emaj._set_time_stamp('CREATE_SERVER', 'C') INTO v_timeId;
--- Insert the row describing the server into the dist_emaj_server table.
-      INSERT INTO dist_emaj.dist_emaj_server (srv_name, srv_connect_string, srv_rlbk_parallel_session, srv_creation_time_id)
-        VALUES (p_server, p_connectString, p_rollbackParallelSession, v_timeId);
+      SELECT dist_emaj._set_time_stamp('CREATE_DATABASE', 'C') INTO v_timeId;
+-- Insert the row describing the database into the dist_emaj_database table.
+      INSERT INTO dist_emaj.dist_emaj_database (db_name, db_connect_string, db_rlbk_parallel_session, db_creation_time_id)
+        VALUES (p_database, p_connectString, p_rollbackParallelSession, v_timeId);
 -- Insert a END event into the history.
       INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object, hist_wording)
-        VALUES ('CREATE_SERVER', 'END', p_server, 'Server created');
+        VALUES ('CREATE_DATABASE', 'END', p_database, 'Database created');
       RETURN 1;
     ELSE
--- The server already exists. So update it.
+-- The database already exists. So update it.
 -- Get the time stamp of the operation.
-      SELECT dist_emaj._set_time_stamp('CREATE_SERVER', 'A') INTO v_timeId;
--- Update the server in the dist_emaj_server table.
-      UPDATE dist_emaj.dist_emaj_server
-        SET srv_connect_string = p_connectString, srv_rlbk_parallel_session = p_rollbackParallelSession, srv_last_alter_time_id = v_timeId
-        WHERE srv_name = p_server;
+      SELECT dist_emaj._set_time_stamp('CREATE_DATABASE', 'A') INTO v_timeId;
+-- Update the database in the dist_emaj_database table.
+      UPDATE dist_emaj.dist_emaj_database
+        SET db_connect_string = p_connectString, db_rlbk_parallel_session = p_rollbackParallelSession, db_last_alter_time_id = v_timeId
+        WHERE db_name = p_database;
 -- Insert a END event into the history.
       INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object, hist_wording)
-        VALUES ('CREATE_SERVER', 'END', p_server, 'Server modified');
+        VALUES ('CREATE_DATABASE', 'END', p_database, 'Database modified');
       RETURN 0;
     END IF;
   END;
-$dist_emaj_create_server$;
-COMMENT ON FUNCTION dist_emaj.dist_emaj_create_server(TEXT, TEXT, INT, BOOLEAN) IS
-$$Creates an E-Maj server.$$;
+$dist_emaj_create_database$;
+COMMENT ON FUNCTION dist_emaj.dist_emaj_create_database(TEXT, TEXT, INT, BOOLEAN) IS
+$$Creates an E-Maj database.$$;
 
-CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_drop_server(p_server TEXT, p_ifExists BOOLEAN DEFAULT FALSE,
-                                                           p_cascade BOOLEAN DEFAULT FALSE)
+CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_drop_database(p_database TEXT, p_ifExists BOOLEAN DEFAULT FALSE,
+                                                             p_cascade BOOLEAN DEFAULT FALSE)
 RETURNS INT LANGUAGE plpgsql AS
-$dist_emaj_drop_server$
--- This function drops an existing E-Maj server.
--- Input: server name,
---        boolean indicating whether the function raises an exception if the server does not exist,
---        boolean indicating whether the function also removes groups assignments that reference the server.
--- Output: number of dropped servers (0 or 1).
+$dist_emaj_drop_database$
+-- This function drops an existing E-Maj database.
+-- Input: database name,
+--        boolean indicating whether the function raises an exception if the database does not exist,
+--        boolean indicating whether the function also removes groups assignments that reference the database.
+-- Output: number of dropped databases (0 or 1).
   DECLARE
     v_exist                  BOOLEAN;
     v_nbGroup                INT;
   BEGIN
 -- Insert a BEGIN event into the history.
     INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object)
-      VALUES ('DROP_SERVER', 'BEGIN', p_server);
--- Determine whether the server exists in dist_emaj_server table.
+      VALUES ('DROP_DATABASE', 'BEGIN', p_database);
+-- Determine whether the database exists in dist_emaj_database table.
     v_exist = EXISTS
                 (SELECT 0
-                   FROM dist_emaj.dist_emaj_server
-                   WHERE srv_name = p_server
+                   FROM dist_emaj.dist_emaj_database
+                   WHERE db_name = p_database
                 );
--- Abort if the server does not exist and it should.
+-- Abort if the database does not exist and it should.
     IF NOT v_exist AND NOT p_ifExists THEN
-      RAISE EXCEPTION 'dist_emaj_drop_server: The server "%" does not exist.', p_server;
+      RAISE EXCEPTION 'dist_emaj_drop_database: The database "%" does not exist.', p_database;
     END IF;
 -- OK
     IF v_exist THEN
--- The server exists.
--- Get the time stamp of the operation (as a counterpart of the time stamp set at create server time).
-      PERFORM dist_emaj._set_time_stamp('DROP_SERVER', 'D');
--- Count groups currently assigned to the server.
+-- The database exists.
+-- Get the time stamp of the operation (as a counterpart of the time stamp set at create database time).
+      PERFORM dist_emaj._set_time_stamp('DROP_DATABASE', 'D');
+-- Count groups currently assigned to the database.
       SELECT count(*)
         INTO v_nbGroup
         FROM dist_emaj.dist_emaj_cluster_group
-        WHERE clgrp_server = p_server;
+        WHERE clgrp_database = p_database;
       IF v_nbGroup > 0 THEN
         IF NOT p_cascade THEN
--- Some groups assigned to existing cluster belong to the server but the function is not allowed to remove them.
-          RAISE EXCEPTION 'dist_emaj_drop_server: The server "%" has % groups assigned to existing clusters.', p_server, v_nbGroup;
+-- Some groups assigned to existing cluster belong to the database but the function is not allowed to remove them.
+          RAISE EXCEPTION 'dist_emaj_drop_database: The database "%" has % groups assigned to existing clusters.', p_database, v_nbGroup;
         ELSE
--- Delete assigned groups that belong to the server.
+-- Delete assigned groups that belong to the database.
           DELETE FROM dist_emaj.dist_emaj_cluster_group
-            WHERE clgrp_server = p_server;
+            WHERE clgrp_database = p_database;
         END IF;
       END IF;
--- Delete the row describing the server in the dist_emaj_server table.
-      DELETE FROM dist_emaj.dist_emaj_server
-        WHERE srv_name = p_server;
+-- Delete the row describing the database in the dist_emaj_database table.
+      DELETE FROM dist_emaj.dist_emaj_database
+        WHERE db_name = p_database;
 -- Insert a END event into the history.
       INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object, hist_wording)
-        VALUES ('DROP_SERVER', 'END', p_server, 'Server dropped, ' || v_nbGroup || ' group assignments deleted');
+        VALUES ('DROP_DATABASE', 'END', p_database, 'Database dropped, ' || v_nbGroup || ' group assignments deleted');
       RETURN 1;
     ELSE
--- The server does not exist.
+-- The database does not exist.
       INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object, hist_wording)
-        VALUES ('DROP_SERVER', 'END', p_server, 'The server did not exist');
+        VALUES ('DROP_DATABASE', 'END', p_database, 'The database did not exist');
       RETURN 0;
     END IF;
   END;
-$dist_emaj_drop_server$;
-COMMENT ON FUNCTION dist_emaj.dist_emaj_drop_server(TEXT, BOOLEAN, BOOLEAN) IS
-$$Drops an E-Maj server.$$;
+$dist_emaj_drop_database$;
+COMMENT ON FUNCTION dist_emaj.dist_emaj_drop_database(TEXT, BOOLEAN, BOOLEAN) IS
+$$Drops an E-Maj database.$$;
 
 CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_create_cluster(p_cluster TEXT, p_ifNotExists BOOLEAN DEFAULT FALSE)
 RETURNS INT LANGUAGE plpgsql AS
@@ -833,12 +833,12 @@ $dist_emaj_drop_cluster$;
 COMMENT ON FUNCTION dist_emaj.dist_emaj_drop_cluster(TEXT, BOOLEAN, BOOLEAN) IS
 $$Drops a Distributed E-Maj cluster.$$;
 
-CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_assign_group(p_cluster TEXT, p_server TEXT, p_group TEXT,
+CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_assign_group(p_cluster TEXT, p_database TEXT, p_group TEXT,
                                                             p_ifNotExists BOOLEAN DEFAULT FALSE)
 RETURNS INT LANGUAGE plpgsql AS
 $dist_emaj_assign_group$
--- This function assigns a table group of an E-Maj server to a cluster.
--- Input: cluster name, server name, group name,
+-- This function assigns a table group of an E-Maj database to a cluster.
+-- Input: cluster name, database name, group name,
 --        boolean indicating whether the function raises an exception if the table group is already assigned to the cluster.
 -- Output: number of assigned table group (0 or 1)
   DECLARE
@@ -847,7 +847,7 @@ $dist_emaj_assign_group$
   BEGIN
 -- Insert a BEGIN event into the history.
     INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object, hist_wording)
-      VALUES ('ASSIGN_GROUP', 'BEGIN', p_server || '.' || p_group, 'To cluster ' || p_cluster);
+      VALUES ('ASSIGN_GROUP', 'BEGIN', p_database || '.' || p_group, 'To cluster ' || p_cluster);
 -- Check that the cluster exists.
     v_exist = EXISTS
                 (SELECT 0
@@ -857,27 +857,27 @@ $dist_emaj_assign_group$
     IF NOT v_exist THEN
       RAISE EXCEPTION 'dist_emaj_assign_group: The cluster "%" does not exist.', p_cluster;
     END IF;
--- Check that the server exists.
+-- Check that the database exists.
     v_exist = EXISTS
                 (SELECT 0
-                   FROM dist_emaj.dist_emaj_server
-                   WHERE srv_name = p_server
+                   FROM dist_emaj.dist_emaj_database
+                   WHERE db_name = p_database
                 );
     IF NOT v_exist THEN
-      RAISE EXCEPTION 'dist_emaj_assign_group: The server "%" does not exist.', p_server;
+      RAISE EXCEPTION 'dist_emaj_assign_group: The database "%" does not exist.', p_database;
     END IF;
 -- Determine whether the table group is already assigned to the cluster.
     v_exist = EXISTS
                 (SELECT 0
                    FROM dist_emaj.dist_emaj_cluster_group
                    WHERE clgrp_cluster = p_cluster
-                     AND clgrp_server = p_server
+                     AND clgrp_database = p_database
                      AND clgrp_group = p_group
                 );
 -- Abort if the table group is already assigned to the cluster and it should not.
     IF v_exist AND NOT p_ifNotExists THEN
-      RAISE EXCEPTION 'dist_emaj_assign_group: The table group "%" on server "%" is already assigned to the cluster "%".',
-                      p_group, p_server, p_cluster;
+      RAISE EXCEPTION 'dist_emaj_assign_group: The table group "%" on database "%" is already assigned to the cluster "%".',
+                      p_group, p_database, p_cluster;
     END IF;
 -- OK
     IF NOT v_exist THEN
@@ -885,20 +885,20 @@ $dist_emaj_assign_group$
 -- Get the time stamp of the operation.
       SELECT dist_emaj._set_time_stamp('ASSIGN_GROUP', 'A') INTO v_timeId;
 -- Insert the row describing the assignment into the dist_emaj_cluster_group table.
-      INSERT INTO dist_emaj.dist_emaj_cluster_group (clgrp_cluster, clgrp_server, clgrp_group, clgrp_last_assign_time_id)
-        VALUES (p_cluster, p_server, p_group, v_timeId);
+      INSERT INTO dist_emaj.dist_emaj_cluster_group (clgrp_cluster, clgrp_database, clgrp_group, clgrp_last_assign_time_id)
+        VALUES (p_cluster, p_database, p_group, v_timeId);
 -- Update the cluster clst_last_alter_time_id column.
       UPDATE dist_emaj.dist_emaj_cluster
         SET clst_last_alter_time_id = v_timeId
         WHERE clst_name = p_cluster;
 -- Insert a END event into the history.
       INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object, hist_wording)
-        VALUES ('ASSIGN_GROUP', 'END', p_server || '.' || p_group, 'Group assigned to the cluster');
+        VALUES ('ASSIGN_GROUP', 'END', p_database || '.' || p_group, 'Group assigned to the cluster');
       RETURN 1;
     ELSE
 -- The group is already assigned to the cluster.
       INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object, hist_wording)
-        VALUES ('ASSIGN_GROUP', 'END', p_server || '.' || p_group, 'The group was already assigned to the cluster');
+        VALUES ('ASSIGN_GROUP', 'END', p_database || '.' || p_group, 'The group was already assigned to the cluster');
       RETURN 0;
     END IF;
   END;
@@ -906,12 +906,12 @@ $dist_emaj_assign_group$;
 COMMENT ON FUNCTION dist_emaj.dist_emaj_assign_group(TEXT, TEXT, TEXT, BOOLEAN) IS
 $$Assigns a table group to a Distributed E-Maj cluster.$$;
 
-CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_remove_group(p_cluster TEXT, p_server TEXT, p_group TEXT,
+CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_remove_group(p_cluster TEXT, p_database TEXT, p_group TEXT,
                                                             p_ifAssigned BOOLEAN DEFAULT FALSE)
 RETURNS INT LANGUAGE plpgsql AS
 $dist_emaj_remove_group$
 -- This function removes a table group from a cluster.
--- Input: cluster name, server name, group name,
+-- Input: cluster name, database name, group name,
 --        boolean indicating whether the function raises an exception if the group is already assigned to the cluster.
 -- Output: number of removed groups (0 or 1).
   DECLARE
@@ -920,7 +920,7 @@ $dist_emaj_remove_group$
   BEGIN
 -- Insert a BEGIN event into the history.
     INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object, hist_wording)
-      VALUES ('REMOVE_GROUP', 'BEGIN', p_server || '.' || p_group, 'From cluster ' || p_cluster);
+      VALUES ('REMOVE_GROUP', 'BEGIN', p_database || '.' || p_group, 'From cluster ' || p_cluster);
 -- Check that the cluster exists.
     v_exist = EXISTS
                 (SELECT 0
@@ -930,27 +930,27 @@ $dist_emaj_remove_group$
     IF NOT v_exist THEN
       RAISE EXCEPTION 'dist_emaj_remove_group: The cluster "%" does not exist.', p_cluster;
     END IF;
--- Check that the server exists.
+-- Check that the database exists.
     v_exist = EXISTS
                 (SELECT 0
-                   FROM dist_emaj.dist_emaj_server
-                   WHERE srv_name = p_server
+                   FROM dist_emaj.dist_emaj_database
+                   WHERE db_name = p_database
                 );
     IF NOT v_exist THEN
-      RAISE EXCEPTION 'dist_emaj_remove_group: The server "%" does not exist.', p_server;
+      RAISE EXCEPTION 'dist_emaj_remove_group: The database "%" does not exist.', p_database;
     END IF;
 -- Determine whether the table group is already assigned to the cluster.
     v_exist = EXISTS
                 (SELECT 0
                    FROM dist_emaj.dist_emaj_cluster_group
                    WHERE clgrp_cluster = p_cluster
-                     AND clgrp_server = p_server
+                     AND clgrp_database = p_database
                      AND clgrp_group = p_group
                 );
 -- Abort if the group is not assigned to the cluster and it should.
     IF NOT v_exist AND NOT p_ifAssigned THEN
-      RAISE EXCEPTION 'dist_emaj_remove_group: The table group "%" on server "%" is not currently assigned to the cluster "%".',
-                      p_group, p_server, p_cluster;
+      RAISE EXCEPTION 'dist_emaj_remove_group: The table group "%" on database "%" is not currently assigned to the cluster "%".',
+                      p_group, p_database, p_cluster;
     END IF;
 -- OK
     IF v_exist THEN
@@ -960,7 +960,7 @@ $dist_emaj_remove_group$
 -- Remove the group from the cluster.
       DELETE FROM dist_emaj.dist_emaj_cluster_group
         WHERE clgrp_cluster = p_cluster
-          AND clgrp_server = p_server
+          AND clgrp_database = p_database
           AND clgrp_group = p_group;
 -- Update the cluster clst_last_alter_time_id column.
       UPDATE dist_emaj.dist_emaj_cluster
@@ -968,12 +968,12 @@ $dist_emaj_remove_group$
         WHERE clst_name = p_cluster;
 -- Insert a END event into the history.
       INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object, hist_wording)
-        VALUES ('REMOVE_GROUP', 'END', p_server || '.' || p_group, 'Group removed from the cluster');
+        VALUES ('REMOVE_GROUP', 'END', p_database || '.' || p_group, 'Group removed from the cluster');
       RETURN 1;
     ELSE
 -- The cluster does not exist.
       INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object, hist_wording)
-        VALUES ('REMOVE_GROUP', 'END', p_server || '.' || p_group, 'The group was not assigned to the cluster');
+        VALUES ('REMOVE_GROUP', 'END', p_database || '.' || p_group, 'The group was not assigned to the cluster');
       RETURN 0;
     END IF;
   END;
@@ -1000,7 +1000,7 @@ CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_export_clusters_configuration(p_l
 RETURNS INT LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS
 $dist_emaj_export_clusters_configuration$
--- This function stores some or all configured clusters configuration into a file on the server.
+-- This function stores some or all configured clusters configuration into a file on the database.
 -- The JSON structure is built by the _export_clusters_conf() function.
 -- Input: an optional array of cluster names, NULL means all clusters.
 -- Output: the number of clusters recorded in the file.
@@ -1037,7 +1037,7 @@ $_export_clusters_conf$
     v_clustersJson           JSON;
     r_cluster                RECORD;
     r_group                  RECORD;
-    r_server                 RECORD;
+    r_database                 RECORD;
   BEGIN
 -- Build the comment heading the JSON structure.
     v_clustersText = E'{\n  "_comment": "Generated on database ' || current_database() || ' with dist_emaj version ' ||
@@ -1061,20 +1061,20 @@ $_export_clusters_conf$
         RAISE EXCEPTION '_export_clusters_conf: The clusters % are unknown.', v_unknownClustersList;
       END IF;
     END IF;
--- Build the servers description.
+-- Build the databases description.
     v_clustersText = v_clustersText
-                || E'  "servers": [\n';
-    FOR r_server IN
-      SELECT DISTINCT srv_name, srv_connect_string, srv_rlbk_parallel_session
-        FROM dist_emaj.dist_emaj_server_aggregates
+                || E'  "databases": [\n';
+    FOR r_database IN
+      SELECT DISTINCT db_name, db_connect_string, db_rlbk_parallel_session
+        FROM dist_emaj.dist_emaj_database_aggregates
         WHERE (p_clusters IS NULL OR clst_name = ANY(p_clusters))
-        ORDER BY srv_name
+        ORDER BY db_name
     LOOP
       v_clustersText = v_clustersText
                   || E'    {\n'
-                  ||  '      "server": ' || to_json(r_server.srv_name) || E',\n'
-                  ||  '      "connect_string": ' || to_json(r_server.srv_connect_string) || E',\n'
-                  ||  '      "rollback_parallel_sessions": ' || to_json(r_server.srv_rlbk_parallel_session) || E',\n'
+                  ||  '      "database": ' || to_json(r_database.db_name) || E',\n'
+                  ||  '      "connect_string": ' || to_json(r_database.db_connect_string) || E',\n'
+                  ||  '      "rollback_parallel_sessions": ' || to_json(r_database.db_rlbk_parallel_session) || E',\n'
                   || E'    },\n';
     END LOOP;
     v_clustersText = v_clustersText
@@ -1096,14 +1096,14 @@ $_export_clusters_conf$
       v_clustersText = v_clustersText
                   || E'      "groups": [\n';
       FOR r_group IN
-        SELECT clgrp_server, clgrp_group
+        SELECT clgrp_database, clgrp_group
           FROM dist_emaj.dist_emaj_cluster_group
           WHERE clgrp_cluster = r_cluster.clst_name
-          ORDER BY clgrp_server, clgrp_group
+          ORDER BY clgrp_database, clgrp_group
       LOOP
         v_clustersText = v_clustersText
                     || E'        {\n'
-                    ||  '          "server": ' || to_json(r_group.clgrp_server) || E',\n'
+                    ||  '          "database": ' || to_json(r_group.clgrp_database) || E',\n'
                     ||  '          "group": ' || to_json(r_group.clgrp_group) || E',\n'
                     || E'        },\n';
       END LOOP;
@@ -1150,7 +1150,7 @@ $dist_emaj_delete_before_mark_cluster$
     v_nbMark                 INT;
     v_nbLocalMark            INT = 0;
     v_nbDistMark             INT;
-    r_server                 RECORD;
+    r_database               RECORD;
   BEGIN
 -- Insert a BEGIN event into the history
     INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object, hist_wording)
@@ -1167,28 +1167,28 @@ $dist_emaj_delete_before_mark_cluster$
            JOIN pg_catalog.pg_namespace ON (pg_namespace.oid = pronamespace)
       WHERE proname = 'dblink_connect'
       LIMIT 1;
--- For each server involved in the cluster.
-    FOR r_server IN
-      SELECT srv_name, srv_connect_string,
+-- For each database involved in the cluster.
+    FOR r_database IN
+      SELECT db_name, db_connect_string,
              array_agg(clgrp_group ORDER BY clgrp_group) AS groups_array
         FROM dist_emaj.dist_emaj_cluster_group
-             JOIN dist_emaj.dist_emaj_server ON (dist_emaj_server.srv_name = dist_emaj_cluster_group.clgrp_server)
+             JOIN dist_emaj.dist_emaj_database ON (dist_emaj_database.db_name = dist_emaj_cluster_group.clgrp_database)
         WHERE clgrp_cluster = p_cluster
-        GROUP BY srv_name, srv_connect_string
-        ORDER BY srv_name
+        GROUP BY db_name, db_connect_string
+        ORDER BY db_name
     LOOP
--- Log on the server.
+-- Log on the database.
       EXECUTE format('SELECT %I.dblink_connect(%L)',
-                     v_dblinkSchema, r_server.srv_connect_string);
--- Process each group of the server.
-      FOREACH v_group IN ARRAY r_server.groups_array
+                     v_dblinkSchema, r_database.db_connect_string);
+-- Process each group of the database.
+      FOREACH v_group IN ARRAY r_database.groups_array
       LOOP
 -- Get the local time_id of the mark for the group.
         SELECT mark_local_time_id
           INTO v_localTimeId
           FROM dist_emaj.dist_emaj_mark_group
           WHERE mark_time_id = v_markTimeId
-            AND mark_server = r_server.srv_name
+            AND mark_database = r_database.db_name
             AND mark_group = v_group;
 -- Execute the emaj_delete_before_mark_group() function.
         v_stmt = 'SELECT emaj.emaj_delete_before_mark_group(' || quote_literal(v_group) || ', mark_name) '
@@ -1201,7 +1201,7 @@ $dist_emaj_delete_before_mark_cluster$
         v_nbLocalMark = v_nbLocalMark + v_nbMark;
       END LOOP;
     END LOOP;
--- Disconnect from the latest server, if any.
+-- Disconnect from the latest database, if any.
     BEGIN
       EXECUTE format('SELECT %I.dblink_disconnect()',
                      v_dblinkSchema);
@@ -1225,20 +1225,20 @@ $dist_emaj_delete_before_mark_cluster$;
 COMMENT ON FUNCTION dist_emaj.dist_emaj_delete_before_mark_cluster(TEXT, TEXT) IS
 $$Deletes all distributed marks set before a given mark.$$;
 
-CREATE OR REPLACE FUNCTION dist_emaj._verify_server(p_server TEXT, p_connectString TEXT, p_groupsList TEXT,
+CREATE OR REPLACE FUNCTION dist_emaj._verify_database(p_database TEXT, p_connectString TEXT, p_groupsList TEXT,
                                                     p_dblinkSchema TEXT, p_onErrorStop BOOLEAN)
 RETURNS SETOF TEXT LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS
-$_verify_server$
--- This function verifies a server health.
--- It checks that the server:
+$_verify_database$
+-- This function verifies a database health.
+-- It checks that the database:
 --   is reachable by dblink,
 --   contains an emaj extension in a valid version
 --   can handle global transactions,
 --   effectively owns all assiged table groups.
--- Input: server name,
---        connect string to reach the server,
---        list of groups owned by the server,
+-- Input: database name,
+--        connect string to reach the database,
+--        list of groups owned by the database,
 --        schema holding the dblinnk extension,
 --        flag indicating whether an error is reported as a warning or an exception.
 -- Output: set of error messages
@@ -1262,10 +1262,10 @@ $_verify_server$
                      p_dblinkSchema, p_connectString);
       v_checkStep = v_checkStep + 1;
     EXCEPTION WHEN OTHERS THEN
-      v_msg = format('Error on server "%s", the dblink connection failed (SQLSTATE %s - %s).',
-                     p_server, SQLSTATE, SQLERRM);
+      v_msg = format('Error on database "%s", the dblink connection failed (SQLSTATE %s - %s).',
+                     p_database, SQLSTATE, SQLERRM);
       IF p_onErrorStop THEN
-        RAISE EXCEPTION '_verify_server (1): %', v_msg;
+        RAISE EXCEPTION '_verify_database (1): %', v_msg;
       END IF;
       RETURN NEXT v_msg;
     END;
@@ -1278,11 +1278,11 @@ $_verify_server$
                      p_dblinkSchema, v_stmt)
         INTO v_schemaExists;
       IF v_schemaExists IS NULL THEN
-        v_msg = format('Error on server "%s", the emaj extension is not installed in the database.',
-                       p_server);
+        v_msg = format('Error on database "%s", the emaj extension is not installed in the database.',
+                       p_database);
         IF p_onErrorStop THEN
           EXECUTE format('SELECT %I.dblink_disconnect()', p_dblinkSchema);
-          RAISE EXCEPTION '_verify_server (2): %', v_msg;
+          RAISE EXCEPTION '_verify_database (2): %', v_msg;
         END IF;
         RETURN NEXT v_msg;
       ELSE
@@ -1302,11 +1302,11 @@ $_verify_server$
                      p_dblinkSchema, v_stmt)
         INTO v_isEmajAdmin, v_getVersionExists;
       IF NOT v_isEmajAdmin THEN
-        v_msg = format('Error on server "%s", the configured user is not an E-Maj administrator.',
-                       p_server);
+        v_msg = format('Error on database "%s", the configured user is not an E-Maj administrator.',
+                       p_database);
         IF p_onErrorStop THEN
           EXECUTE format('SELECT %I.dblink_disconnect()', p_dblinkSchema);
-          RAISE EXCEPTION '_verify_server (3): %', v_msg;
+          RAISE EXCEPTION '_verify_database (3): %', v_msg;
         END IF;
         RETURN NEXT v_msg;
       ELSE
@@ -1316,17 +1316,17 @@ $_verify_server$
 -- If the user has the proper rights, verify the emaj_get_version() exists.
     IF v_checkStep >= 3 THEN
       IF NOT v_getVersionExists THEN
-        v_msg = format('Error on server "%s", the emaj.emaj_get_version() function is missing. The emaj version is '
+        v_msg = format('Error on database "%s", the emaj.emaj_get_version() function is missing. The emaj version is '
                           'probably too old (a version 5.0+ is required).',
-                       p_server);
+                       p_database);
         IF p_onErrorStop THEN
           EXECUTE format('SELECT %I.dblink_disconnect()', p_dblinkSchema);
-          RAISE EXCEPTION '_verify_server (4): %', v_msg;
+          RAISE EXCEPTION '_verify_database (4): %', v_msg;
         END IF;
         RETURN NEXT v_msg;
       END IF;
     END IF;
--- Then check the emaj version installed on the server is >= 5.0.
+-- Then check the emaj version installed on the database is >= 5.0.
     IF v_checkStep >= 3 THEN
       v_stmt = 'SELECT emaj.emaj_get_version() AS emaj_version';
       EXECUTE format('SELECT emaj_version FROM %I.dblink(%L) AS (emaj_version TEXT)',
@@ -1338,11 +1338,11 @@ $_verify_server$
                            v_emajVersionArray[2]::SMALLINT * 100 +
                            v_emajVersionArray[3]::SMALLINT;
         IF v_emajVersionNum < 50000 THEN
-          v_msg = format('Error on server "%s", the emaj version (%s) is too old. It must be at least 5.0.0.',
-                         p_server, v_emajVersion);
+          v_msg = format('Error on database "%s", the emaj version (%s) is too old. It must be at least 5.0.0.',
+                         p_database, v_emajVersion);
           IF p_onErrorStop THEN
             EXECUTE format('SELECT %I.dblink_disconnect()', p_dblinkSchema);
-            RAISE EXCEPTION '_verify_server (5): %', v_msg;
+            RAISE EXCEPTION '_verify_database (5): %', v_msg;
           END IF;
           RETURN NEXT v_msg;
         END IF;
@@ -1355,12 +1355,12 @@ $_verify_server$
                      p_dblinkSchema, v_stmt)
         INTO v_maxPreparedTx;
       IF v_maxPreparedTx <= 1 THEN
-        v_msg = format('Error on server "%s", the postgres instance max_prepared_transactions parameter (%s) is too low '
+        v_msg = format('Error on database "%s", the postgres instance max_prepared_transactions parameter (%s) is too low '
                           'to launch distributed operations.',
-                          p_server, v_maxPreparedTx);
+                          p_database, v_maxPreparedTx);
         IF p_onErrorStop THEN
           EXECUTE format('SELECT %I.dblink_disconnect()', p_dblinkSchema);
-          RAISE EXCEPTION '_verify_server (6): %', v_msg;
+          RAISE EXCEPTION '_verify_database (6): %', v_msg;
         END IF;
         RETURN NEXT v_msg;
       END IF;
@@ -1377,16 +1377,16 @@ $_verify_server$
                      p_dblinkSchema, v_stmt)
         INTO v_missingGroupsList;
       IF v_missingGroupsList IS NOT NULL THEN
-        v_msg = format('Error on server "%s", some table groups (%s) are missing.',
-                          p_server, v_missingGroupsList);
+        v_msg = format('Error on database "%s", some table groups (%s) are missing.',
+                          p_database, v_missingGroupsList);
         IF p_onErrorStop THEN
           EXECUTE format('SELECT %I.dblink_disconnect()', p_dblinkSchema);
-          RAISE EXCEPTION '_verify_server (7): %', v_msg;
+          RAISE EXCEPTION '_verify_database (7): %', v_msg;
         END IF;
         RETURN NEXT v_msg;
       END IF;
     END IF;
--- Disconnect from the server.
+-- Disconnect from the database.
     IF v_checkStep >= 1 THEN
       EXECUTE format('SELECT %I.dblink_disconnect()',
                      p_dblinkSchema);
@@ -1394,7 +1394,7 @@ $_verify_server$
 --
     RETURN;
   END;
-$_verify_server$;
+$_verify_database$;
 
 CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_verify_cluster(p_cluster TEXT, p_checkEmptyCluster BOOLEAN DEFAULT FALSE)
 RETURNS VOID LANGUAGE plpgsql
@@ -1404,7 +1404,7 @@ $dist_emaj_verify_cluster$
 -- It checks that:
 --   the cluster exists,
 --   the cluster has at least 1 assigned table group (on request),
---   all servers are reachable by dblink, contain a emaj extension in a valid version and can handle global transactions,
+--   all databases are reachable by dblink, contain a emaj extension in a valid version and can handle global transactions,
 --   all table groups assigned to the cluster exist.
 -- It also cleans up the state of rollback operations that are known as in-progress.
 -- Input: cluster name.
@@ -1438,17 +1438,17 @@ $dist_emaj_verify_cluster$
            JOIN pg_catalog.pg_namespace ON (pg_namespace.oid = pronamespace)
       WHERE proname = 'dblink_connect'
       LIMIT 1;
--- Check each server involved in the cluster, using the _verify_server() function.
-    PERFORM dist_emaj._verify_server(srv_name, srv_connect_string, groups_list, v_dblinkSchema, TRUE)
+-- Check each database involved in the cluster, using the _verify_database() function.
+    PERFORM dist_emaj._verify_database(db_name, db_connect_string, groups_list, v_dblinkSchema, TRUE)
       FROM (
-        SELECT srv_name, srv_connect_string,
+        SELECT db_name, db_connect_string,
                string_agg(quote_literal(clgrp_group), ',' ORDER BY clgrp_group) AS groups_list
           FROM dist_emaj.dist_emaj_cluster_group
-               JOIN dist_emaj.dist_emaj_server ON (dist_emaj_server.srv_name = dist_emaj_cluster_group.clgrp_server)
+               JOIN dist_emaj.dist_emaj_database ON (dist_emaj_database.db_name = dist_emaj_cluster_group.clgrp_database)
           WHERE clgrp_cluster = p_cluster
-          GROUP BY srv_name, srv_connect_string
-          ORDER BY srv_name
-        ) AS servers;
+          GROUP BY db_name, db_connect_string
+          ORDER BY db_name
+        ) AS databases;
 -- Cleanup the rollback states.
 -- Look at each distributed rollback operation known as in-progress, i.e. not yet commited or aborted.
     FOR r_rlbk IN
@@ -1496,14 +1496,14 @@ $dist_emaj_sync_marks_cluster$
     v_dblinkSchema           TEXT;
     v_stmt                   TEXT;
     v_nbDeletedMark          INT = 0;
-    v_serverHistMsg          TEXT;
+    v_databaseHistMsg        TEXT;
     v_mostRecentStart        BIGINT;
     v_nbGroup                INT;
     v_nbMark                 INT;
     v_timeIdList             TEXT;
     v_missingMarkTimeIdArray BIGINT[];
     v_localTimeId            BIGINT;
-    r_server                 RECORD;
+    r_database                 RECORD;
   BEGIN
 -- Record the BEGIN event into dist_emaj_hist.
     INSERT INTO dist_emaj.dist_emaj_hist(hist_function, hist_event, hist_object)
@@ -1521,78 +1521,78 @@ $dist_emaj_sync_marks_cluster$
            JOIN pg_catalog.pg_namespace ON (pg_namespace.oid = pronamespace)
       WHERE proname = 'dblink_connect'
       LIMIT 1;
--- Perform a first lookup on each server involved in the cluster, in order to delete all distributed marks older than the most recent
+-- Perform a first lookup on each database involved in the cluster, in order to delete all distributed marks older than the most recent
 --   group start/reset.
-    FOR r_server IN
-      SELECT srv_name, srv_connect_string,
+    FOR r_database IN
+      SELECT db_name, db_connect_string,
              array_agg(clgrp_group ORDER BY clgrp_group) AS groups_array,
              string_agg(quote_literal(clgrp_group), ',' ORDER BY clgrp_group) AS groups_list,
              count(*) AS nb_groups_in_cluster
         FROM dist_emaj.dist_emaj_cluster_group
-             JOIN dist_emaj.dist_emaj_server ON (dist_emaj_server.srv_name = dist_emaj_cluster_group.clgrp_server)
+             JOIN dist_emaj.dist_emaj_database ON (dist_emaj_database.db_name = dist_emaj_cluster_group.clgrp_database)
         WHERE clgrp_cluster = p_cluster
-        GROUP BY srv_name, srv_connect_string
-        ORDER BY srv_name
+        GROUP BY db_name, db_connect_string
+        ORDER BY db_name
     LOOP
--- Connect to the emaj server.
+-- Connect to the emaj database.
       EXECUTE format('SELECT %I.dblink_connect(%L)',
-                     v_dblinkSchema, r_server.srv_connect_string);
+                     v_dblinkSchema, r_database.db_connect_string);
 -- Get the most recent groups start local time_id by looking at log sessions.
       v_stmt = 'SELECT max(lower(lses_time_range)) AS most_recent_start, count(*) AS nb_groups '
                  'FROM emaj.emaj_log_session '
-                 'WHERE lses_group = ANY (ARRAY[' || r_server.groups_list || ']) '
+                 'WHERE lses_group = ANY (ARRAY[' || r_database.groups_list || ']) '
                    'AND upper_inf(lses_time_range)';
       EXECUTE format('SELECT most_recent_start, nb_groups FROM %I.dblink(%L) AS (most_recent_start BIGINT, nb_groups INT)',
                      v_dblinkSchema, v_stmt)
         INTO v_mostRecentStart, v_nbGroup;
 -- If any group is missing, it means that at least one group is in IDLE state, thus invalidating all distributed marks for the entire
 --   cluster. So delete all distributed marks.
-      IF v_nbGroup < r_server.nb_groups_in_cluster THEN
+      IF v_nbGroup < r_database.nb_groups_in_cluster THEN
         DELETE FROM dist_emaj.dist_emaj_mark
           WHERE mark_cluster = p_cluster;
         GET DIAGNOSTICS v_nbMark = ROW_COUNT;
         v_nbDeletedMark = v_nbDeletedMark + v_nbMark;
-        v_serverHistMsg = (r_server.nb_groups_in_cluster - v_nbGroup)::text || ' stopped groups => all distributed marks deleted';
+        v_databaseHistMsg = (r_database.nb_groups_in_cluster - v_nbGroup)::text || ' stopped groups => all distributed marks deleted';
         INSERT INTO dist_emaj.dist_emaj_hist(hist_function, hist_event, hist_object, hist_wording)
-          VALUES ('SYNC_MARKS_CLUSTER', 'DELETED MARKS', r_server.srv_name, v_serverHistMsg);
+          VALUES ('SYNC_MARKS_CLUSTER', 'DELETED MARKS', r_database.db_name, v_databaseHistMsg);
         EXIT;
       END IF;
 -- Otherwise, delete all distributed marks whose time id is older than the most recent group start.
-      v_serverHistMsg = '';
+      v_databaseHistMsg = '';
       DELETE FROM dist_emaj.dist_emaj_mark
         WHERE mark_cluster = p_cluster
           AND mark_time_id <= (
               SELECT max(mark_time_id)
                 FROM dist_emaj.dist_emaj_mark_group
-                WHERE mark_server = r_server.srv_name
-                  AND mark_group = ANY (r_server.groups_array)
+                WHERE mark_database = r_database.db_name
+                  AND mark_group = ANY (r_database.groups_array)
                   AND mark_local_time_id < v_mostRecentStart
               );
       GET DIAGNOSTICS v_nbMark = ROW_COUNT;
       IF v_nbMark > 0 THEN
         v_nbDeletedMark = v_nbDeletedMark + v_nbMark;
-        v_serverHistMsg = v_serverHistMsg || 'Some stopped and restarted groups => ' || v_nbMark || ' distributed marks deleted';
+        v_databaseHistMsg = v_databaseHistMsg || 'Some stopped and restarted groups => ' || v_nbMark || ' distributed marks deleted';
       END IF;
 -- Build the list of remaining distributed marks local time ids.
       SELECT string_agg('(' || time_id::text || ')', ',')
         FROM (
           SELECT DISTINCT mark_local_time_id
             FROM dist_emaj.dist_emaj_mark_group
-            WHERE mark_server = r_server.srv_name
-              AND mark_group = ANY (r_server.groups_array)
+            WHERE mark_database = r_database.db_name
+              AND mark_group = ANY (r_database.groups_array)
             ORDER BY 1
           ) AS t(time_id)
         INTO v_timeIdList;
--- Detect the missing distributed marks on the server.
+-- Detect the missing distributed marks on the database.
       v_stmt = 'SELECT array_agg(time_id) AS time_id_array FROM ( '
                  'SELECT time_id FROM (VALUES ' || v_timeIdList || ') AS t(time_id) '
                    'EXCEPT '
                  'SELECT mark_time_id '
                    'FROM emaj.emaj_mark '
-                   'WHERE mark_group = ANY (ARRAY[' || r_server.groups_list || ']) '
+                   'WHERE mark_group = ANY (ARRAY[' || r_database.groups_list || ']) '
                      'AND mark_time_id >= ' || v_mostRecentStart || ' '
                    'GROUP BY mark_time_id '
-                   'HAVING count(mark_group) = ' || r_server.nb_groups_in_cluster || ' '
+                   'HAVING count(mark_group) = ' || r_database.nb_groups_in_cluster || ' '
                ') AS t';
       EXECUTE format('SELECT time_id_array FROM %I.dblink(%L) AS (time_id_array BIGINT[])',
                      v_dblinkSchema, v_stmt)
@@ -1606,22 +1606,22 @@ $dist_emaj_sync_marks_cluster$
               AND mark_time_id = (
                   SELECT mark_time_id
                     FROM dist_emaj.dist_emaj_mark_group
-                    WHERE mark_server = r_server.srv_name
-                      AND mark_group = ANY (r_server.groups_array)
+                    WHERE mark_database = r_database.db_name
+                      AND mark_group = ANY (r_database.groups_array)
                       AND mark_local_time_id = v_localTimeId
                     LIMIT 1
                   );
         END LOOP;
         v_nbMark = array_length(v_missingMarkTimeIdArray, 1);
         v_nbDeletedMark = v_nbDeletedMark + v_nbMark;
-        v_serverHistMsg = v_serverHistMsg || 'Some deleted local marks => ' || v_nbMark || ' distributed marks deleted';
+        v_databaseHistMsg = v_databaseHistMsg || 'Some deleted local marks => ' || v_nbMark || ' distributed marks deleted';
       END IF;
-      IF v_serverHistMsg <> '' THEN
+      IF v_databaseHistMsg <> '' THEN
         INSERT INTO dist_emaj.dist_emaj_hist(hist_function, hist_event, hist_object, hist_wording)
-          VALUES ('SYNC_MARKS_CLUSTER', 'DELETED MARKS', r_server.srv_name, v_serverHistMsg);
+          VALUES ('SYNC_MARKS_CLUSTER', 'DELETED MARKS', r_database.db_name, v_databaseHistMsg);
       END IF;
     END LOOP;
--- Disconnect from the latest server, if any.
+-- Disconnect from the latest database, if any.
     BEGIN
       EXECUTE format('SELECT %I.dblink_disconnect()',
                      v_dblinkSchema);
@@ -1635,7 +1635,7 @@ $dist_emaj_sync_marks_cluster$
   END;
 $dist_emaj_sync_marks_cluster$;
 COMMENT ON FUNCTION dist_emaj.dist_emaj_sync_marks_cluster(TEXT) IS
-$$Synchronizes recorded distributed marks of a cluster with local marks on servers.$$;
+$$Synchronizes recorded distributed marks of a cluster with local marks on databases.$$;
 
 ----------------------------------------------------------------
 --                                                            --
@@ -1735,7 +1735,7 @@ $dist_emaj_purge_histories$
 --   without deleting event traces neither after the oldest distributed mark or after the oldest not committed or aborted
 --   distributed rollback operation.
 -- It purges oldest rows from the following tables:
---    dist_emaj_hist, dist_emaj_rlbk, dist_emaj_rlbk_server and dist_emaj_time_stamp
+--    dist_emaj_hist, dist_emaj_rlbk, dist_emaj_rlbk_database and dist_emaj_time_stamp
 -- The function is called by distEmaj.pl.
 -- It may also be is directly called by administrators.
 -- A retention delay >= 100 years means infinite.
@@ -1792,7 +1792,7 @@ $dist_emaj_purge_histories$
         FROM dist_emaj.dist_emaj_rlbk
         WHERE rlbk_time_id <= v_maxTimeId;
 -- Purge the dist_emaj_rlbk table.
--- This automatically purges the dist_emaj_rlbk_server table via the FK between both tables.
+-- This automatically purges the dist_emaj_rlbk_database table via the FK between both tables.
       IF v_maxRlbkId IS NOT NULL THEN
         DELETE FROM dist_emaj.dist_emaj_rlbk
           WHERE rlbk_id <= v_maxRlbkId;
@@ -1819,10 +1819,10 @@ CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_verify_all()
 RETURNS SETOF TEXT LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS
 $dist_emaj_verify_all$
--- This function checks the entire clusters and servers configuration.
+-- This function checks the entire clusters and databases configuration.
 -- It checks that:
---   each cluster and each server has at least 1 assigned table group,
---   all servers are reachable by dblink, contain a emaj extension in a valid version and can handle global transactions,
+--   each cluster and each database has at least 1 assigned table group,
+--   all databases are reachable by dblink, contain a emaj extension in a valid version and can handle global transactions,
 --   all table groups assigned to any cluster exist.
 -- It also cleans up the state of rollback operations that are known as in-progress.
 -- The function is defined as SECURITY DEFINER to look at all PG processes in pg_stat_activity.
@@ -1848,19 +1848,19 @@ $dist_emaj_verify_all$
     LOOP
       RETURN NEXT r_message.msg;
     END LOOP;
--- Report warning for servers having no assigned table group.
+-- Report warning for databases having no assigned table group.
     FOR r_message IN
-      SELECT format('Warning: the server "%s" has no assigned table group.', srv_name) AS msg
+      SELECT format('Warning: the database "%s" has no assigned table group.', db_name) AS msg
         FROM (
-          SELECT srv_name
-            FROM dist_emaj.dist_emaj_server
+          SELECT db_name
+            FROM dist_emaj.dist_emaj_database
             WHERE NOT EXISTS(
               SELECT 0
                 FROM dist_emaj.dist_emaj_cluster_group
-                WHERE clgrp_server = srv_name
+                WHERE clgrp_database = db_name
               )
-            ORDER BY srv_name
-          ) AS servers
+            ORDER BY db_name
+          ) AS databases
     LOOP
       RETURN NEXT r_message.msg;
     END LOOP;
@@ -1870,17 +1870,17 @@ $dist_emaj_verify_all$
            JOIN pg_catalog.pg_namespace ON (pg_namespace.oid = pronamespace)
       WHERE proname = 'dblink_connect'
       LIMIT 1;
--- Check all configured servers, using the _verify_server() function.
+-- Check all configured databases, using the _verify_database() function.
     FOR r_message IN
-      SELECT dist_emaj._verify_server(srv_name, srv_connect_string, groups_list, v_dblinkSchema, FALSE) AS msg
+      SELECT dist_emaj._verify_database(db_name, db_connect_string, groups_list, v_dblinkSchema, FALSE) AS msg
         FROM (
-          SELECT srv_name, srv_connect_string,
+          SELECT db_name, db_connect_string,
                  string_agg(quote_literal(clgrp_group), ',' ORDER BY clgrp_group) AS groups_list
-            FROM dist_emaj.dist_emaj_server
-                 LEFT OUTER JOIN dist_emaj.dist_emaj_cluster_group ON (dist_emaj_cluster_group.clgrp_server = dist_emaj_server.srv_name)
-            GROUP BY srv_name, srv_connect_string
-            ORDER BY srv_name
-          ) AS servers
+            FROM dist_emaj.dist_emaj_database
+                 LEFT OUTER JOIN dist_emaj.dist_emaj_cluster_group ON (dist_emaj_cluster_group.clgrp_database = dist_emaj_database.db_name)
+            GROUP BY db_name, db_connect_string
+            ORDER BY db_name
+          ) AS databases
     LOOP
       RETURN NEXT r_message.msg;
       IF r_message.msg LIKE 'Error%' THEN
@@ -1942,7 +1942,7 @@ CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_export_parameters_configuration(p
 RETURNS INT LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS
 $dist_emaj_export_parameters_configuration$
--- This function stores the parameters configuration into a file on the server.
+-- This function stores the parameters configuration into a file on the database.
 -- The JSON structure is built by the _export_param_conf() function.
 -- Input: - output file location,
 --        - boolean indicating whether keys which current value equals their default value must be exported (false by default).
@@ -2340,18 +2340,18 @@ GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA dist_emaj TO dist_emaj_adm;
 --
 -- dist_emaj_viewer can
 -- ... examine all dist_emaj tables and sequences,
---     except the dist_emaj_server table that contains connection parameters to servers, including password.
+--     except the dist_emaj_database table that contains connection parameters to databases, including password.
 
 GRANT USAGE ON SCHEMA dist_emaj TO dist_emaj_viewer;
 GRANT SELECT ON ALL TABLES IN SCHEMA dist_emaj TO dist_emaj_viewer;
 GRANT SELECT ON ALL SEQUENCES IN SCHEMA dist_emaj TO dist_emaj_viewer;
 
-REVOKE SELECT ON TABLE dist_emaj.dist_emaj_server FROM dist_emaj_viewer;
-GRANT SELECT (srv_name, srv_rlbk_parallel_session, srv_creation_time_id, srv_last_alter_time_id) ON TABLE dist_emaj.dist_emaj_server
+REVOKE SELECT ON TABLE dist_emaj.dist_emaj_database FROM dist_emaj_viewer;
+GRANT SELECT (db_name, db_rlbk_parallel_session, db_creation_time_id, db_last_alter_time_id) ON TABLE dist_emaj.dist_emaj_database
   TO dist_emaj_viewer;
-REVOKE SELECT ON TABLE dist_emaj.dist_emaj_server_aggregates FROM dist_emaj_viewer;
-GRANT SELECT (clst_name, srv_name, srv_rlbk_parallel_session, srv_groups_array, srv_groups_list, srv_nb_group)
-  ON TABLE dist_emaj.dist_emaj_server_aggregates TO dist_emaj_viewer;
+REVOKE SELECT ON TABLE dist_emaj.dist_emaj_database_aggregates FROM dist_emaj_viewer;
+GRANT SELECT (clst_name, db_name, db_rlbk_parallel_session, db_groups_array, db_groups_list, db_nb_group)
+  ON TABLE dist_emaj.dist_emaj_database_aggregates TO dist_emaj_viewer;
 
 -- ... and execute a subset of dist_emaj functions for which rights are explicitely granted.
 
@@ -2367,13 +2367,13 @@ GRANT EXECUTE ON FUNCTION dist_emaj.dist_emaj_get_version() TO dist_emaj_viewer;
 SELECT pg_catalog.pg_extension_config_dump('dist_emaj_param', '');
 SELECT pg_catalog.pg_extension_config_dump('dist_emaj_hist', 'WHERE hist_id > 1');
 SELECT pg_catalog.pg_extension_config_dump('dist_emaj_time_stamp', '');
-SELECT pg_catalog.pg_extension_config_dump('dist_emaj_server', '');
+SELECT pg_catalog.pg_extension_config_dump('dist_emaj_database', '');
 SELECT pg_catalog.pg_extension_config_dump('dist_emaj_cluster', '');
 SELECT pg_catalog.pg_extension_config_dump('dist_emaj_cluster_group', '');
 SELECT pg_catalog.pg_extension_config_dump('dist_emaj_mark', '');
 SELECT pg_catalog.pg_extension_config_dump('dist_emaj_mark_group', '');
 SELECT pg_catalog.pg_extension_config_dump('dist_emaj_rlbk', '');
-SELECT pg_catalog.pg_extension_config_dump('dist_emaj_rlbk_server', '');
+SELECT pg_catalog.pg_extension_config_dump('dist_emaj_rlbk_database', '');
 -- Register dist_sequences values as candidate for pg_dump.
 SELECT pg_catalog.pg_extension_config_dump('dist_emaj.dist_emaj_hist_hist_id_seq', '');
 SELECT pg_catalog.pg_extension_config_dump('dist_emaj.dist_emaj_time_stamp_time_id_seq', '');

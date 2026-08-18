@@ -58,15 +58,15 @@ select relname from pg_catalog.pg_class,
 ----------------------------------
  dist_emaj_cluster
  dist_emaj_cluster_group
+ dist_emaj_database
  dist_emaj_hist
  dist_emaj_hist_hist_id_seq
  dist_emaj_mark
  dist_emaj_mark_group
  dist_emaj_param
  dist_emaj_rlbk
+ dist_emaj_rlbk_database
  dist_emaj_rlbk_rlbk_id_seq
- dist_emaj_rlbk_server
- dist_emaj_server
  dist_emaj_time_stamp
  dist_emaj_time_stamp_time_id_seq
 (13 rows)

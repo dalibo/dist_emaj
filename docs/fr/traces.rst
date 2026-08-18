@@ -47,7 +47,7 @@ La colonne *hist_function* peut prendre les valeurs suivantes.
 +----------------------------------+------------------------------------------------------------------------------------------+
 | CREATE_CLUSTER                   | création d'un cluster                                                                    |
 +----------------------------------+------------------------------------------------------------------------------------------+
-| CREATE_SERVER                    | création d'un serveur                                                                    |
+| CREATE_DATABASE                  | création d'une database                                                                  |
 +----------------------------------+------------------------------------------------------------------------------------------+
 | DELETE_BEFORE_MARK_CLUSTER       | suppression des marques distribuées antérieure à une marque pour un cluster              |
 +----------------------------------+------------------------------------------------------------------------------------------+
@@ -57,7 +57,7 @@ La colonne *hist_function* peut prendre les valeurs suivantes.
 +----------------------------------+------------------------------------------------------------------------------------------+
 | DROP_CLUSTER                     | suppression d'un cluster                                                                 |
 +----------------------------------+------------------------------------------------------------------------------------------+
-| DROP_SERVER                      | suppression d'un serveur                                                                 |
+| DROP_DATABASE                    | suppression d'une database                                                               |
 +----------------------------------+------------------------------------------------------------------------------------------+
 | PURGE_HISTORIES                  | suppression de la table *dist_emaj_hist* des événements antérieurs au délai de rétention |
 +----------------------------------+------------------------------------------------------------------------------------------+
@@ -107,7 +107,7 @@ La colonne *hist_event* peut prendre les valeurs suivantes.
 
 ----
 
-Serveurs E-Maj
---------------
+Databases E-Maj
+---------------
 
-Chaque serveur E-Maj trace de son côté les opérations élémentaires qui le concernent. (Voir la documentation E-Maj).
+Chaque database E-Maj trace de son côté les opérations élémentaires qui le concernent. (Voir la documentation E-Maj).

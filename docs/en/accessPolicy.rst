@@ -14,7 +14,7 @@ To use Distributed E-Maj, you can connect as a *SUPERUSER*. However, for securit
 
 * ``dist_emaj_viewer``: The read-only access role:
 
-   * It can read all tables in the *dist_emaj* schema, except for the columns in the *dist_emaj_server* table that describe how to access the *servers* (IP, port, database, role, password).
+   * It can read all tables in the *dist_emaj* schema, except for the column in the *dist_emaj_database* table that contains the database connection strings.
 
 All rights granted to *dist_emaj_viewer* are also granted to *dist_emaj_adm*.
 

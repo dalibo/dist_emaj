@@ -17,7 +17,7 @@ Architecture
 The E-Maj Extensions
 ^^^^^^^^^^^^^^^^^^^^
 
-Each *E-Maj server* has its own *emaj* extension, where its table groups are created and configured.
+Each *E-Maj database* has its own *emaj* extension, where its table groups are created and configured.
 
 The dist_emaj Extension
 ^^^^^^^^^^^^^^^^^^^^^^^
@@ -26,7 +26,7 @@ A **dist_emaj** extension must be created in any PostgreSQL database on the netw
 
 The *dist_emaj* extension contains some technical tables and functions that enable its usage.
 
-The functions allow, in particular, the **configuration** of *clusters* (with their attached table groups) and *servers* (with their network access parameters).
+The functions allow, in particular, the **configuration** of *clusters* (with their attached table groups) and *databases* (with their network access parameters).
 
 ----
 
@@ -51,18 +51,18 @@ Implementing global transactions requires that the concerned operations be initi
 Parallelization
 ^^^^^^^^^^^^^^^
 
-The longest steps of the operations are **executed in parallel** across all *servers* in the *cluster*.
+The longest steps of the operations are **executed in parallel** across all *databases* in the *cluster*.
 
-Additionally, the main steps of a **rollback** on a *server* can themselves be distributed across **multiple sessions**. The number of *rollback sessions* to use is one of the configuration parameters of a server.
+Additionally, elementary steps of a **rollback** on a *database* can themselves be distributed across **multiple sessions**. The number of *rollback sessions* to use is one of the configuration parameters of a *database*.
 
 Independence Between E-Maj and Dist-Emaj
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **The E-Maj extensions are not aware of the dist_emaj extensions** that reference them.
 
-Thus, for a given *server*:
+Thus, for a given *database*:
 
-- Starting or stopping a *cluster* locally translates to the "simple" starting or stopping of the table groups hosted by the *server*,
+- Starting or stopping a *cluster* locally translates to the "simple" starting or stopping of the table groups hosted by the *database*,
 - Setting a *distributed mark* locally translates to setting a simple *mark* on the table groups,
 - Executing a *distributed rollback* locally proceeds like a standard rollback of the table groups.
 
@@ -82,7 +82,7 @@ Simple Configuration of a Cluster
 
    Figure 1 – Configuration of a *cluster*.
 
-Here, 1 *cluster* includes 4 table groups distributed across 3 different *servers*, with "grp_A" and "grp_B" located on the same database.
+Here, 1 *cluster* includes 4 table groups distributed across 3 different *databases*, with "grp_A" and "grp_B" located on the same database.
 
 Complex Configuration of Multiple Clusters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -96,5 +96,5 @@ Complex Configuration of Multiple Clusters
 This example includes:
 
 - 3 *clusters* distributed across 2 *dist_emaj* extensions,
-- Both *dist_emaj* and *emaj* extensions coexist on the *server* "srv_4",
-- On server "srv_3", the table group "grp_H" is not associated with any *cluster*.
+- Both *dist_emaj* and *emaj* extensions coexist on the *database* "db_4",
+- On database "db_3", the table group "grp_H" is not associated with any *cluster*.

@@ -47,7 +47,7 @@ The function checks that:
 
 - The cluster exists,
 - The cluster has at least one assigned table group (checked on demand),
-- All servers accessed by the *cluster* are accessible via *dblink*, contain the *emaj* extension, and can handle global transactions,
+- All *databases* accessed by the *cluster* are accessible via *dblink*, contain the *emaj* extension, and can handle global transactions,
 - All table groups assigned to the *cluster* exist.
 
 The function also updates the state of *distributed rollback* operations that are reputed to be in progress.
@@ -77,7 +77,7 @@ The function returns a set of text messages describing any detected anomalies.
 
 The function checks that:
 
-- All *servers*:
+- All *databases*:
 
    - Are accessible via *dblink*,
    - Contain a valid version of the *emaj* extension,
@@ -88,7 +88,7 @@ If no anomalies are detected, the function returns a single row containing the m
 
    'No error detected'
 
-Additionally, the function generates a warning message for any *cluster* with no assigned table groups and for any *server* with no table groups referencing it.
+Additionally, the function generates a warning message for any *cluster* with no assigned table groups and for any *database* with no table groups referencing it.
 
 The function also updates the state of *distributed rollback* operations that are reputed to be in progress.
 

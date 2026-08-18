@@ -70,7 +70,7 @@ select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_rlbk
  select ok
 (1 row)
 
-select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_rlbk_server) as t;
+select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_rlbk_database) as t;
   result   
 -----------
  select ok
@@ -82,36 +82,36 @@ select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_rlbk
 delete from dist_emaj.dist_emaj_hist;
 ERROR:  permission denied for table dist_emaj_hist
 -----------------------------
--- dist_emaj_server specific case
+-- dist_emaj_database specific case
 -----------------------------
 -- authorized
-select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_server) as t;
+select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_database) as t;
   result   
 -----------
  select ok
 (1 row)
 
-select srv_name, srv_rlbk_parallel_session from dist_emaj.dist_emaj_server order by 1;
- srv_name | srv_rlbk_parallel_session 
-----------+---------------------------
- emaj_1   |                         2
- emaj_2   |                         2
+select db_name, db_rlbk_parallel_session from dist_emaj.dist_emaj_database order by 1;
+ db_name | db_rlbk_parallel_session 
+---------+--------------------------
+ emaj_1  |                        2
+ emaj_2  |                        2
 (2 rows)
 
-select clst_name, srv_name, srv_rlbk_parallel_session, srv_groups_array from dist_emaj.dist_emaj_server_aggregates order by 1, 2;
- clst_name  | srv_name | srv_rlbk_parallel_session |                 srv_groups_array                 
-------------+----------+---------------------------+--------------------------------------------------
- my_cluster | emaj_1   |                         2 | {myGroup1,myGroup2}
- my_cluster | emaj_2   |                         2 | {myGroup4,myGroup5,myGroup6,"phil's group#3\","}
+select clst_name, db_name, db_rlbk_parallel_session, db_groups_array from dist_emaj.dist_emaj_database_aggregates order by 1, 2;
+ clst_name  | db_name | db_rlbk_parallel_session |                 db_groups_array                  
+------------+---------+--------------------------+--------------------------------------------------
+ my_cluster | emaj_1  |                        2 | {myGroup1,myGroup2}
+ my_cluster | emaj_2  |                        2 | {myGroup4,myGroup5,myGroup6,"phil's group#3\","}
 (2 rows)
 
 -- forbidden
-select * from dist_emaj.dist_emaj_server;
-ERROR:  permission denied for table dist_emaj_server
-delete from dist_emaj.dist_emaj_server;
-ERROR:  permission denied for table dist_emaj_server
-select * from dist_emaj.dist_emaj_server_aggregates;
-ERROR:  permission denied for view dist_emaj_server_aggregates
+select * from dist_emaj.dist_emaj_database;
+ERROR:  permission denied for table dist_emaj_database
+delete from dist_emaj.dist_emaj_database;
+ERROR:  permission denied for table dist_emaj_database
+select * from dist_emaj.dist_emaj_database_aggregates;
+ERROR:  permission denied for view dist_emaj_database_aggregates
 -----------------------------
 -- authorized functions
 -----------------------------

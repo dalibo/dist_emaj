@@ -1,6 +1,6 @@
 -- create_drop.sql : non regression tests for Distributed E-Maj objects creation and drop
 -- It tests in particular:
---   dist_emaj_create_server(), dist_emaj_drop_server(),
+--   dist_emaj_create_database(), dist_emaj_drop_database(),
 --   dist_emaj_create_cluster(), dist_emaj_drop_cluster(),
 --   dist_emaj_assign_group(), dist_emaj_remove_group(),
 --   dist_emaj_export_clusters_configuration(), dist_emaj_import_clusters_configuration()
@@ -17,38 +17,38 @@ select public.handle_dist_emaj_sequences(1000);
 \! mkdir -p $EMAJTESTTMPDIR
 
 --
--- Test dist_emaj_create_server()
+-- Test dist_emaj_create_database()
 --
 
 -- illegal value
-select dist_emaj.dist_emaj_create_server(null, 'a connect string', 2);
-select dist_emaj.dist_emaj_create_server('first_server', null, 2);
-select dist_emaj.dist_emaj_create_server('first_server', 'a connect string', null);
-select dist_emaj.dist_emaj_create_server('first_server', 'a connect string', 0);
+select dist_emaj.dist_emaj_create_database(null, 'a connect string', 2);
+select dist_emaj.dist_emaj_create_database('first_database', null, 2);
+select dist_emaj.dist_emaj_create_database('first_database', 'a connect string', null);
+select dist_emaj.dist_emaj_create_database('first_database', 'a connect string', 0);
 
 -- ok
-select dist_emaj.dist_emaj_create_server('first_server', 'a connect string', 2);
-select * from dist_emaj.dist_emaj_server where srv_name = 'first_server';
+select dist_emaj.dist_emaj_create_database('first_database', 'a connect string', 2);
+select * from dist_emaj.dist_emaj_database where db_name = 'first_database';
 -- already created
-select dist_emaj.dist_emaj_create_server('first_server', 'another connect string', 3);
-select dist_emaj.dist_emaj_create_server('first_server', 'another connect string', 3, true);
-select * from dist_emaj.dist_emaj_server where srv_name = 'first_server';
+select dist_emaj.dist_emaj_create_database('first_database', 'another connect string', 3);
+select dist_emaj.dist_emaj_create_database('first_database', 'another connect string', 3, true);
+select * from dist_emaj.dist_emaj_database where db_name = 'first_database';
 
 --
--- Test dist_emaj_drop_server()
+-- Test dist_emaj_drop_database()
 --
 
--- server does not exist.
-select dist_emaj.dist_emaj_drop_server('dummy_server');
-select dist_emaj.dist_emaj_drop_server('dummy_server', true);
+-- database does not exist.
+select dist_emaj.dist_emaj_drop_database('dummy_database');
+select dist_emaj.dist_emaj_drop_database('dummy_database', true);
 
 -- an assigned group
 insert into dist_emaj.dist_emaj_cluster (clst_name) values ('a_cluster');
-insert into dist_emaj.dist_emaj_cluster_group values ('a_cluster', 'first_server', 'a group');
+insert into dist_emaj.dist_emaj_cluster_group values ('a_cluster', 'first_database', 'a group');
 -- but CASCADE is not allowed
-select dist_emaj.dist_emaj_drop_server('first_server');
+select dist_emaj.dist_emaj_drop_database('first_database');
 -- ok, CASCADE is now allowed
-select dist_emaj.dist_emaj_drop_server('first_server', false, true);
+select dist_emaj.dist_emaj_drop_database('first_database', false, true);
 
 delete from dist_emaj.dist_emaj_cluster where clst_name = 'a_cluster';
 
@@ -73,57 +73,57 @@ select dist_emaj.dist_emaj_drop_cluster('dummy_cluster');
 select dist_emaj.dist_emaj_drop_cluster('dummy_cluster', true);
 
 -- an assigned group
-insert into dist_emaj.dist_emaj_server (srv_name, srv_connect_string, srv_rlbk_parallel_session) values ('a_server', 'a connect string', 1);
-insert into dist_emaj.dist_emaj_cluster_group values ('first_cluster', 'a_server', 'a group');
+insert into dist_emaj.dist_emaj_database (db_name, db_connect_string, db_rlbk_parallel_session) values ('a_database', 'a connect string', 1);
+insert into dist_emaj.dist_emaj_cluster_group values ('first_cluster', 'a_database', 'a group');
 -- but CASCADE is not allowed
 select dist_emaj.dist_emaj_drop_cluster('first_cluster');
 -- ok, CASCADE is now allowed
 select dist_emaj.dist_emaj_drop_cluster('first_cluster', false, true);
 
-delete from dist_emaj.dist_emaj_server where srv_name = 'a_server';
+delete from dist_emaj.dist_emaj_database where db_name = 'a_database';
 
 --
 -- Test dist_emaj_assign_group()
 --
 
 insert into dist_emaj.dist_emaj_cluster (clst_name) values ('a_cluster');
-insert into dist_emaj.dist_emaj_server (srv_name, srv_connect_string, srv_rlbk_parallel_session) values ('a_server', 'a connect string', 1);
+insert into dist_emaj.dist_emaj_database (db_name, db_connect_string, db_rlbk_parallel_session) values ('a_database', 'a connect string', 1);
 
 -- invalid values
-select dist_emaj.dist_emaj_assign_group('dummy_cluster', 'dummy_server', 'dummy_group');
-select dist_emaj.dist_emaj_assign_group('a_cluster', 'dummy_server', 'dummy_group');
+select dist_emaj.dist_emaj_assign_group('dummy_cluster', 'dummy_database', 'dummy_group');
+select dist_emaj.dist_emaj_assign_group('a_cluster', 'dummy_database', 'dummy_group');
 
 -- ok
-select dist_emaj.dist_emaj_assign_group('a_cluster', 'a_server', 'a_group');
+select dist_emaj.dist_emaj_assign_group('a_cluster', 'a_database', 'a_group');
 
 -- already assigned
-select dist_emaj.dist_emaj_assign_group('a_cluster', 'a_server', 'a_group');
-select dist_emaj.dist_emaj_assign_group('a_cluster', 'a_server', 'a_group', true);
+select dist_emaj.dist_emaj_assign_group('a_cluster', 'a_database', 'a_group');
+select dist_emaj.dist_emaj_assign_group('a_cluster', 'a_database', 'a_group', true);
 
 --
 -- Test dist_emaj_remove_group()
 --
 
 -- invalid values
-select dist_emaj.dist_emaj_remove_group('dummy_cluster', 'dummy_server', 'dummy_group');
-select dist_emaj.dist_emaj_remove_group('a_cluster', 'dummy_server', 'dummy_group');
+select dist_emaj.dist_emaj_remove_group('dummy_cluster', 'dummy_database', 'dummy_group');
+select dist_emaj.dist_emaj_remove_group('a_cluster', 'dummy_database', 'dummy_group');
 
 -- ok
-select dist_emaj.dist_emaj_remove_group('a_cluster', 'a_server', 'a_group');
+select dist_emaj.dist_emaj_remove_group('a_cluster', 'a_database', 'a_group');
 -- not assigned group
-select dist_emaj.dist_emaj_remove_group('a_cluster', 'a_server', 'a_group');
-select dist_emaj.dist_emaj_remove_group('a_cluster', 'a_server', 'a_group', true);
+select dist_emaj.dist_emaj_remove_group('a_cluster', 'a_database', 'a_group');
+select dist_emaj.dist_emaj_remove_group('a_cluster', 'a_database', 'a_group', true);
 
 
-delete from dist_emaj.dist_emaj_server where srv_name = 'a_server';
+delete from dist_emaj.dist_emaj_database where db_name = 'a_database';
 delete from dist_emaj.dist_emaj_cluster where clst_name = 'a_cluster';
 
 --
 -- prepare the clusters configuration for the next script.
 --
 
-select dist_emaj.dist_emaj_create_server('emaj_1', 'host=localhost port=' || pg_catalog.current_setting('port') || ' dbname=regression_1 user=_regress_emaj_adm password=adm', 2);
-select dist_emaj.dist_emaj_create_server('emaj_2', 'postgresql://_regress_emaj_adm:adm@localhost:' || pg_catalog.current_setting('port') || '/regression_2', 2);
+select dist_emaj.dist_emaj_create_database('emaj_1', 'host=localhost port=' || pg_catalog.current_setting('port') || ' dbname=regression_1 user=_regress_emaj_adm password=adm', 2);
+select dist_emaj.dist_emaj_create_database('emaj_2', 'postgresql://_regress_emaj_adm:adm@localhost:' || pg_catalog.current_setting('port') || '/regression_2', 2);
 
 select dist_emaj.dist_emaj_create_cluster('my_cluster');
 select dist_emaj.dist_emaj_create_cluster('empty_cluster');
@@ -145,15 +145,15 @@ select dist_emaj.dist_emaj_verify_cluster('dummy');
 -- empty cluster
 select dist_emaj.dist_emaj_verify_cluster('empty_cluster');
 select dist_emaj.dist_emaj_verify_cluster('empty_cluster', TRUE);
--- emaj is missing in a server
+-- emaj is missing in a database
 create database regression_no_emaj;
-select dist_emaj.dist_emaj_create_server('no_emaj', 'host=localhost port=' || pg_catalog.current_setting('port') || ' dbname=regression_no_emaj user=_regress_emaj_adm password=adm', 1);
+select dist_emaj.dist_emaj_create_database('no_emaj', 'host=localhost port=' || pg_catalog.current_setting('port') || ' dbname=regression_no_emaj user=_regress_emaj_adm password=adm', 1);
 begin;
   select dist_emaj.dist_emaj_create_cluster('buggy_cluster');
   select dist_emaj.dist_emaj_assign_group('buggy_cluster', 'no_emaj', 'myGroup1');
   select dist_emaj.dist_emaj_verify_cluster('buggy_cluster');
 rollback;
--- keep the server and the database for dist_emaj_verify_all() tests in misc.sql
+-- keep the database and the database for dist_emaj_verify_all() tests in misc.sql
 
 -- should be OK
 select dist_emaj.dist_emaj_verify_cluster('my_cluster');
@@ -164,7 +164,7 @@ select dist_emaj.dist_emaj_verify_cluster('my_cluster');
 select hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_wording, E'\\d\\d\.\\d\\d\\.\\d\\d\\.\\d\\d\\d\\d', '%', 'g'), hist_user
   from dist_emaj.dist_emaj_hist where hist_id >= 1000 order by 1;
 select * from dist_emaj.dist_emaj_cluster order by 1;
-select * from dist_emaj.dist_emaj_server order by 1;
+select * from dist_emaj.dist_emaj_database order by 1;
 select * from dist_emaj.dist_emaj_cluster_group order by 1,2,3;
 
 -----------------------------
@@ -178,7 +178,7 @@ SELECT dist_emaj.dist_emaj_export_clusters_configuration(ARRAY['my_cluster', 'un
 
 -- Ok.
 SELECT json_array_length(dist_emaj.dist_emaj_export_clusters_configuration()->'clusters');
-SELECT json_array_length(dist_emaj.dist_emaj_export_clusters_configuration()->'servers');
+SELECT json_array_length(dist_emaj.dist_emaj_export_clusters_configuration()->'databases');
 SELECT json_array_length(dist_emaj.dist_emaj_export_clusters_configuration(ARRAY['my_cluster', 'empty_cluster'])->'clusters');
 
 --

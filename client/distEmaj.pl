@@ -5,9 +5,9 @@
 #
 # This software is distributed under the GNU General Public License.
 #
-# It performs distributed actions on tables groups located on several postgres servers in a consistent way.
+# It performs distributed actions on tables groups located on several postgres databases in a consistent way.
 # Supported actions are: start and stop tables groups, set a mark on tables groups several tables groups at once.
-# The processed tables groups are members of a predefined "groups cluster".
+# The processed tables groups are members of a predefined "group cluster".
 
 use warnings;
 use strict;
@@ -18,7 +18,7 @@ use DBI qw(:sql_types);
 use DBD::Pg qw(:pg_types :async);
 use POSIX qw(strftime);
 use Data::Dumper;
-#print Dumper($srv);
+#print Dumper($db);
 
 STDOUT->autoflush(1);
 
@@ -36,14 +36,14 @@ my $sth_trace;
 my $conn_string = "application_name=$APPNAME;";
 
 # Structure counters.
-my $nbServer = 0;
+my $nbDatabase = 0;
 my $nbSession = 0;
 my $nbGroup = 0;
 
 # Hash and array structures.
-my $serversArray;                       # Reference to the array representing servers read from the dist_emaj configuration
+my $databasesArray;                     # Reference to the array representing databases read from the dist_emaj configuration
 
-# Variables for E-Maj foreign servers accesses.
+# Variables for E-Maj foreign databases accesses.
 my @dbh = undef;
 my @sth = undef;
 
@@ -54,7 +54,7 @@ my @sth = undef;
 my $dbname = undef;						# -d PostgreSQL database name hosting the dist_emaj extension
 my $host = undef;						# -h PostgreSQL server host name
 my $port = undef;						# -p PostgreSQL server ip port
-my $username = undef;					# -U user name for the connection to PostgreSQL database
+my $username = undef;					# -U user name for the connection to Distributed E-Maj database
 my $password = undef;					# -W user password
 my $askHelp = 0;						# --help option
 my $askVersion = 0;						# --version option
@@ -259,21 +259,21 @@ if ($action eq 'set_mark') {
 
 # Get data about the requested cluster.
 $sql = qq(
-	SELECT srv_name AS name, srv_connect_string AS connect_string, srv_groups_array AS groups_array, srv_nb_group AS nb_group
-		FROM dist_emaj.dist_emaj_server_aggregates
+	SELECT db_name AS name, db_connect_string AS connect_string, db_groups_array AS groups_array, db_nb_group AS nb_group
+		FROM dist_emaj.dist_emaj_database_aggregates
 		WHERE clst_name = ?
-		ORDER BY srv_name;
+		ORDER BY db_name;
 	);
 
-$serversArray = $dbh->selectall_arrayref($sql, { Slice => {} }, $cluster)
+$databasesArray = $dbh->selectall_arrayref($sql, { Slice => {} }, $cluster)
 	or die "Error while reading the cluster configuration from dist_emaj.\n$DBI::errstr\n\n";
 
 # Count objects and build the sessions structure.
-foreach my $srv (@$serversArray) {
-	$nbServer++;
+foreach my $db (@$databasesArray) {
+	$nbDatabase++;
 	$nbSession++;
-	$nbGroup += $srv->{nb_group};
-	$srv->{session} = $nbSession;
+	$nbGroup += $db->{nb_group};
+	$db->{session} = $nbSession;
 }
 
 # Check and resolve the mark name supplied as option by calling the _check_new_dist_mark() function on the dist_emaj session.
@@ -290,19 +290,19 @@ if (!($action eq 'stop' && $resetLogs)) {
 	}
 }
 
-# Open a session for each server and perform preliminary checks.
-# The initial cluster check has already verified for each server that:
+# Open a session for each database and perform preliminary checks.
+# The initial cluster check has already verified for each database that:
 #   - emaj exists in the database, with a proper version,
 #   - the user has adminstration capabilities,
 #   - and the PG instance is configured to allow distributed operations,
 #   - all tables groups assigned to the cluster exist.
-foreach my $srv (@$serversArray) {
+foreach my $db (@$databasesArray) {
 
-# Open the session for the server.
-	traceIfVerbose("Open session #$srv->{session} (for server $srv->{name})...");
+# Open the session for the database.
+	traceIfVerbose("Open session #$db->{session} (for database $db->{name})...");
 
-	$dbh[$srv->{session}] = DBI->connect('dbi:Pg:'.$srv->{connect_string}, '', '', {AutoCommit => 1, RaiseError => 0, PrintError => 0})
-		or die "Opening the session #$srv->{session} (on server $srv->{name}) failed.\n$DBI::errstr\n\n";
+	$dbh[$db->{session}] = DBI->connect('dbi:Pg:'.$db->{connect_string}, '', '', {AutoCommit => 1, RaiseError => 0, PrintError => 0})
+		or die "Opening the session #$db->{session} (on database $db->{name}) failed.\n$DBI::errstr\n\n";
 }
 
 # Get a global time stamp on dist_emaj.
@@ -314,21 +314,21 @@ $sql = qq(
 traceIfVerbose("Global time id = $globalTimeId.");
 
 # For each session, start a transaction.
-foreach my $srv (@$serversArray) {
-	traceIfVerbose("Start transaction on session #$srv->{session}...");
-	$dbh[$srv->{session}]->begin_work() 
-		or die "Begin transaction #$srv->{session} failed.\n$DBI::errstr\n\n";
+foreach my $db (@$databasesArray) {
+	traceIfVerbose("Start transaction on session #$db->{session}...");
+	$dbh[$db->{session}]->begin_work() 
+		or die "Begin transaction #$db->{session} failed.\n$DBI::errstr\n\n";
 }
 
 ###############################################################################
 # Operation phase 1. (init)
 ###############################################################################
 
-# Call the initialization function for each server.
+# Call the initialization function for each database.
 # This is a synchronous call that returns the array of real tables groups to process.
-foreach my $srv (@$serversArray) {
+foreach my $db (@$databasesArray) {
 
-	traceIfVerbose("Action $action - Call the initial step for server $srv->{name}...");
+	traceIfVerbose("Action $action - Call the initial step for database $db->{name}...");
 	if ($action eq 'start') {
 		$sql = qq(
 			SELECT p_groups, p_idleGroups, p_loggingGroups
@@ -346,37 +346,37 @@ foreach my $srv (@$serversArray) {
 			);
 	}
 
-	$sth[$srv->{session}] = $dbh[$srv->{session}]->prepare($sql)
-		or die "Error while preparing the initial step for server $srv->{name}.\n$DBI::errstr\n\n";
+	$sth[$db->{session}] = $dbh[$db->{session}]->prepare($sql)
+		or die "Error while preparing the initial step for database $db->{name}.\n$DBI::errstr\n\n";
 
-	$sth[$srv->{session}]->bind_param(1, $srv->{groups_array}, { pg_type => PG_TEXTARRAY });
-	$sth[$srv->{session}]->bind_param(2, $realMarkName, { pg_type => PG_TEXT });
+	$sth[$db->{session}]->bind_param(1, $db->{groups_array}, { pg_type => PG_TEXTARRAY });
+	$sth[$db->{session}]->bind_param(2, $realMarkName, { pg_type => PG_TEXT });
 	if ($action eq 'start') {
-		$sth[$srv->{session}]->bind_param(3, $keepLogs ? 'FALSE' : 'TRUE', { pg_type => PG_BOOL });
-		$sth[$srv->{session}]->bind_param(4, $loggingGroupsAllowed ? 'TRUE' : 'FALSE', { pg_type => PG_BOOL });
+		$sth[$db->{session}]->bind_param(3, $keepLogs ? 'FALSE' : 'TRUE', { pg_type => PG_BOOL });
+		$sth[$db->{session}]->bind_param(4, $loggingGroupsAllowed ? 'TRUE' : 'FALSE', { pg_type => PG_BOOL });
 	}
 	if ($action eq 'stop') {
-		$sth[$srv->{session}]->bind_param(3, $resetLogs ? 'TRUE' : 'FALSE', { pg_type => PG_BOOL });
-		$sth[$srv->{session}]->bind_param(4, $idleGroupsAllowed ? 'TRUE' : 'FALSE', { pg_type => PG_BOOL });
+		$sth[$db->{session}]->bind_param(3, $resetLogs ? 'TRUE' : 'FALSE', { pg_type => PG_BOOL });
+		$sth[$db->{session}]->bind_param(4, $idleGroupsAllowed ? 'TRUE' : 'FALSE', { pg_type => PG_BOOL });
 	}
 
-	$sth[$srv->{session}]->execute()
-		or die "Error while executing the initial step for server $srv->{name}.\n$DBI::errstr\n\n";
+	$sth[$db->{session}]->execute()
+		or die "Error while executing the initial step for database $db->{name}.\n$DBI::errstr\n\n";
 
 	if ($action eq 'start') {
-		($srv->{all_groups_array}, $srv->{idle_groups_array}, $srv->{logging_groups_array}) = $sth[$srv->{session}]->fetchrow_array()
-			or die "Error while getting the results of the start_groups initial step for server $srv->{name}.\n$DBI::errstr\n\n";
+		($db->{all_groups_array}, $db->{idle_groups_array}, $db->{logging_groups_array}) = $sth[$db->{session}]->fetchrow_array()
+			or die "Error while getting the results of the start_groups initial step for database $db->{name}.\n$DBI::errstr\n\n";
 	} elsif ($action eq 'stop') {
-		($srv->{all_groups_array}, $srv->{logging_groups_array}, $srv->{idle_groups_array}) = $sth[$srv->{session}]->fetchrow_array()
-			or die "Error while getting the results of the stop_groups initial step for server $srv->{name}.\n$DBI::errstr\n\n";
+		($db->{all_groups_array}, $db->{logging_groups_array}, $db->{idle_groups_array}) = $sth[$db->{session}]->fetchrow_array()
+			or die "Error while getting the results of the stop_groups initial step for database $db->{name}.\n$DBI::errstr\n\n";
 	} elsif ($action eq 'set_mark') {
-		($srv->{all_groups_array}) = $sth[$srv->{session}]->fetchrow_array()
-			or die "Error while getting the results of the set_mark_groups initial step for server $srv->{name}.\n$DBI::errstr\n\n";
+		($db->{all_groups_array}) = $sth[$db->{session}]->fetchrow_array()
+			or die "Error while getting the results of the set_mark_groups initial step for database $db->{name}.\n$DBI::errstr\n\n";
 	}
 
-	$sth[$srv->{session}]->finish;
+	$sth[$db->{session}]->finish;
 
-	$sth_trace->execute($emajAction, 'INIT', $srv->{name}, undef)
+	$sth_trace->execute($emajAction, 'INIT', $db->{name}, undef)
 		or die "Error while inserting an operation init step into dist_emaj_hist.\n$DBI::errstr\n\n";
 }
 
@@ -384,64 +384,64 @@ foreach my $srv (@$serversArray) {
 # Operation phase 2. (lock)
 ###############################################################################
 
-# Asynchronously call the lock function for each server.
-# This returns the operation time id for the server.
-foreach my $srv (@$serversArray) {
+# Asynchronously call the lock function for each database.
+# This returns the operation time id for the database.
+foreach my $db (@$databasesArray) {
 
-	if (defined($srv->{all_groups_array})) {
-		traceIfVerbose("Action $action - Asynchronously call the lock step for server $srv->{name}...");
+	if (defined($db->{all_groups_array})) {
+		traceIfVerbose("Action $action - Asynchronously call the lock step for database $db->{name}...");
 
 		if ($action eq 'start') {
 			$sql = qq(
 				SELECT emaj._start_groups_lock(?, ?, TRUE)
 					);
-			$sth[$srv->{session}] = $dbh[$srv->{session}]->prepare($sql, {pg_async => PG_ASYNC})
-				or die "Error while preparing the start_groups lock step for server $srv->{name}.\n$DBI::errstr\n\n";
-			$sth[$srv->{session}]->bind_param(1, $srv->{idle_groups_array}, { pg_type => PG_TEXTARRAY });
-			$sth[$srv->{session}]->bind_param(2, $srv->{logging_groups_array}, { pg_type => PG_TEXTARRAY });
+			$sth[$db->{session}] = $dbh[$db->{session}]->prepare($sql, {pg_async => PG_ASYNC})
+				or die "Error while preparing the start_groups lock step for database $db->{name}.\n$DBI::errstr\n\n";
+			$sth[$db->{session}]->bind_param(1, $db->{idle_groups_array}, { pg_type => PG_TEXTARRAY });
+			$sth[$db->{session}]->bind_param(2, $db->{logging_groups_array}, { pg_type => PG_TEXTARRAY });
 
 		} elsif ($action eq 'stop') {
 			$sql = qq(
 				SELECT emaj._stop_groups_lock(?, ?, TRUE, FALSE)
 					);
-			$sth[$srv->{session}] = $dbh[$srv->{session}]->prepare($sql, {pg_async => PG_ASYNC})
-				or die "Error while preparing the stop_groups lock step for server $srv->{name}.\n$DBI::errstr\n\n";
-			$sth[$srv->{session}]->bind_param(1, $srv->{logging_groups_array}, { pg_type => PG_TEXTARRAY });
-			$sth[$srv->{session}]->bind_param(2, $srv->{idle_groups_array}, { pg_type => PG_TEXTARRAY });
+			$sth[$db->{session}] = $dbh[$db->{session}]->prepare($sql, {pg_async => PG_ASYNC})
+				or die "Error while preparing the stop_groups lock step for database $db->{name}.\n$DBI::errstr\n\n";
+			$sth[$db->{session}]->bind_param(1, $db->{logging_groups_array}, { pg_type => PG_TEXTARRAY });
+			$sth[$db->{session}]->bind_param(2, $db->{idle_groups_array}, { pg_type => PG_TEXTARRAY });
 
 		} elsif ($action eq 'set_mark') {
 			$sql = qq(
 				SELECT emaj._set_mark_groups_lock(?, TRUE)
 					);
-			$sth[$srv->{session}] = $dbh[$srv->{session}]->prepare($sql, {pg_async => PG_ASYNC})
-				or die "Error while preparing the set_mark_groups lock step for server $srv->{name}.\n$DBI::errstr\n\n";
-			$sth[$srv->{session}]->bind_param(1, $srv->{all_groups_array}, { pg_type => PG_TEXTARRAY });
+			$sth[$db->{session}] = $dbh[$db->{session}]->prepare($sql, {pg_async => PG_ASYNC})
+				or die "Error while preparing the set_mark_groups lock step for database $db->{name}.\n$DBI::errstr\n\n";
+			$sth[$db->{session}]->bind_param(1, $db->{all_groups_array}, { pg_type => PG_TEXTARRAY });
 		}
 
-		$sth[$srv->{session}]->execute()
-			or die "Error while calling the lock step for server $srv->{name}.\n$DBI::errstr\n\n";
+		$sth[$db->{session}]->execute()
+			or die "Error while calling the lock step for database $db->{name}.\n$DBI::errstr\n\n";
 	} else {
-		traceIfVerbose("Action $action - No group to process for server $srv->{name}...");
-		$sth_trace->execute($emajAction, 'LOCK', $srv->{name}, 'No group to process')
+		traceIfVerbose("Action $action - No group to process for database $db->{name}...");
+		$sth_trace->execute($emajAction, 'LOCK', $db->{name}, 'No group to process')
 			or die "Error while inserting an operation 'No group to process' trace.\n$DBI::errstr\n\n";
 	}
 }
 
-# For each server, get the result of the previous lock function call.
-foreach my $srv (@$serversArray) {
+# For each database, get the result of the previous lock function call.
+foreach my $db (@$databasesArray) {
 
-	if (defined($srv->{all_groups_array})) {
-		traceIfVerbose("Action $action - Get result of the lock function call for server $srv->{name}...");
+	if (defined($db->{all_groups_array})) {
+		traceIfVerbose("Action $action - Get result of the lock function call for database $db->{name}...");
 
-		$sth[$srv->{session}]->pg_result()
-			or die "Error while waiting for the result of the lock step for server $srv->{name}.\n$DBI::errstr\n\n";
+		$sth[$db->{session}]->pg_result()
+			or die "Error while waiting for the result of the lock step for database $db->{name}.\n$DBI::errstr\n\n";
 
-		($srv->{time_id}) = $sth[$srv->{session}]->fetchrow_array()
-			or die "Error while getting the result of the lock step for server $srv->{name}.\n$DBI::errstr\n\n";
-		traceIfVerbose("    => time_id = $srv->{time_id}");
+		($db->{time_id}) = $sth[$db->{session}]->fetchrow_array()
+			or die "Error while getting the result of the lock step for database $db->{name}.\n$DBI::errstr\n\n";
+		traceIfVerbose("    => time_id = $db->{time_id}");
 
-		$sth[$srv->{session}]->finish;
-		$sth_trace->execute($emajAction, 'LOCK', $srv->{name}, 'Time_id: ' . $srv->{time_id})
+		$sth[$db->{session}]->finish;
+		$sth_trace->execute($emajAction, 'LOCK', $db->{name}, 'Time_id: ' . $db->{time_id})
 			or die "Error while inserting an operation lock step into dist_emaj_hist.\n$DBI::errstr\n\n";
 	}
 }
@@ -450,12 +450,12 @@ foreach my $srv (@$serversArray) {
 # Operation phase 3. (exec)
 ###############################################################################
 
-# Asynchronously call the exec function for each server.
-# This returns the number of processed tables and sequences for the server.
-foreach my $srv (@$serversArray) {
+# Asynchronously call the exec function for each database.
+# This returns the number of processed tables and sequences for the database.
+foreach my $db (@$databasesArray) {
 
-	if (defined($srv->{all_groups_array})) {
-		traceIfVerbose("Action $action - Asynchronously call the exec step for server $srv->{name}...");
+	if (defined($db->{all_groups_array})) {
+		traceIfVerbose("Action $action - Asynchronously call the exec step for database $db->{name}...");
 
 		if ($action eq 'start') {
 			$sql = qq(
@@ -471,46 +471,46 @@ foreach my $srv (@$serversArray) {
 					)
 		}
 
-		$sth[$srv->{session}] = $dbh[$srv->{session}]->prepare($sql, {pg_async => PG_ASYNC})
-			or die "Error while preparing the exec step for server $srv->{name}.\n$DBI::errstr\n\n";
+		$sth[$db->{session}] = $dbh[$db->{session}]->prepare($sql, {pg_async => PG_ASYNC})
+			or die "Error while preparing the exec step for database $db->{name}.\n$DBI::errstr\n\n";
 
-		$sth[$srv->{session}]->bind_param(1, $srv->{all_groups_array}, { pg_type => PG_TEXTARRAY });
+		$sth[$db->{session}]->bind_param(1, $db->{all_groups_array}, { pg_type => PG_TEXTARRAY });
 		if ($action eq 'start') {
-			$sth[$srv->{session}]->bind_param(2, $srv->{idle_groups_array}, { pg_type => PG_TEXTARRAY });
-			$sth[$srv->{session}]->bind_param(3, $realMarkName, { pg_type => PG_TEXT });
-			$sth[$srv->{session}]->bind_param(4, $keepLogs ? 'FALSE' : 'TRUE', { pg_type => PG_BOOL });
-			$sth[$srv->{session}]->bind_param(5, $srv->{time_id}, { pg_type => PG_INT8 });
+			$sth[$db->{session}]->bind_param(2, $db->{idle_groups_array}, { pg_type => PG_TEXTARRAY });
+			$sth[$db->{session}]->bind_param(3, $realMarkName, { pg_type => PG_TEXT });
+			$sth[$db->{session}]->bind_param(4, $keepLogs ? 'FALSE' : 'TRUE', { pg_type => PG_BOOL });
+			$sth[$db->{session}]->bind_param(5, $db->{time_id}, { pg_type => PG_INT8 });
 		} elsif ($action eq 'stop') {
-			$sth[$srv->{session}]->bind_param(2, $srv->{logging_groups_array}, { pg_type => PG_TEXTARRAY });
-			$sth[$srv->{session}]->bind_param(3, $realMarkName, { pg_type => PG_TEXT });
-			$sth[$srv->{session}]->bind_param(4, $resetLogs ? 'TRUE' : 'FALSE', { pg_type => PG_BOOL });
-			$sth[$srv->{session}]->bind_param(5, $srv->{time_id}, { pg_type => PG_INT8 });
+			$sth[$db->{session}]->bind_param(2, $db->{logging_groups_array}, { pg_type => PG_TEXTARRAY });
+			$sth[$db->{session}]->bind_param(3, $realMarkName, { pg_type => PG_TEXT });
+			$sth[$db->{session}]->bind_param(4, $resetLogs ? 'TRUE' : 'FALSE', { pg_type => PG_BOOL });
+			$sth[$db->{session}]->bind_param(5, $db->{time_id}, { pg_type => PG_INT8 });
 		} elsif ($action eq 'set_mark') {
-			$sth[$srv->{session}]->bind_param(2, $realMarkName, { pg_type => PG_TEXT });
-			$sth[$srv->{session}]->bind_param(3, $comment, { pg_type => PG_TEXT });
-			$sth[$srv->{session}]->bind_param(4, $srv->{time_id}, { pg_type => PG_INT8 });
+			$sth[$db->{session}]->bind_param(2, $realMarkName, { pg_type => PG_TEXT });
+			$sth[$db->{session}]->bind_param(3, $comment, { pg_type => PG_TEXT });
+			$sth[$db->{session}]->bind_param(4, $db->{time_id}, { pg_type => PG_INT8 });
 		}
 
-		$sth[$srv->{session}]->execute()
-			or die "Error while calling the exec step for server $srv->{name}.\n$DBI::errstr\n\n";
+		$sth[$db->{session}]->execute()
+			or die "Error while calling the exec step for database $db->{name}.\n$DBI::errstr\n\n";
 	}
 }
 
-# For each server, get the result of the previous exec function call.
-foreach my $srv (@$serversArray) {
+# For each database, get the result of the previous exec function call.
+foreach my $db (@$databasesArray) {
 
-	if (defined($srv->{all_groups_array})) {
-		traceIfVerbose("Action $action - Get result of the exec function call for server $srv->{name}...");
+	if (defined($db->{all_groups_array})) {
+		traceIfVerbose("Action $action - Get result of the exec function call for database $db->{name}...");
 
-		$sth[$srv->{session}]->pg_result()
-			or die "Error while waiting for the result of the exec step for server $srv->{name}.\n$DBI::errstr\n\n";
+		$sth[$db->{session}]->pg_result()
+			or die "Error while waiting for the result of the exec step for database $db->{name}.\n$DBI::errstr\n\n";
 
-		($srv->{nb_tblseq}) = $sth[$srv->{session}]->fetchrow_array()
-			or die "Error while getting the result of the exec step for server $srv->{name}.\n$DBI::errstr\n\n";
-		traceIfVerbose("    => processed tables and sequences = $srv->{nb_tblseq}");
+		($db->{nb_tblseq}) = $sth[$db->{session}]->fetchrow_array()
+			or die "Error while getting the result of the exec step for database $db->{name}.\n$DBI::errstr\n\n";
+		traceIfVerbose("    => processed tables and sequences = $db->{nb_tblseq}");
 
-		$sth[$srv->{session}]->finish;
-		$sth_trace->execute($emajAction, 'EXEC', $srv->{name}, 'Processed tables and sequences: ' . $srv->{nb_tblseq})
+		$sth[$db->{session}]->finish;
+		$sth_trace->execute($emajAction, 'EXEC', $db->{name}, 'Processed tables and sequences: ' . $db->{nb_tblseq})
 			or die "Error while inserting an operation end exec step into dist_emaj_hist.\n$DBI::errstr\n\n";
 	}
 }
@@ -522,21 +522,21 @@ foreach my $srv (@$serversArray) {
 # Comment the marks set at start or stop time, if a comment has been supplied in options.
 # (a comment for set_mark has been already registered)
 if ($comment ne '' && ($action eq 'start' || ($action eq 'stop' && !$resetLogs))) {
-	foreach my $srv (@$serversArray) {
-		traceIfVerbose("Action $action - Comment the mark for server $srv->{name}...");
+	foreach my $db (@$databasesArray) {
+		traceIfVerbose("Action $action - Comment the mark for database $db->{name}...");
 		$sql = q(
 			SELECT emaj.emaj_comment_mark_group(group_name, 'EMAJ_LAST_MARK', ?)
 				FROM emaj.emaj_group
 				WHERE group_name = ANY (?)
 		);
-		$sth[$srv->{session}] = $dbh[$srv->{session}]->prepare($sql)
-			or die "Error while preparing the comment recording for server $srv->{name}.\n$DBI::errstr\n\n";
+		$sth[$db->{session}] = $dbh[$db->{session}]->prepare($sql)
+			or die "Error while preparing the comment recording for database $db->{name}.\n$DBI::errstr\n\n";
 
-		$sth[$srv->{session}]->bind_param(1, $comment, { pg_type => PG_TEXT });
-		$sth[$srv->{session}]->bind_param(2, $srv->{all_groups_array}, { pg_type => PG_TEXTARRAY });
-		$sth[$srv->{session}]->execute
-			or die "Error while recording the comment for server $srv->{name}.\n$DBI::errstr\n\n";
-		$sth[$srv->{session}]->finish;
+		$sth[$db->{session}]->bind_param(1, $comment, { pg_type => PG_TEXT });
+		$sth[$db->{session}]->bind_param(2, $db->{all_groups_array}, { pg_type => PG_TEXTARRAY });
+		$sth[$db->{session}]->execute
+			or die "Error while recording the comment for database $db->{name}.\n$DBI::errstr\n\n";
+		$sth[$db->{session}]->finish;
 	}
 }
 
@@ -568,10 +568,10 @@ if (!($action eq 'stop' && $resetLogs)) {
 
 # Record the local mark attributes for each tables group on dist_emaj.
 	$sql = qq(
-		INSERT INTO dist_emaj.dist_emaj_mark_group (mark_time_id, mark_server, mark_group, mark_local_time_id)
+		INSERT INTO dist_emaj.dist_emaj_mark_group (mark_time_id, mark_database, mark_group, mark_local_time_id)
 			SELECT ?, ?, clgrp_group, ?
 				FROM dist_emaj.dist_emaj_cluster_group
-				WHERE clgrp_cluster = ? AND clgrp_server = ?
+				WHERE clgrp_cluster = ? AND clgrp_database = ?
 	);
 	$sth = $dbh->prepare($sql)
 		or die "Error while preparing the INSERT into dist_emaj_mark_group statement.\n$DBI::errstr\n\n";
@@ -579,12 +579,12 @@ if (!($action eq 'stop' && $resetLogs)) {
 	$sth->bind_param(1, $globalTimeId, { pg_type => PG_INT8 });
 	$sth->bind_param(4, $cluster, { pg_type => PG_TEXT });
 
-	foreach my $srv (@$serversArray) {
-		$sth->bind_param(2, $srv->{name}, { pg_type => PG_TEXT });
-		$sth->bind_param(3, $srv->{time_id}, { pg_type => PG_INT8 });
-		$sth->bind_param(5, $srv->{name}, { pg_type => PG_TEXT });
+	foreach my $db (@$databasesArray) {
+		$sth->bind_param(2, $db->{name}, { pg_type => PG_TEXT });
+		$sth->bind_param(3, $db->{time_id}, { pg_type => PG_INT8 });
+		$sth->bind_param(5, $db->{name}, { pg_type => PG_TEXT });
 		$sth->execute()
-			or die "Error while inserting the operation distributed mark for server $srv->{name}.\n$DBI::errstr\n\n";
+			or die "Error while inserting the operation distributed mark for database $db->{name}.\n$DBI::errstr\n\n";
 	}
 	$sth->finish;
 }
@@ -593,31 +593,31 @@ if (!($action eq 'stop' && $resetLogs)) {
 $sth_trace->execute('DIST_EMAJ', 'END', $cluster, undef)
 	or die "Error while inserting the operation end trace into dist_emaj_hist.\n$DBI::errstr\n\n";
 
-# COMMIT transactions on all emaj servers and dist_emaj, with 2PC.
+# COMMIT transactions on all emaj databases and dist_emaj, with 2PC.
 # This ensure that all sessions can either be commited or rolled back in a single transaction.
 # Phase 1 : Prepare transaction
-foreach my $srv (@$serversArray) {
-	traceIfVerbose("Prepare transaction #$srv->{session}...");
-	$dbh[$srv->{session}]->do("PREPARE TRANSACTION 'emajtx$srv->{session}'")
-		or die "Prepare transaction #$srv->{session} failed.\n$DBI::errstr\n\n";
+foreach my $db (@$databasesArray) {
+	traceIfVerbose("Prepare transaction #$db->{session}...");
+	$dbh[$db->{session}]->do("PREPARE TRANSACTION 'emajtx$db->{session}'")
+		or die "Prepare transaction #$db->{session} failed.\n$DBI::errstr\n\n";
 }
 $dbh->do("PREPARE TRANSACTION 'distemajtx'")
 	or die "Prepare transaction on dist_emaj failed.\n$DBI::errstr\n\n";
 
 # Phase 2 : Commit
-foreach my $srv (@$serversArray) {
-	traceIfVerbose("Commit transaction #$srv->{session}...");
-	$dbh[$srv->{session}]->do("COMMIT PREPARED 'emajtx$srv->{session}'")
-		or die "Commit prepared #$srv->{session} failed.\n$DBI::errstr\n\n";
+foreach my $db (@$databasesArray) {
+	traceIfVerbose("Commit transaction #$db->{session}...");
+	$dbh[$db->{session}]->do("COMMIT PREPARED 'emajtx$db->{session}'")
+		or die "Commit prepared #$db->{session} failed.\n$DBI::errstr\n\n";
 }
 $dbh->do("COMMIT PREPARED 'distemajtx'")
 	or die "Commit prepared on dist_emaj failed.\n$DBI::errstr\n\n";
 
 # Close the sessions.
 traceIfVerbose("Close all sessions...");
-foreach my $srv (@$serversArray) {
-	$dbh[$srv->{session}]->disconnect
-		or die "Disconnect for session #$srv->{session} failed:\n$DBI::errstr\n\n";
+foreach my $db (@$databasesArray) {
+	$dbh[$db->{session}]->disconnect
+		or die "Disconnect for session #$db->{session} failed:\n$DBI::errstr\n\n";
 }
 $dbh->disconnect
 	or die "Disconnect from dist_emaj failed:\n$DBI::errstr\n\n";
@@ -625,8 +625,8 @@ $dbh->disconnect
 # Clean up on error.
 END {
 	if (defined($nbSession)) {
-		foreach my $srv (@$serversArray) {
-			$dbh[$srv->{session}]->disconnect if ( ($dbh[$srv->{session}]) && ($dbh[$srv->{session}]->{Active}) )
+		foreach my $db (@$databasesArray) {
+			$dbh[$db->{session}]->disconnect if ( ($dbh[$db->{session}]) && ($dbh[$db->{session}]->{Active}) )
 		}
 	}
 	if ($dbh) {
@@ -636,7 +636,7 @@ END {
 
 # Send the final message.
 print ("The '$action' action on cluster '$cluster' is completed.\n");
-print ("It has processed $nbGroup groups spread into $nbServer servers.\n");
+print ("It has processed $nbGroup groups spread into $nbDatabase databases.\n");
 exit 0;
 
 #------------------------------------------------------------------------------
@@ -659,7 +659,7 @@ sub traceIfVerbose {
 
 sub printHelp {
 	print qq{$PROGRAM belongs to the Distributed E-Maj extension (version $VERSION).
-It performs consistent E-Maj operations for several tables groups located on several servers.
+It performs consistent E-Maj operations for several tables groups located on several databases.
 
 Usage:
   $PROGRAM --action <start|stop|set_mark> --cluster <groups cluster name> --mark <mark_name> [OPTION]...
@@ -677,9 +677,9 @@ Options:
   --version     just displays version information
 
 Connection options:
-  -d,           database to connect to
-  -h,           database server host or socket directory
-  -p,           database server port
+  -d,           Distributed E-Maj database to connect to
+  -h,           server host or socket directory
+  -p,           server port
   -U,           user name to connect as
   -W,           password associated to the user, if needed
   

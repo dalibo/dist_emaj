@@ -38,7 +38,7 @@ Error: the user is not allowed to access the dist_emaj database.
 --
 -- Start and stop tests
 --
--- Errors on a server
+-- Errors on a database
 --   missing groups (simulated from dist_emaj)
 insert into dist_emaj.dist_emaj_cluster_group values
   ('my_cluster', 'emaj_1', 'extraGroup_1'),
@@ -47,21 +47,21 @@ insert into dist_emaj.dist_emaj_cluster_group values
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 Error while checking the cluster.
-ERROR:  _verify_server (7): Error on server "emaj_1", some table groups (extraGroup_1, extraGroup_2) are missing.
-CONTEXT:  PL/pgSQL function dist_emaj._verify_server(text,text,text,text,boolean) line 153 at RAISE
-SQL statement "SELECT dist_emaj._verify_server(srv_name, srv_connect_string, groups_list, v_dblinkSchema, TRUE)
+ERROR:  _verify_database (7): Error on database "emaj_1", some table groups (extraGroup_1, extraGroup_2) are missing.
+CONTEXT:  PL/pgSQL function dist_emaj._verify_database(text,text,text,text,boolean) line 153 at RAISE
+SQL statement "SELECT dist_emaj._verify_database(db_name, db_connect_string, groups_list, v_dblinkSchema, TRUE)
       FROM (
-        SELECT srv_name, srv_connect_string,
+        SELECT db_name, db_connect_string,
                string_agg(quote_literal(clgrp_group), ',' ORDER BY clgrp_group) AS groups_list
           FROM dist_emaj.dist_emaj_cluster_group
-               JOIN dist_emaj.dist_emaj_server ON (dist_emaj_server.srv_name = dist_emaj_cluster_group.clgrp_server)
+               JOIN dist_emaj.dist_emaj_database ON (dist_emaj_database.db_name = dist_emaj_cluster_group.clgrp_database)
           WHERE clgrp_cluster = p_cluster
-          GROUP BY srv_name, srv_connect_string
-          ORDER BY srv_name
-        ) AS servers"
+          GROUP BY db_name, db_connect_string
+          ORDER BY db_name
+        ) AS databases"
 PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 41 at PERFORM
 
-delete from dist_emaj.dist_emaj_cluster_group where clgrp_cluster = 'my_cluster' and clgrp_server = 'emaj_1' and clgrp_group like 'extraGroup%';
+delete from dist_emaj.dist_emaj_cluster_group where clgrp_cluster = 'my_cluster' and clgrp_database = 'emaj_1' and clgrp_group like 'extraGroup%';
 -- Start a cluster (with a comment and useless --reset-logs and --idle-groups-allowed)
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action start --cluster my_cluster --mark 'START' --comment "Comment on start mark" --verbose --regression-test --rl --iga
  Distributed E-Maj (version <devel>) - launching parallel actions
@@ -72,33 +72,33 @@ The --idle-groups-allowed option has no effect on start action
 dd/mm/yyyy - hh:mn:ss Purging dist_emaj histories...
 dd/mm/yyyy - hh:mn:ss     => Nothing to delete.
 dd/mm/yyyy - hh:mn:ss Mark name checked and resolved. Real mark name = 'START'.
-dd/mm/yyyy - hh:mn:ss Open session #1 (for server emaj_1)...
-dd/mm/yyyy - hh:mn:ss Open session #2 (for server emaj_2)...
+dd/mm/yyyy - hh:mn:ss Open session #1 (for database emaj_1)...
+dd/mm/yyyy - hh:mn:ss Open session #2 (for database emaj_2)...
 dd/mm/yyyy - hh:mn:ss Global time id = 2000.
 dd/mm/yyyy - hh:mn:ss Start transaction on session #1...
 dd/mm/yyyy - hh:mn:ss Start transaction on session #2...
-dd/mm/yyyy - hh:mn:ss Action start - Call the initial step for server emaj_1...
+dd/mm/yyyy - hh:mn:ss Action start - Call the initial step for database emaj_1...
 WARNING:  _check_fk_groups: The foreign key "mytbl6_col61_fkey" on the table "myschema2.mytbl6" references the table "myschema2.mytbl7" that is outside the groups (myGroup1,myGroup2).
 WARNING:  _check_fk_groups: The table "myschema2.mytbl6" is referenced by the foreign key "mytbl8_col81_fkey" on the table "myschema2.mytbl8" that is outside the groups (myGroup1,myGroup2).
-dd/mm/yyyy - hh:mn:ss Action start - Call the initial step for server emaj_2...
+dd/mm/yyyy - hh:mn:ss Action start - Call the initial step for database emaj_2...
 WARNING:  _check_fk_groups: The table "phil's schema"3.my"tbl4" is referenced by the foreign key "mytbl2_col21_fkey_nv" on the table "phil's schema"3.myTbl2\" that is outside the groups (myGroup4,myGroup5,myGroup6,phil's group#3",).
 WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp1a" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
 WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp1b" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
 WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp2" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
-dd/mm/yyyy - hh:mn:ss Action start - Asynchronously call the lock step for server emaj_1...
-dd/mm/yyyy - hh:mn:ss Action start - Asynchronously call the lock step for server emaj_2...
-dd/mm/yyyy - hh:mn:ss Action start - Get result of the lock function call for server emaj_1...
+dd/mm/yyyy - hh:mn:ss Action start - Asynchronously call the lock step for database emaj_1...
+dd/mm/yyyy - hh:mn:ss Action start - Asynchronously call the lock step for database emaj_2...
+dd/mm/yyyy - hh:mn:ss Action start - Get result of the lock function call for database emaj_1...
 dd/mm/yyyy - hh:mn:ss     => time_id = 7
-dd/mm/yyyy - hh:mn:ss Action start - Get result of the lock function call for server emaj_2...
+dd/mm/yyyy - hh:mn:ss Action start - Get result of the lock function call for database emaj_2...
 dd/mm/yyyy - hh:mn:ss     => time_id = 10
-dd/mm/yyyy - hh:mn:ss Action start - Asynchronously call the exec step for server emaj_1...
-dd/mm/yyyy - hh:mn:ss Action start - Asynchronously call the exec step for server emaj_2...
-dd/mm/yyyy - hh:mn:ss Action start - Get result of the exec function call for server emaj_1...
+dd/mm/yyyy - hh:mn:ss Action start - Asynchronously call the exec step for database emaj_1...
+dd/mm/yyyy - hh:mn:ss Action start - Asynchronously call the exec step for database emaj_2...
+dd/mm/yyyy - hh:mn:ss Action start - Get result of the exec function call for database emaj_1...
 dd/mm/yyyy - hh:mn:ss     => processed tables and sequences = 16
-dd/mm/yyyy - hh:mn:ss Action start - Get result of the exec function call for server emaj_2...
+dd/mm/yyyy - hh:mn:ss Action start - Get result of the exec function call for database emaj_2...
 dd/mm/yyyy - hh:mn:ss     => processed tables and sequences = 18
-dd/mm/yyyy - hh:mn:ss Action start - Comment the mark for server emaj_1...
-dd/mm/yyyy - hh:mn:ss Action start - Comment the mark for server emaj_2...
+dd/mm/yyyy - hh:mn:ss Action start - Comment the mark for database emaj_1...
+dd/mm/yyyy - hh:mn:ss Action start - Comment the mark for database emaj_2...
 dd/mm/yyyy - hh:mn:ss Action start - Delete old marks in the distributed emaj database...
 dd/mm/yyyy - hh:mn:ss Action start - Register the mark in the distributed emaj database...
 dd/mm/yyyy - hh:mn:ss Prepare transaction #1...
@@ -107,12 +107,12 @@ dd/mm/yyyy - hh:mn:ss Commit transaction #1...
 dd/mm/yyyy - hh:mn:ss Commit transaction #2...
 dd/mm/yyyy - hh:mn:ss Close all sessions...
 The 'start' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 -- Try to restart the cluster without --logging-groups-allowed
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action start --cluster my_cluster --mark 'START_ko'
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
-Error while executing the initial step for server emaj_1.
+Error while executing the initial step for database emaj_1.
 ERROR:  _check_group_names: The groups "myGroup1, myGroup2" are not in IDLE state.
 CONTEXT:  PL/pgSQL function emaj._check_group_names(text[],boolean,boolean,boolean,boolean,boolean,boolean) line 74 at RAISE
 SQL statement "SELECT emaj._check_group_names(p_groups := p_groups, p_mayBeNull := p_multiGroup,
@@ -134,12 +134,12 @@ CONTEXT:  PL/pgSQL function dist_emaj._check_new_dist_mark(text,text,boolean) li
 The --keep-logs option has no effect on stop action
 The --logging-groups-allowed option has no effect on stop action
 The 'stop' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 -- Re-stop a cluster without --idle-groups-allowed
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action stop --cluster my_cluster --mark 'STOP_ko' --comment "Comment on stop mark"
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
-Error while executing the initial step for server emaj_1.
+Error while executing the initial step for database emaj_1.
 ERROR:  _check_group_names: The groups "myGroup1, myGroup2" are not in LOGGING state.
 CONTEXT:  PL/pgSQL function emaj._check_group_names(text[],boolean,boolean,boolean,boolean,boolean,boolean) line 87 at RAISE
 SQL statement "SELECT emaj._check_group_names(p_groups := p_groups, p_mayBeNull := p_multiGroup,
@@ -162,7 +162,7 @@ The --comment option has no effect on stop operations with --reset-logs option
 WARNING:  _stop_groups_init: The groups "myGroup1, myGroup2" are already in IDLE state.
 WARNING:  _stop_groups_init: The groups "myGroup4, myGroup5, myGroup6, phil's group#3"," are already in IDLE state.
 The 'stop' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 --
 -- Set mark tests
 --
@@ -176,7 +176,7 @@ WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "mys
 WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp1b" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
 WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp2" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
 The 'start' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 -- illegal mark name
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark EMAJ_LAST_MARK
  Distributed E-Maj (version <devel>) - launching parallel actions
@@ -192,24 +192,24 @@ CONTEXT:  PL/pgSQL function dist_emaj._check_new_dist_mark(text,text,boolean) li
 dd/mm/yyyy - hh:mn:ss Initialisation...
 dd/mm/yyyy - hh:mn:ss Synchronizing marks...
 dd/mm/yyyy - hh:mn:ss Mark name checked and resolved. Real mark name = 'Fixed_Mark_Name'.
-dd/mm/yyyy - hh:mn:ss Open session #1 (for server emaj_1)...
-dd/mm/yyyy - hh:mn:ss Open session #2 (for server emaj_2)...
+dd/mm/yyyy - hh:mn:ss Open session #1 (for database emaj_1)...
+dd/mm/yyyy - hh:mn:ss Open session #2 (for database emaj_2)...
 dd/mm/yyyy - hh:mn:ss Global time id = 2006.
 dd/mm/yyyy - hh:mn:ss Start transaction on session #1...
 dd/mm/yyyy - hh:mn:ss Start transaction on session #2...
-dd/mm/yyyy - hh:mn:ss Action set_mark - Call the initial step for server emaj_1...
-dd/mm/yyyy - hh:mn:ss Action set_mark - Call the initial step for server emaj_2...
-dd/mm/yyyy - hh:mn:ss Action set_mark - Asynchronously call the lock step for server emaj_1...
-dd/mm/yyyy - hh:mn:ss Action set_mark - Asynchronously call the lock step for server emaj_2...
-dd/mm/yyyy - hh:mn:ss Action set_mark - Get result of the lock function call for server emaj_1...
+dd/mm/yyyy - hh:mn:ss Action set_mark - Call the initial step for database emaj_1...
+dd/mm/yyyy - hh:mn:ss Action set_mark - Call the initial step for database emaj_2...
+dd/mm/yyyy - hh:mn:ss Action set_mark - Asynchronously call the lock step for database emaj_1...
+dd/mm/yyyy - hh:mn:ss Action set_mark - Asynchronously call the lock step for database emaj_2...
+dd/mm/yyyy - hh:mn:ss Action set_mark - Get result of the lock function call for database emaj_1...
 dd/mm/yyyy - hh:mn:ss     => time_id = 11
-dd/mm/yyyy - hh:mn:ss Action set_mark - Get result of the lock function call for server emaj_2...
+dd/mm/yyyy - hh:mn:ss Action set_mark - Get result of the lock function call for database emaj_2...
 dd/mm/yyyy - hh:mn:ss     => time_id = 14
-dd/mm/yyyy - hh:mn:ss Action set_mark - Asynchronously call the exec step for server emaj_1...
-dd/mm/yyyy - hh:mn:ss Action set_mark - Asynchronously call the exec step for server emaj_2...
-dd/mm/yyyy - hh:mn:ss Action set_mark - Get result of the exec function call for server emaj_1...
+dd/mm/yyyy - hh:mn:ss Action set_mark - Asynchronously call the exec step for database emaj_1...
+dd/mm/yyyy - hh:mn:ss Action set_mark - Asynchronously call the exec step for database emaj_2...
+dd/mm/yyyy - hh:mn:ss Action set_mark - Get result of the exec function call for database emaj_1...
 dd/mm/yyyy - hh:mn:ss     => processed tables and sequences = 16
-dd/mm/yyyy - hh:mn:ss Action set_mark - Get result of the exec function call for server emaj_2...
+dd/mm/yyyy - hh:mn:ss Action set_mark - Get result of the exec function call for database emaj_2...
 dd/mm/yyyy - hh:mn:ss     => processed tables and sequences = 18
 dd/mm/yyyy - hh:mn:ss Action set_mark - Register the mark in the distributed emaj database...
 dd/mm/yyyy - hh:mn:ss Prepare transaction #1...
@@ -218,17 +218,17 @@ dd/mm/yyyy - hh:mn:ss Commit transaction #1...
 dd/mm/yyyy - hh:mn:ss Commit transaction #2...
 dd/mm/yyyy - hh:mn:ss Close all sessions...
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark --comment "Comment on generated mark name"
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark --comment "Comment on generated mark name"
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 --
 -- Marks synchronization tests
 --
@@ -253,27 +253,27 @@ select dist_emaj.dist_emaj_sync_marks_cluster('my_cluster');
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark DM2
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark DM3
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark DM4
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark DM5
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 \c regression_1
 select emaj.emaj_delete_mark_group('myGroup1', 'DM2');
  emaj_delete_mark_group 
@@ -327,7 +327,7 @@ select dist_emaj.dist_emaj_sync_marks_cluster('my_cluster');
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action stop --cluster my_cluster --mark
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
-Error while executing the initial step for server emaj_1.
+Error while executing the initial step for database emaj_1.
 ERROR:  _check_group_names: The group "myGroup1" is not in LOGGING state.
 CONTEXT:  PL/pgSQL function emaj._check_group_names(text[],boolean,boolean,boolean,boolean,boolean,boolean) line 84 at RAISE
 SQL statement "SELECT emaj._check_group_names(p_groups := p_groups, p_mayBeNull := p_multiGroup,
@@ -339,7 +339,7 @@ PL/pgSQL function emaj._stop_groups_init(text[],text,boolean,boolean,boolean,boo
 ----------------------------------------------------------------
 WARNING:  _stop_groups_init: The group "myGroup1" is already in IDLE state.
 The 'stop' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action start --cluster my_cluster --mark DM1
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
@@ -350,12 +350,12 @@ WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "mys
 WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp1b" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
 WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp2" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
 The 'start' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark DM2
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 \c regression_1
 select emaj.emaj_stop_group('myGroup1');
  emaj_stop_group 
@@ -376,24 +376,24 @@ select emaj.emaj_start_group('myGroup1');
 ----------------------------------------------------------------
 dd/mm/yyyy - hh:mn:ss Initialisation...
 dd/mm/yyyy - hh:mn:ss Mark name checked and resolved. Real mark name = 'resync_and_STOP'.
-dd/mm/yyyy - hh:mn:ss Open session #1 (for server emaj_1)...
-dd/mm/yyyy - hh:mn:ss Open session #2 (for server emaj_2)...
+dd/mm/yyyy - hh:mn:ss Open session #1 (for database emaj_1)...
+dd/mm/yyyy - hh:mn:ss Open session #2 (for database emaj_2)...
 dd/mm/yyyy - hh:mn:ss Global time id = 2018.
 dd/mm/yyyy - hh:mn:ss Start transaction on session #1...
 dd/mm/yyyy - hh:mn:ss Start transaction on session #2...
-dd/mm/yyyy - hh:mn:ss Action stop - Call the initial step for server emaj_1...
-dd/mm/yyyy - hh:mn:ss Action stop - Call the initial step for server emaj_2...
-dd/mm/yyyy - hh:mn:ss Action stop - Asynchronously call the lock step for server emaj_1...
-dd/mm/yyyy - hh:mn:ss Action stop - Asynchronously call the lock step for server emaj_2...
-dd/mm/yyyy - hh:mn:ss Action stop - Get result of the lock function call for server emaj_1...
+dd/mm/yyyy - hh:mn:ss Action stop - Call the initial step for database emaj_1...
+dd/mm/yyyy - hh:mn:ss Action stop - Call the initial step for database emaj_2...
+dd/mm/yyyy - hh:mn:ss Action stop - Asynchronously call the lock step for database emaj_1...
+dd/mm/yyyy - hh:mn:ss Action stop - Asynchronously call the lock step for database emaj_2...
+dd/mm/yyyy - hh:mn:ss Action stop - Get result of the lock function call for database emaj_1...
 dd/mm/yyyy - hh:mn:ss     => time_id = 25
-dd/mm/yyyy - hh:mn:ss Action stop - Get result of the lock function call for server emaj_2...
+dd/mm/yyyy - hh:mn:ss Action stop - Get result of the lock function call for database emaj_2...
 dd/mm/yyyy - hh:mn:ss     => time_id = 25
-dd/mm/yyyy - hh:mn:ss Action stop - Asynchronously call the exec step for server emaj_1...
-dd/mm/yyyy - hh:mn:ss Action stop - Asynchronously call the exec step for server emaj_2...
-dd/mm/yyyy - hh:mn:ss Action stop - Get result of the exec function call for server emaj_1...
+dd/mm/yyyy - hh:mn:ss Action stop - Asynchronously call the exec step for database emaj_1...
+dd/mm/yyyy - hh:mn:ss Action stop - Asynchronously call the exec step for database emaj_2...
+dd/mm/yyyy - hh:mn:ss Action stop - Get result of the exec function call for database emaj_1...
 dd/mm/yyyy - hh:mn:ss     => processed tables and sequences = 16
-dd/mm/yyyy - hh:mn:ss Action stop - Get result of the exec function call for server emaj_2...
+dd/mm/yyyy - hh:mn:ss Action stop - Get result of the exec function call for database emaj_2...
 dd/mm/yyyy - hh:mn:ss     => processed tables and sequences = 18
 dd/mm/yyyy - hh:mn:ss Action stop - Register the mark in the distributed emaj database...
 dd/mm/yyyy - hh:mn:ss Prepare transaction #1...
@@ -402,7 +402,7 @@ dd/mm/yyyy - hh:mn:ss Commit transaction #1...
 dd/mm/yyyy - hh:mn:ss Commit transaction #2...
 dd/mm/yyyy - hh:mn:ss Close all sessions...
 The 'stop' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 -- a group has been locally started
 \c regression_1
 select emaj.emaj_start_group('myGroup1', 'Local_Start');
@@ -415,7 +415,7 @@ select emaj.emaj_start_group('myGroup1', 'Local_Start');
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action start --cluster my_cluster --mark DM1
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
-Error while executing the initial step for server emaj_1.
+Error while executing the initial step for database emaj_1.
 ERROR:  _check_group_names: The group "myGroup1" is not in IDLE state.
 CONTEXT:  PL/pgSQL function emaj._check_group_names(text[],boolean,boolean,boolean,boolean,boolean,boolean) line 71 at RAISE
 SQL statement "SELECT emaj._check_group_names(p_groups := p_groups, p_mayBeNull := p_multiGroup,
@@ -433,13 +433,13 @@ WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "mys
 WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp1b" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
 WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp2" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
 The 'start' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 -- Final stop
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action stop --cluster my_cluster --mark 'STOP'
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'stop' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 --
 -- Final checks
 --
@@ -652,22 +652,22 @@ select mark_cluster, regexp_replace(mark_name,E'\\d\\d\.\\d\\d\\.\\d\\d\\.\\d\\d
  my_cluster   | STOP           |         2021
 (2 rows)
 
-select mark_time_id, mark_server, mark_group, mark_local_time_id
+select mark_time_id, mark_database, mark_group, mark_local_time_id
   from dist_emaj.dist_emaj_mark_group order by 1, 2, 3;
- mark_time_id | mark_server |    mark_group    | mark_local_time_id 
---------------+-------------+------------------+--------------------
-         2020 | emaj_1      | myGroup1         |                 27
-         2020 | emaj_1      | myGroup2         |                 27
-         2020 | emaj_2      | myGroup4         |                 26
-         2020 | emaj_2      | myGroup5         |                 26
-         2020 | emaj_2      | myGroup6         |                 26
-         2020 | emaj_2      | phil's group#3", |                 26
-         2021 | emaj_1      | myGroup1         |                 28
-         2021 | emaj_1      | myGroup2         |                 28
-         2021 | emaj_2      | myGroup4         |                 27
-         2021 | emaj_2      | myGroup5         |                 27
-         2021 | emaj_2      | myGroup6         |                 27
-         2021 | emaj_2      | phil's group#3", |                 27
+ mark_time_id | mark_database |    mark_group    | mark_local_time_id 
+--------------+---------------+------------------+--------------------
+         2020 | emaj_1        | myGroup1         |                 27
+         2020 | emaj_1        | myGroup2         |                 27
+         2020 | emaj_2        | myGroup4         |                 26
+         2020 | emaj_2        | myGroup5         |                 26
+         2020 | emaj_2        | myGroup6         |                 26
+         2020 | emaj_2        | phil's group#3", |                 26
+         2021 | emaj_1        | myGroup1         |                 28
+         2021 | emaj_1        | myGroup2         |                 28
+         2021 | emaj_2        | myGroup4         |                 27
+         2021 | emaj_2        | myGroup5         |                 27
+         2021 | emaj_2        | myGroup6         |                 27
+         2021 | emaj_2        | phil's group#3", |                 27
 (12 rows)
 
 -- Check emaj tables

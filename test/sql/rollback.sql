@@ -18,7 +18,7 @@ select set_config('dist_emaj.regress_start_mark_time_id', mark_time_id::text, fa
 select set_config('dist_emaj.regress_start_mark_local_time_id', mark_local_time_id::text, false)
   from dist_emaj.dist_emaj_mark_group
   where mark_time_id = (select max(mark_time_id) from dist_emaj.dist_emaj_mark)
-    and mark_server = 'emaj_1' and mark_group = 'myGroup1';
+    and mark_database = 'emaj_1' and mark_group = 'myGroup1';
 
 -- Set a mark
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark 'A_Mark_Name';
@@ -44,19 +44,19 @@ select set_config('dist_emaj.regress_start_mark_local_time_id', mark_local_time_
 
 --   missing mark for a group
 delete from dist_emaj.dist_emaj_mark_group
-  where mark_time_id = current_setting('dist_emaj.regress_start_mark_time_id')::BIGINT and mark_server = 'emaj_1' and mark_group = 'myGroup1';
+  where mark_time_id = current_setting('dist_emaj.regress_start_mark_time_id')::BIGINT and mark_database = 'emaj_1' and mark_group = 'myGroup1';
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark START
 insert into dist_emaj.dist_emaj_mark_group
   values (current_setting('dist_emaj.regress_start_mark_time_id')::BIGINT, 'emaj_1', 'myGroup1', current_setting('dist_emaj.regress_start_mark_local_time_id')::BIGINT);
 
 --   mark with different time id
 update dist_emaj.dist_emaj_mark_group set mark_local_time_id = mark_local_time_id + 1
-  where mark_time_id = current_setting('dist_emaj.regress_start_mark_time_id')::BIGINT and mark_server = 'emaj_1' and mark_group = 'myGroup1';
+  where mark_time_id = current_setting('dist_emaj.regress_start_mark_time_id')::BIGINT and mark_database = 'emaj_1' and mark_group = 'myGroup1';
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark START
 update dist_emaj.dist_emaj_mark_group set mark_local_time_id = mark_local_time_id - 1
-  where mark_time_id = current_setting('dist_emaj.regress_start_mark_time_id')::BIGINT and mark_server = 'emaj_1' and mark_group = 'myGroup1';
+  where mark_time_id = current_setting('dist_emaj.regress_start_mark_time_id')::BIGINT and mark_database = 'emaj_1' and mark_group = 'myGroup1';
 
--- Errors on a server
+-- Errors on a database
 --   missing groups (simulated from dist_emaj)
 insert into dist_emaj.dist_emaj_cluster_group values
   ('my_cluster', 'emaj_1', 'extraGroup_1'),
@@ -122,8 +122,8 @@ select hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_word
   from dist_emaj.dist_emaj_hist where hist_id >= 3000 order by 1;
 select mark_cluster, regexp_replace(mark_name, E'\\d\\d\.\\d\\d\\.\\d\\d\\.\\d\\d\\d\\d', '%', 'g'), mark_time_id
   from dist_emaj.dist_emaj_mark order by 1, 3;
-select mark_time_id, mark_server, mark_group, mark_local_time_id
+select mark_time_id, mark_database, mark_group, mark_local_time_id
   from dist_emaj.dist_emaj_mark_group order by 1, 2, 3;
 select rlbk_id, rlbk_cluster, rlbk_mark, rlbk_mark_time_id, rlbk_time_id, rlbk_is_logged, rlbk_is_alter_group_allowed, rlbk_comment, rlbk_status
   from dist_emaj.dist_emaj_rlbk order by 1;
-select rlbs_rlbk_id, rlbs_server, rlbs_local_rlbk_id from dist_emaj.dist_emaj_rlbk_server order by 1,2;
+select rlbd_rlbk_id, rlbd_database, rlbd_local_rlbk_id from dist_emaj.dist_emaj_rlbk_database order by 1,2;

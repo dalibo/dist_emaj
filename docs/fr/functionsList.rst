@@ -9,15 +9,15 @@ Toutes ces fonctions sont appelables par les rôles disposant des privilèges *d
 | Fonctions                                        | Paramètres en entrée          | Données restituées               |
 +==================================================+===============================+==================================+
 | :ref:`dist_emaj_assign_group                     | | p_cluster TEXT              | nb.groupe.assigné (0/1) INT      |
-| <dist_emaj_assign_group>`                        | | p_server TEXT               |                                  |
+| <dist_emaj_assign_group>`                        | | p_database TEXT             |                                  |
 |                                                  | | p_group TEXT                |                                  |
 |                                                  | | [ p_ifNotExists BOOLEAN ]   |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
 | :ref:`dist_emaj_create_cluster                   | | p_cluster TEXT              | nb.cluster.créé (0/1) INT        |
 | <dist_emaj_create_cluster>`                      | | [ p_ifNotExists BOOLEAN ]   |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
-| :ref:`dist_emaj_create_server                    | | p_server TEXT               | nb.server.créé (0/1) INT         |
-| <dist_emaj_create_server>`                       | | p_connectString TEXT        |                                  |
+| :ref:`dist_emaj_create_database                  | | p_database TEXT             | nb.database.créée (0/1) INT      |
+| <dist_emaj_create_database>`                     | | p_connectString TEXT        |                                  |
 |                                                  | | p_rollbackParallelSession   |                                  |
 |                                                  | |                         INT |                                  |
 |                                                  | | [ p_ifNotExists BOOLEAN ]   |                                  |
@@ -32,8 +32,8 @@ Toutes ces fonctions sont appelables par les rôles disposant des privilèges *d
 | :ref:`dist_emaj_drop_extension                   |                               |                                  |
 | <dist_emaj_drop_extension>`                      |                               |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
-| :ref:`dist_emaj_drop_server                      | | p_server TEXT               | nb.server.supprimé (0/1) INT     |
-| <dist_emaj_drop_server>`                         | | [ p_ifExists BOOLEAN ]      |                                  |
+| :ref:`dist_emaj_drop_database                    | | p_database TEXT             | nb.database.supprimée (0/1) INT  |
+| <dist_emaj_drop_database>`                       | | [ p_ifExists BOOLEAN ]      |                                  |
 |                                                  | | [ p_cascade BOOLEAN ]       |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
 | :ref:`dist_emaj_export_parameters_configuration  | [ p_includeDefault BOOLEAN ]  | paramètres JSON                  |
@@ -63,7 +63,7 @@ Toutes ces fonctions sont appelables par les rôles disposant des privilèges *d
 | <dist_emaj_purge_histories>`                     |                               |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
 | :ref:`dist_emaj_remove_group                     | | p_cluster TEXT              | nb.groupe.retiré (0/1) INT       |
-| <dist_emaj_remove_group>`                        | | p_server TEXT               |                                  |
+| <dist_emaj_remove_group>`                        | | p_database TEXT             |                                  |
 |                                                  | | p_group TEXT                |                                  |
 |                                                  | | [ p_ifAssigned BOOLEAN ]    |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+

@@ -5,10 +5,10 @@
 #
 # This software is distributed under the GNU General Public License.
 #
-# It performs distributed parallel rollback on tables groups located on several postgres servers in a consistent way.
+# It performs distributed parallel rollback on tables groups located on several postgres databases in a consistent way.
 # The processed tables groups are members of a predefined "groups cluster".
 # The target mark is a distributed mark set by distEmaj.pl
-# The number of sessions used on each server is defined at the distributed emaj cluster level
+# The number of sessions used on each database is defined at the distributed emaj cluster level
 
 use warnings;
 use strict;
@@ -38,15 +38,15 @@ my $sthRecordRlbkId;
 my $connectionString = "application_name=$APPNAME;";
 
 # Structure counters.
-my $nbServer = 0;
+my $nbdatabase = 0;
 my $nbSession = 0;
 my $nbGroup = 0;
 
 # Hash and array structures.
 
-my $serversArray;                       # Reference to the array representing servers read from the dist_emaj configuration
+my $databasesArray;                       # Reference to the array representing databases read from the dist_emaj configuration
 
-# Variables for E-Maj foreign servers accesses.
+# Variables for E-Maj foreign databases accesses.
 my @dbh = undef;
 my @sth = undef;
 
@@ -55,8 +55,8 @@ my @sth = undef;
 #
 # Initialize parameters with their default values.
 my $dbname = undef;						# -d PostgreSQL database name hosting the dist_emaj extension
-my $host = undef;						# -h PostgreSQL server host name
-my $port = undef;						# -p PostgreSQL server ip port
+my $host = undef;						# -h PostgreSQL database host name
+my $port = undef;						# -p PostgreSQL database ip port
 my $username = undef;					# -U user name for the connection to PostgreSQL database
 my $password = undef;					# -W user password
 my $askHelp = 0;						# --help option
@@ -136,7 +136,7 @@ if (!defined $targetMark) {
 # Open 2 connections on the dist_emaj database.
 # The first handles most dist_emaj accesses.
 # The second will be used at the end of the rollback operation to insert or delete distributed marks in the same distributed
-#   transaction as emaj servers accesses.
+#   transaction as emaj databases accesses.
 # Connection parameters are optional. If not supplied, the environment variables and PostgreSQL default values are used.
 $dbh = DBI->connect('dbi:Pg:' . $connectionString, $username, $password, {AutoCommit => 1, RaiseError => 0, PrintError => 0})
 	or traceDie("Error at first dist_emaj database connection.\n$DBI::errstr\n\n");
@@ -198,55 +198,55 @@ $sthUpdateStatus = $dbh->prepare($sql)
 	or traceDie("Error while preparing the UPDATE dist_emaj_rlbk statement.\n$DBI::errstr\n\n");
 
 $sql = qq(
-    INSERT INTO dist_emaj.dist_emaj_rlbk_server (rlbs_rlbk_id, rlbs_server, rlbs_local_rlbk_id)
+    INSERT INTO dist_emaj.dist_emaj_rlbk_database (rlbd_rlbk_id, rlbd_database, rlbd_local_rlbk_id)
 		VALUES (?, ?, ?)
     );
 $sthRecordRlbkId = $dbh->prepare($sql)
-	or traceDie("Error while preparing the INSERT INTO dist_emaj_rlbk_server statement.\n$DBI::errstr\n\n");
+	or traceDie("Error while preparing the INSERT INTO dist_emaj_rlbk_database statement.\n$DBI::errstr\n\n");
 
 # Trace the operation start.
 $msgRlbk = $isLogged ? 'Logged rollback' : 'Rollback';
 $sthTrace->execute('ROLLBACK_GROUPS', 'BEGIN', $cluster, "$msgRlbk to mark $targetMark")
 	or traceDie("Error while inserting the operation start trace into dist_emaj_hist.\n$DBI::errstr\n\n");
 
-# Get data about each server of the cluster.
+# Get data about each database of the cluster.
 $sql = qq(
-    SELECT srv_name AS name, srv_connect_string AS connect_string, srv_rlbk_parallel_session AS nb_session,
-           srv_groups_array AS groups_array, srv_groups_list AS groups_list, srv_nb_group AS nb_group,
+    SELECT db_name AS name, db_connect_string AS connect_string, db_rlbk_parallel_session AS nb_session,
+           db_groups_array AS groups_array, db_groups_list AS groups_list, db_nb_group AS nb_group,
            mark_local_time_id
-		FROM dist_emaj.dist_emaj_server_aggregates
-          JOIN dist_emaj.dist_emaj_mark_group ON (mark_time_id = ? AND mark_server = srv_name AND
-                                                  mark_group = srv_groups_array[1])
+		FROM dist_emaj.dist_emaj_database_aggregates
+          JOIN dist_emaj.dist_emaj_mark_group ON (mark_time_id = ? AND mark_database = db_name AND
+                                                  mark_group = db_groups_array[1])
 		WHERE clst_name = ?
-		ORDER BY srv_name;
+		ORDER BY db_name;
 	);
 
-$serversArray = $dbh->selectall_arrayref($sql, { Slice => {} }, $targetMarkTimeId, $cluster)
+$databasesArray = $dbh->selectall_arrayref($sql, { Slice => {} }, $targetMarkTimeId, $cluster)
 	or traceDie("Error while reading the cluster configuration from dist_emaj.\n$DBI::errstr\n\n");
 
 # Build the sessions structure.
-foreach my $srv (@$serversArray) {
-	$nbServer++;
-	$nbGroup += $srv->{nb_group};
-	$srv->{first_session} = $nbSession + 1;
-	$srv->{last_session} = $nbSession + $srv->{nb_session};
-	$nbSession += $srv->{nb_session};
+foreach my $db (@$databasesArray) {
+	$nbdatabase++;
+	$nbGroup += $db->{nb_group};
+	$db->{first_session} = $nbSession + 1;
+	$db->{last_session} = $nbSession + $db->{nb_session};
+	$nbSession += $db->{nb_session};
 }
 
-# Open the necessary sessions for each server.
-# The initial cluster check has already verified for each server that:
+# Open the necessary sessions for each database.
+# The initial cluster check has already verified for each database that:
 #   - emaj exists in the database, with a proper version,
 #   - the user has adminstration capabilities,
 #   - and the PG instance is configured to allow distributed operations,
 #   - all tables groups assigned to the cluster exist.
-foreach my $srv (@$serversArray) {
+foreach my $db (@$databasesArray) {
 
-# Open all sessions for the server.
-	for (my $i = $srv->{first_session} ; $i <= $srv->{last_session}; $i++) {
-		traceIfVerbose("Server $srv->{name}: open session #$i...");
+# Open all sessions for the database.
+	for (my $i = $db->{first_session} ; $i <= $db->{last_session}; $i++) {
+		traceIfVerbose("database $db->{name}: open session #$i...");
 
-		$dbh[$i] = DBI->connect('dbi:Pg:'.$srv->{connect_string}, '', '', {AutoCommit => 1, RaiseError => 0, PrintError => 0})
-			or traceDie("Opening the session #$i (on server $srv->{name}) failed.\n$DBI::errstr\n\n");
+		$dbh[$i] = DBI->connect('dbi:Pg:'.$db->{connect_string}, '', '', {AutoCommit => 1, RaiseError => 0, PrintError => 0})
+			or traceDie("Opening the session #$i (on database $db->{name}) failed.\n$DBI::errstr\n\n");
 	}
 }
 
@@ -281,10 +281,10 @@ for (my $i = 1 ; $i <= $nbSession; $i++) {
 # Rollback phase 1. (init)
 ###############################################################################
 
-# For each server, get and check the real mark name the rollback has to reach and call the initialization function on the first corridor.
-foreach my $srv (@$serversArray) {
+# For each database, get and check the real mark name the rollback has to reach and call the initialization function on the first corridor.
+foreach my $db (@$databasesArray) {
 
-# Check the mark name on the emaj server.
+# Check the mark name on the emaj database.
 	$sql = qq(
 		SELECT ? - count(*) AS nb_missing_mark, count(DISTINCT mark_name) AS nb_distinct_mark_name, string_agg(DISTINCT mark_name, ', ') AS mark_names_list
 			FROM (
@@ -294,55 +294,55 @@ foreach my $srv (@$serversArray) {
 				  AND mark_group = ANY (?)
 			) AS t
 		);
-	$sth[$srv->{first_session}] = $dbh[$srv->{first_session}]->prepare($sql)
-		or traceDie("Error while preparing the call to _rlbk_init() for server $srv->{name}.\n$DBI::errstr\n\n");
+	$sth[$db->{first_session}] = $dbh[$db->{first_session}]->prepare($sql)
+		or traceDie("Error while preparing the call to _rlbk_init() for database $db->{name}.\n$DBI::errstr\n\n");
 
-	$sth[$srv->{first_session}]->bind_param(1, $srv->{nb_group}, { pg_type => PG_INT4 });
-	$sth[$srv->{first_session}]->bind_param(2, $srv->{mark_local_time_id}, { pg_type => PG_INT8 });
-	$sth[$srv->{first_session}]->bind_param(3, $srv->{groups_array}, { pg_type => PG_TEXTARRAY });
-	$sth[$srv->{first_session}]->execute()
-		or traceDie("Error while checking the target mark for server $srv->{name}.\n$DBI::errstr\n\n");
+	$sth[$db->{first_session}]->bind_param(1, $db->{nb_group}, { pg_type => PG_INT4 });
+	$sth[$db->{first_session}]->bind_param(2, $db->{mark_local_time_id}, { pg_type => PG_INT8 });
+	$sth[$db->{first_session}]->bind_param(3, $db->{groups_array}, { pg_type => PG_TEXTARRAY });
+	$sth[$db->{first_session}]->execute()
+		or traceDie("Error while checking the target mark for database $db->{name}.\n$DBI::errstr\n\n");
 
-	my ($nbMissingMark, $nbDistinctMarkName, $markNamesList) = $sth[$srv->{first_session}]->fetchrow_array()
-		or traceDie("Error while getting results of the target mark check for server $srv->{name}.\n$DBI::errstr\n\n");
-	$sth[$srv->{first_session}]->finish();
+	my ($nbMissingMark, $nbDistinctMarkName, $markNamesList) = $sth[$db->{first_session}]->fetchrow_array()
+		or traceDie("Error while getting results of the target mark check for database $db->{name}.\n$DBI::errstr\n\n");
+	$sth[$db->{first_session}]->finish();
 
 	if ($nbMissingMark > 0) {
-		traceDie("Error: the target mark is missing (or has not the expected time_id) for $nbMissingMark tables groups on server $srv->{name} (time_id $srv->{mark_local_time_id}).\n");
+		traceDie("Error: the target mark is missing (or has not the expected time_id) for $nbMissingMark tables groups on database $db->{name} (time_id $db->{mark_local_time_id}).\n");
 	}
 	if ($nbDistinctMarkName > 1) {
-		traceDie("Error: the target mark is known with $nbDistinctMarkName different names ($markNamesList) on server $srv->{name}.\n");
+		traceDie("Error: the target mark is known with $nbDistinctMarkName different names ($markNamesList) on database $db->{name}.\n");
 	}
-	$srv->{realMarkName} = $markNamesList;		# The list has a single element
+	$db->{realMarkName} = $markNamesList;		# The list has a single element
 
 # Call the _rlbk_init() function. This rechecks the groups and mark, and prepares the parallel rollback by creating well balanced corridors.
 # This is a synchronous call that returns the local rollback id.
-	traceIfVerbose("Server $srv->{name}: call _rlbk_init()...");
+	traceIfVerbose("database $db->{name}: call _rlbk_init()...");
 
 	$sql = qq(
 		SELECT emaj._rlbk_init(?, ?, ?, ?, TRUE, ?, ?)
 		);
-	$sth[$srv->{first_session}] = $dbh[$srv->{first_session}]->prepare($sql)
-		or traceDie("Error while preparing the call to _rlbk_init() for server $srv->{name}.\n$DBI::errstr\n\n");
+	$sth[$db->{first_session}] = $dbh[$db->{first_session}]->prepare($sql)
+		or traceDie("Error while preparing the call to _rlbk_init() for database $db->{name}.\n$DBI::errstr\n\n");
 
-	$sth[$srv->{first_session}]->bind_param(1, $srv->{groups_array}, { pg_type => PG_TEXTARRAY });
-	$sth[$srv->{first_session}]->bind_param(2, $srv->{realMarkName}, { pg_type => PG_TEXT });
-	$sth[$srv->{first_session}]->bind_param(3, $isLogged ? 'TRUE' : 'FALSE', { pg_type => PG_BOOL });
-	$sth[$srv->{first_session}]->bind_param(4, $srv->{nb_session}, { pg_type => PG_INT4 });
-	$sth[$srv->{first_session}]->bind_param(5, $isAlterGroupAllowed ? 'TRUE' : 'FALSE', { pg_type => PG_BOOL });
-	$sth[$srv->{first_session}]->bind_param(6, $comment, { pg_type => PG_TEXT });
-	$sth[$srv->{first_session}]->execute()
-		or traceDie("Error while calling the _rlbk_init() function for server $srv->{name}.\n$DBI::errstr\n\n");
-	($srv->{rlbk_id}) = $sth[$srv->{first_session}]->fetchrow_array()
-		or traceDie("Error while getting the results of the _rlbk_init() call for server $srv->{name}.\n$DBI::errstr\n\n");
-	$sth[$srv->{first_session}]->finish();
+	$sth[$db->{first_session}]->bind_param(1, $db->{groups_array}, { pg_type => PG_TEXTARRAY });
+	$sth[$db->{first_session}]->bind_param(2, $db->{realMarkName}, { pg_type => PG_TEXT });
+	$sth[$db->{first_session}]->bind_param(3, $isLogged ? 'TRUE' : 'FALSE', { pg_type => PG_BOOL });
+	$sth[$db->{first_session}]->bind_param(4, $db->{nb_session}, { pg_type => PG_INT4 });
+	$sth[$db->{first_session}]->bind_param(5, $isAlterGroupAllowed ? 'TRUE' : 'FALSE', { pg_type => PG_BOOL });
+	$sth[$db->{first_session}]->bind_param(6, $comment, { pg_type => PG_TEXT });
+	$sth[$db->{first_session}]->execute()
+		or traceDie("Error while calling the _rlbk_init() function for database $db->{name}.\n$DBI::errstr\n\n");
+	($db->{rlbk_id}) = $sth[$db->{first_session}]->fetchrow_array()
+		or traceDie("Error while getting the results of the _rlbk_init() call for database $db->{name}.\n$DBI::errstr\n\n");
+	$sth[$db->{first_session}]->finish();
 
-	$sthTrace->execute('ROLLBACK_GROUPS', 'INIT', $srv->{name}, "Mark name = $srv->{realMarkName} ; Rollback Id = $srv->{rlbk_id}")
+	$sthTrace->execute('ROLLBACK_GROUPS', 'INIT', $db->{name}, "Mark name = $db->{realMarkName} ; Rollback Id = $db->{rlbk_id}")
 		or traceDie("Error while inserting an operation init step into dist_emaj_hist.\n$DBI::errstr\n\n");
-	$sthRecordRlbkId->execute($distRlbkId, $srv->{name}, $srv->{rlbk_id})
+	$sthRecordRlbkId->execute($distRlbkId, $db->{name}, $db->{rlbk_id})
 		or traceDie("Error while recording a local rollback id.\n$DBI::errstr\n\n");
-	print ("On server '$srv->{name}', $msgRlbk of tables groups $srv->{groups_list} to mark '$srv->{realMarkName}' is now in progress,");
-	print (" using $srv->{nb_session} corridors, with local rollback identifier $srv->{rlbk_id}.\n");
+	print ("On database '$db->{name}', $msgRlbk of tables groups $db->{groups_list} to mark '$db->{realMarkName}' is now in progress,");
+	print (" using $db->{nb_session} corridors, with local rollback identifier $db->{rlbk_id}.\n");
 }
 
 ###############################################################################
@@ -353,38 +353,38 @@ foreach my $srv (@$serversArray) {
 $sthUpdateStatus->execute('LOCKING', $distRlbkId)
 	or traceDie("Error while updating the distributed rollback status to LOCKING.\n$DBI::errstr\n\n");
 
-# Asynchronously call the _rlbk_session_lock() function for each corridor of each server.
-foreach my $srv (@$serversArray) {
+# Asynchronously call the _rlbk_session_lock() function for each corridor of each database.
+foreach my $db (@$databasesArray) {
 
-	for (my $i = $srv->{first_session} ; $i <= $srv->{last_session}; $i++) {
-		my $corridor = $i - $srv->{first_session} + 1;
+	for (my $i = $db->{first_session} ; $i <= $db->{last_session}; $i++) {
+		my $corridor = $i - $db->{first_session} + 1;
 
-		traceIfVerbose("Server $srv->{name} - corridor #$corridor: call _rlbk_lock() asynchronously...");
+		traceIfVerbose("database $db->{name} - corridor #$corridor: call _rlbk_lock() asynchronously...");
 
 		$sql = qq(
-			SELECT emaj._rlbk_session_lock($srv->{rlbk_id}, $corridor)
+			SELECT emaj._rlbk_session_lock($db->{rlbk_id}, $corridor)
 			);
 
 		$sth[$i] = $dbh[$i]->prepare($sql, {pg_async => PG_ASYNC})
-			or traceDie("Error while preparing the lock step for session $i (server $srv->{name}).\n$DBI::errstr\n\n");
+			or traceDie("Error while preparing the lock step for session $i (database $db->{name}).\n$DBI::errstr\n\n");
 		$sth[$i]->execute()
-			or traceDie("Error while calling the lock step for session $i (server $srv->{name}).\n$DBI::errstr\n\n");
+			or traceDie("Error while calling the lock step for session $i (database $db->{name}).\n$DBI::errstr\n\n");
 	}
 }
 
-# For each server, get the result of the previous _rlbk_lock() function call.
-foreach my $srv (@$serversArray) {
+# For each database, get the result of the previous _rlbk_lock() function call.
+foreach my $db (@$databasesArray) {
 
-	for (my $i = $srv->{first_session} ; $i <= $srv->{last_session}; $i++) {
-		my $corridor = $i - $srv->{first_session} + 1;
+	for (my $i = $db->{first_session} ; $i <= $db->{last_session}; $i++) {
+		my $corridor = $i - $db->{first_session} + 1;
 
-		traceIfVerbose("Server $srv->{name} - corridor #$corridor: get results of the _rlbk_lock() call...");
+		traceIfVerbose("database $db->{name} - corridor #$corridor: get results of the _rlbk_lock() call...");
 
 		$sth[$i]->pg_result()
-			or traceDie("Error while waiting for the result of the lock step for server $srv->{name}.\n$DBI::errstr\n\n");
+			or traceDie("Error while waiting for the result of the lock step for database $db->{name}.\n$DBI::errstr\n\n");
 		$sth[$i]->finish;
 
-		$sthTrace->execute('ROLLBACK_GROUPS', 'LOCK', $srv->{name}, 'Corridor: ' . $corridor)
+		$sthTrace->execute('ROLLBACK_GROUPS', 'LOCK', $db->{name}, 'Corridor: ' . $corridor)
 			or traceDie("Error while inserting an operation lock step into dist_emaj_hist.\n$DBI::errstr\n\n");
 	}
 }
@@ -393,26 +393,26 @@ foreach my $srv (@$serversArray) {
 # Rollback phase 3. (start)
 ###############################################################################
 
-# For each server, synchronously call the _rlbk_start() function on the first corridor.
+# For each database, synchronously call the _rlbk_start() function on the first corridor.
 # This sets a rollback start mark if logged rollback.
 
-foreach my $srv (@$serversArray) {
+foreach my $db (@$databasesArray) {
 
-	traceIfVerbose("Server $srv->{name}: call _rlbk_start()...");
+	traceIfVerbose("database $db->{name}: call _rlbk_start()...");
 
 	$sql = qq(
 		SELECT emaj._rlbk_start(?, ?)
 		);
-	$sth[$srv->{first_session}] = $dbh[$srv->{first_session}]->prepare($sql)
-		or traceDie("Error while preparing the call to _rlbk_start() for server $srv->{name}.\n$DBI::errstr\n\n");
+	$sth[$db->{first_session}] = $dbh[$db->{first_session}]->prepare($sql)
+		or traceDie("Error while preparing the call to _rlbk_start() for database $db->{name}.\n$DBI::errstr\n\n");
 
-	$sth[$srv->{first_session}]->bind_param(1, $srv->{rlbk_id}, { pg_type => PG_INT4 });
-	$sth[$srv->{first_session}]->bind_param(2, $srv->{multiGroup}, { pg_type => PG_BOOL });
-	$sth[$srv->{first_session}]->execute()
-		or traceDie("Error while calling the _rlbk_start() function for server $srv->{name}.\n$DBI::errstr\n\n");
-	$sth[$srv->{first_session}]->finish();
+	$sth[$db->{first_session}]->bind_param(1, $db->{rlbk_id}, { pg_type => PG_INT4 });
+	$sth[$db->{first_session}]->bind_param(2, $db->{multiGroup}, { pg_type => PG_BOOL });
+	$sth[$db->{first_session}]->execute()
+		or traceDie("Error while calling the _rlbk_start() function for database $db->{name}.\n$DBI::errstr\n\n");
+	$sth[$db->{first_session}]->finish();
 
-	$sthTrace->execute('ROLLBACK_GROUPS', 'START', $srv->{name}, undef)
+	$sthTrace->execute('ROLLBACK_GROUPS', 'START', $db->{name}, undef)
 		or traceDie("Error while inserting an operation start step into dist_emaj_hist.\n$DBI::errstr\n\n");
 }
 
@@ -424,38 +424,38 @@ foreach my $srv (@$serversArray) {
 $sthUpdateStatus->execute('EXECUTING', $distRlbkId)
 	or traceDie("Error while updating the distributed rollback status to EXECUTING.\n$DBI::errstr\n\n");
 
-# Asynchronously call the _rlbk_session_exec() function for each corridor of each server.
-foreach my $srv (@$serversArray) {
+# Asynchronously call the _rlbk_session_exec() function for each corridor of each database.
+foreach my $db (@$databasesArray) {
 
-	for (my $i = $srv->{first_session} ; $i <= $srv->{last_session}; $i++) {
-		my $corridor = $i - $srv->{first_session} + 1;
+	for (my $i = $db->{first_session} ; $i <= $db->{last_session}; $i++) {
+		my $corridor = $i - $db->{first_session} + 1;
 
-		traceIfVerbose("Server $srv->{name} - corridor #$corridor: call _rlbk_session_exec() asynchronously...");
+		traceIfVerbose("database $db->{name} - corridor #$corridor: call _rlbk_session_exec() asynchronously...");
 
 		$sql = qq(
-			SELECT emaj._rlbk_session_exec($srv->{rlbk_id}, $corridor)
+			SELECT emaj._rlbk_session_exec($db->{rlbk_id}, $corridor)
 			);
 
 		$sth[$i] = $dbh[$i]->prepare($sql, {pg_async => PG_ASYNC})
-			or traceDie("Error while preparing the exec step for session $i (server $srv->{name}).\n$DBI::errstr\n\n");
+			or traceDie("Error while preparing the exec step for session $i (database $db->{name}).\n$DBI::errstr\n\n");
 		$sth[$i]->execute()
-			or traceDie("Error while calling the exec step for session $i (server $srv->{name}).\n$DBI::errstr\n\n");
+			or traceDie("Error while calling the exec step for session $i (database $db->{name}).\n$DBI::errstr\n\n");
 	}
 }
 
-# For each server, get the result of the previous _rlbk_session_exec() function call.
-foreach my $srv (@$serversArray) {
+# For each database, get the result of the previous _rlbk_session_exec() function call.
+foreach my $db (@$databasesArray) {
 
-	for (my $i = $srv->{first_session} ; $i <= $srv->{last_session}; $i++) {
-		my $corridor = $i - $srv->{first_session} + 1;
+	for (my $i = $db->{first_session} ; $i <= $db->{last_session}; $i++) {
+		my $corridor = $i - $db->{first_session} + 1;
 
-		traceIfVerbose("Server $srv->{name} - corridor #$corridor: get results of the _rlbk_session_exec() call...");
+		traceIfVerbose("database $db->{name} - corridor #$corridor: get results of the _rlbk_session_exec() call...");
 
 		$sth[$i]->pg_result()
-			or traceDie("Error while waiting for the result of the exec step for server $srv->{name}.\n$DBI::errstr\n\n");
+			or traceDie("Error while waiting for the result of the exec step for database $db->{name}.\n$DBI::errstr\n\n");
 		$sth[$i]->finish;
 
-		$sthTrace->execute('ROLLBACK_GROUPS', 'EXEC', $srv->{name}, 'Corridor: ' . $corridor)
+		$sthTrace->execute('ROLLBACK_GROUPS', 'EXEC', $db->{name}, 'Corridor: ' . $corridor)
 			or traceDie("Error while inserting an operation lock step into dist_emaj_hist.\n$DBI::errstr\n\n");
 	}
 }
@@ -464,29 +464,29 @@ foreach my $srv (@$serversArray) {
 # Rollback phase 5. (end)
 ###############################################################################
 
-# For each server, synchronously call the _rlbk_end() function on the first corridor.
+# For each database, synchronously call the _rlbk_end() function on the first corridor.
 # It sets a rollback end mark if logged rollback, and returns the execution report.
 
-foreach my $srv (@$serversArray) {
+foreach my $db (@$databasesArray) {
 
-	traceIfVerbose("Server $srv->{name}: call _rlbk_end()...");
+	traceIfVerbose("database $db->{name}: call _rlbk_end()...");
 
 	$sql = qq(
 		SELECT * FROM emaj._rlbk_end(?, ?)
 		);
-	$sth[$srv->{first_session}] = $dbh[$srv->{first_session}]->prepare($sql)
-		or traceDie("Error while preparing the call to _rlbk_end() for server $srv->{name}.\n$DBI::errstr\n\n");
+	$sth[$db->{first_session}] = $dbh[$db->{first_session}]->prepare($sql)
+		or traceDie("Error while preparing the call to _rlbk_end() for database $db->{name}.\n$DBI::errstr\n\n");
 
-	$sth[$srv->{first_session}]->bind_param(1, $srv->{rlbk_id}, { pg_type => PG_INT4 });
-	$sth[$srv->{first_session}]->bind_param(2, $srv->{multiGroup}, { pg_type => PG_BOOL });
-	$sth[$srv->{first_session}]->execute()
-		or traceDie("Error while calling the _rlbk_end() function for server $srv->{name}.\n$DBI::errstr\n\n");
+	$sth[$db->{first_session}]->bind_param(1, $db->{rlbk_id}, { pg_type => PG_INT4 });
+	$sth[$db->{first_session}]->bind_param(2, $db->{multiGroup}, { pg_type => PG_BOOL });
+	$sth[$db->{first_session}]->execute()
+		or traceDie("Error while calling the _rlbk_end() function for database $db->{name}.\n$DBI::errstr\n\n");
 
-	($srv->{exec_report}) = $sth[$srv->{first_session}]->fetchall_arrayref()
-		or traceDie("Error while getting results of the _rlbk_end() call for server $srv->{name}.\n$DBI::errstr\n\n");
-	$sth[$srv->{first_session}]->finish();
+	($db->{exec_report}) = $sth[$db->{first_session}]->fetchall_arrayref()
+		or traceDie("Error while getting results of the _rlbk_end() call for database $db->{name}.\n$DBI::errstr\n\n");
+	$sth[$db->{first_session}]->finish();
 
-	$sthTrace->execute('ROLLBACK_GROUPS', 'END', $srv->{name}, undef)
+	$sthTrace->execute('ROLLBACK_GROUPS', 'END', $db->{name}, undef)
 		or traceDie("Error while inserting an operation start step into dist_emaj_hist.\n$DBI::errstr\n\n");
 }
 
@@ -508,7 +508,7 @@ if (! $isLogged) {
 		or traceDie("Error while deleting old distributed marks.\n$DBI::errstr\n\n");
 }
 
-# When logged rollback, record the distributed marks for each server and tables group on dist_emaj.
+# When logged rollback, record the distributed marks for each database and tables group on dist_emaj.
 if ($isLogged) {
 
 # Get a global time stamp on dist_emaj for the end mark.
@@ -527,26 +527,26 @@ if ($isLogged) {
 						  $cluster, 'RLBK_' . $distRlbkId . '_DONE', $globalEndTimeId)
 		or traceDie("Error while inserting the both distributed marks.\n$DBI::errstr\n\n");
 
-# For each server,
-	foreach my $srv (@$serversArray) {
-		traceIfVerbose("Server $srv->{name}: Register both marks...");
+# For each database,
+	foreach my $db (@$databasesArray) {
+		traceIfVerbose("database $db->{name}: Register both marks...");
 
 # Get both mark ids using the first group name.
-		my $firstGroup = $srv->{groups_array}[0];
-		my $startMarkName = 'RLBK_' . $srv->{rlbk_id} . '_START';
-		my $doneMarkName = 'RLBK_' . $srv->{rlbk_id} . '_DONE';
+		my $firstGroup = $db->{groups_array}[0];
+		my $startMarkName = 'RLBK_' . $db->{rlbk_id} . '_START';
+		my $doneMarkName = 'RLBK_' . $db->{rlbk_id} . '_DONE';
 		$sql = qq(
 			SELECT
 				(SELECT mark_time_id FROM emaj.emaj_mark WHERE mark_group = ? AND mark_name = ?) AS start_mark_time_id,
 				(SELECT mark_time_id FROM emaj.emaj_mark WHERE mark_group = ? AND mark_name = ?) AS done_mark_time_id
 		);
-		($srv->{start_mark_time_id}, $srv->{done_mark_time_id}) =
-				$dbh[$srv->{first_session}]->selectrow_array($sql, undef, $firstGroup, $startMarkName, $firstGroup, $doneMarkName)
-			or traceDie("Error while retrieving the local mark time ids for server $srv->{name}.\n$DBI::errstr\n\n");
+		($db->{start_mark_time_id}, $db->{done_mark_time_id}) =
+				$dbh[$db->{first_session}]->selectrow_array($sql, undef, $firstGroup, $startMarkName, $firstGroup, $doneMarkName)
+			or traceDie("Error while retrieving the local mark time ids for database $db->{name}.\n$DBI::errstr\n\n");
 
 # Record the marks into dist_emaj_mark_group.
 		$sql = qq(
-			INSERT INTO dist_emaj.dist_emaj_mark_group (mark_time_id, mark_server, mark_group, mark_local_time_id)
+			INSERT INTO dist_emaj.dist_emaj_mark_group (mark_time_id, mark_database, mark_group, mark_local_time_id)
 				SELECT ?, ?, group_name, ?
 					FROM unnest(?::TEXT[]) AS group_name
 		);
@@ -554,15 +554,15 @@ if ($isLogged) {
 			or traceDie("Error while preparing the INSERT into dist_emaj_mark_group statement.\n$DBI::errstr\n\n");
 		
 		$sth->bind_param(1, $globalTimeId, { pg_type => PG_INT8 });
-		$sth->bind_param(2, $srv->{name}, { pg_type => PG_TEXT });
-		$sth->bind_param(3, $srv->{start_mark_time_id}, { pg_type => PG_INT8 });
-		$sth->bind_param(4, $srv->{groups_array}, { pg_type => PG_TEXTARRAY });
+		$sth->bind_param(2, $db->{name}, { pg_type => PG_TEXT });
+		$sth->bind_param(3, $db->{start_mark_time_id}, { pg_type => PG_INT8 });
+		$sth->bind_param(4, $db->{groups_array}, { pg_type => PG_TEXTARRAY });
 		$sth->execute()
-			or traceDie("Error while inserting the rollback start marks for server $srv->{name}.\n$DBI::errstr\n\n");
+			or traceDie("Error while inserting the rollback start marks for database $db->{name}.\n$DBI::errstr\n\n");
 		$sth->bind_param(1, $globalEndTimeId, { pg_type => PG_INT8 });
-		$sth->bind_param(3, $srv->{done_mark_time_id}, { pg_type => PG_INT8 });
+		$sth->bind_param(3, $db->{done_mark_time_id}, { pg_type => PG_INT8 });
 		$sth->execute()
-			or traceDie("Error while inserting the rollback done marks for server $srv->{name}.\n$DBI::errstr\n\n");
+			or traceDie("Error while inserting the rollback done marks for database $db->{name}.\n$DBI::errstr\n\n");
 
 		$sth->finish;
 	}
@@ -572,7 +572,7 @@ if ($isLogged) {
 $sthUpdateStatus->execute('COMPLETED', $distRlbkId)
 	or traceDie("Error while updating the distributed rollback status to COMPLETED.\n$DBI::errstr\n\n");
 
-# COMMIT transactions on all emaj servers and the second dist_emaj connection, with 2PC to be sure that all sessions
+# COMMIT transactions on all emaj databases and the second dist_emaj connection, with 2PC to be sure that all sessions
 #   can either commit or rollback in a single transaction.
 # Phase 1 : Prepare transaction
 for (my $i = 1 ; $i <= $nbSession; $i++) {
@@ -592,11 +592,11 @@ for (my $i = 1 ; $i <= $nbSession; $i++) {
 $dbh2->do("COMMIT PREPARED 'distemajtx'")
 		or traceDie("Commit prepared on dist_emaj session failed.\n$DBI::errstr\n\n");
 
-# Call the emaj_cleanup_rollback_state() function on each server to set the rollback event as committed.
-foreach my $srv (@$serversArray) {
-	traceIfVerbose("Server $srv->{name}: call emaj_cleanup_rollback_state()...");
-	$dbh[$srv->{first_session}]->do("SELECT emaj.emaj_cleanup_rollback_state()")
-		or traceDie("Error while calling the emaj_cleanup_rollback_state() function for server $srv->{name}.\n$DBI::errstr\n\n");
+# Call the emaj_cleanup_rollback_state() function on each database to set the rollback event as committed.
+foreach my $db (@$databasesArray) {
+	traceIfVerbose("database $db->{name}: call emaj_cleanup_rollback_state()...");
+	$dbh[$db->{first_session}]->do("SELECT emaj.emaj_cleanup_rollback_state()")
+		or traceDie("Error while calling the emaj_cleanup_rollback_state() function for database $db->{name}.\n$DBI::errstr\n\n");
 }
 
 # Close the sessions.
@@ -627,11 +627,11 @@ $sthTrace->execute('DIST_EMAJ', 'END', $cluster, undef)
 
 # Send the final message and the execution reports.
 print ("$msgRlbk on cluster '$cluster' completed.\n");
-print ("It has processed $nbGroup groups spread into $nbServer servers.\n");
+print ("It has processed $nbGroup groups spread into $nbdatabase databases.\n");
 
-foreach my $srv (@$serversArray) {
-	print "  Server '$srv->{name}':\n";
-	my $execReportRows = $srv->{exec_report};
+foreach my $db (@$databasesArray) {
+	print "  database '$db->{name}':\n";
+	my $execReportRows = $db->{exec_report};
 	foreach my $row ( @$execReportRows ) {
 		print ("    " . @$row[0] . ": " . @$row[1]."\n");
 	}
@@ -685,7 +685,7 @@ sub traceDie {
 
 sub printHelp {
 	print qq{$PROGRAM belongs to the Distributed E-Maj extension (version $VERSION).
-It performs consistent and parallel E-Maj rollbacks for several tables groups located on several servers.
+It performs consistent and parallel E-Maj rollbacks for several tables groups located on several databases.
 
 Usage:
   $PROGRAM --cluster <groups cluster name> --mark <rollback target mark> [OPTION]...
@@ -700,8 +700,8 @@ Options:
 
 Connection options:
   -d,         database to connect to
-  -h,         database server host or socket directory
-  -p,         database server port
+  -h,         database database host or socket directory
+  -p,         database database port
   -U,         user name to connect as
   -W,         password associated to the user, if needed
 

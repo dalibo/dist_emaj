@@ -16,12 +16,12 @@ JSON Structures
 JSON Structure for Clusters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The JSON structure describing clusters is a set of two attributes of type array: ``servers`` describes the servers holding the tables groups, ``clusters`` describes the clusters with the table groups they own. It has the following format::
+The JSON structure describing clusters is a set of two attributes of type array: ``databases`` describes the databases holding the tables groups, ``clusters`` describes the clusters with the table groups they own. It has the following format::
 
    {
-      "servers": [
+      "databases": [
          {
-            "server": "sss",
+            "database": "ddd",
             "connect_string": "ccc",
             "rollback_parallel_sessions": n
          },
@@ -34,7 +34,7 @@ The JSON structure describing clusters is a set of two attributes of type array:
             "cluster": "cccc",
             "groups": [
                 {
-                "server": "sss",
+                "database": "ddd",
                 "group": "ggg"
                 },
                 {
@@ -100,18 +100,18 @@ Otherwise, it returns the *JSON* structure containing the clusters configuration
 
 If present, the file path must be writable by the PostgreSQL instance.
 
-If the ``p_clusters`` parameter is set, the "servers" structure only contains the servers holding table groups owned by the selected clusters.
+If the ``p_clusters`` parameter is set, the "databases" structure only contains the databases holding table groups owned by the selected clusters.
 
 The second variant allows visualization or storage in a relational table. For example::
 
    INSERT INTO my_table (my_clusters_json)
        VALUES (emaj_export_clusters_configuration());
 
-The generated *JSON* structure contains the :ref:`"servers" and "clusters"<clusters_json>` attributes described above, preceded by a ``_comment`` attribute. ::
+The generated *JSON* structure contains the :ref:`"databases" and "clusters"<clusters_json>` attributes described above, preceded by a ``_comment`` attribute. ::
 
    {
    	   "_comment": "Generated on database <db> with Distributed E-Maj version <version> at <date_heure>, including ...",
-   	   "servers": [
+   	   "databases": [
           ...
    	   ]
    	   "clusters": [

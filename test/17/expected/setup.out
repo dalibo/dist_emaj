@@ -15,7 +15,7 @@ create role _regress_dist_emaj_anonym login password 'anonym';
 --
 grant dist_emaj_adm to _regress_dist_emaj_adm;
 grant dist_emaj_viewer to _regress_dist_emaj_viewer;
--- Role for emaj accesses on server
+-- Role for emaj accesses on databases
 create role _regress_emaj_adm login password 'adm';
 grant emaj_adm to _regress_emaj_adm;
 -----------------------------

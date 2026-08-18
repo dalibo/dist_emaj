@@ -1,7 +1,7 @@
 Impacts of Local E-Maj Actions
 ==============================
 
-On an E-Maj *server*, there is no information indicating whether a table group is assigned to any *Distributed E-Maj cluster*. If a table group is assigned to a *cluster*, it is therefore the **responsibility of the E-Maj administrator** to avoid performing actions on the table group that could subsequently prevent actions from being carried out at the *cluster* level.
+On an E-Maj *database*, there is no information indicating whether a table group is assigned to any *Distributed E-Maj cluster*. If a table group is assigned to a *cluster*, it is therefore the **responsibility of the E-Maj administrator** to avoid performing actions on the table group that could subsequently prevent actions from being carried out at the *cluster* level.
 
 The potential consequences of local E-Maj actions on a *cluster* are described below.
 
@@ -50,8 +50,8 @@ If this mark corresponds to a *distributed mark* of the *cluster*:
 - Renaming the mark does not change the name of the associated *distributed mark*,
 - A *distributed rollback* targeting this *distributed mark* remains possible:
 
-   - If the table group is the only one on the *server* assigned to the *cluster*,
-   - Or if the same renaming is performed for **all table groups on the server**.
+   - If the table group is the only one on the *database* assigned to the *cluster*,
+   - Or if the same renaming is performed for **all table groups on the database**.
 
 ----
 

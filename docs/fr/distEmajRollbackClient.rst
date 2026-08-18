@@ -72,7 +72,7 @@ Notes
 
 Le rollback du *cluster* est effectué au sein d'une **transaction globale** et les groupes de tables sont **verrouillés** pour l'occasion. Ceci garantit ainsi :
 
-- que le rollback est correctement réalisé pour **tous les groupes de tables** des différents serveurs ou qu'il n'est réalisé pour aucun des groupes, en cas d'anomalie,
+- que le rollback est correctement réalisé pour **tous les groupes de tables** des différentes databases ou qu'il n'est réalisé pour aucun des groupes, en cas d'anomalie,
 - en fin de rollback, tous les groupes de tables du *cluster* sont dans un **état cohérent**, correspondant à la marque distribuée ciblée.
 
 La marque cible du rollback doit correspondre à un même point dans le temps pour l'ensemble des groupes de tables du *cluster*. Le nom de la marque doit correspondre à celui cité lors de la pose de la marque avec distEmaj.pl. Néanmoins, cette marque peut avoir été renommée localement pour l'un des groupes de tables.
@@ -81,17 +81,17 @@ Si le rollback distribué est tracé, deux marques distribuées encadrent l'opé
 
 **Déroulement**
 
-L'outil contrôle d'abord les paramètres et options saisis. Puis, sur chacun des *serveurs* hébergeant les groupes de tables concernés, il ouvre autant de connexions qu'indiqué par le paramètre ``p_rollbackParallelSession`` fourni à l'appel de la :ref:`fonction dist_emaj_create_server()<dist_emaj_create_server>` qui a créé le *serveur* dans la configuration d'Emaj Distribué. Il démarre alors une transaction sur chaque connexion ouverte.
+L'outil contrôle d'abord les paramètres et options saisis. Puis, sur chacune des *databases* hébergeant les groupes de tables concernés, il ouvre autant de connexions qu'indiqué par le paramètre ``p_rollbackParallelSession`` fourni à l'appel de la :ref:`fonction dist_emaj_create_database()<dist_emaj_create_database>` qui a créé la *database* dans la configuration d'Emaj Distribué. Il démarre alors une transaction sur chaque connexion ouverte.
 
 Ensuite, l'opération de rollback est découpée en **6 étapes** :
 
-- **initialisation** : chaque *serveur* est accédé en séquence sur sa première connexion ouverte, pour qu'il vérifie sa capacité à exécuter le rollback (état des groupes, validité du nom de la marque cible, etc) et qu'il planifie les opérations élémentaires du rollback. En cas d'anomalie, l'opération est arrêtée.
-- **verrouillage** : un verrou est posé sur les groupes de tables de chaque *serveur*. Des appels asynchrones sur toutes les connexions ouvertes permettent de paralléliser cette action.
-- **démarrage** : chaque *serveur* est accédé en séquence sur sa première connexion ouverte pour qu'il enregistre le démarrage effectif de l'opération. Si le rollback est tracé, la marque de début de rollback est posée.
-- **exécution** : chaque *serveur* est à nouveau sollicité pour l'exécution des actions élémentaires planifiées, là aussi de manière asynchrone et sur l'ensemble des connexions ouvertes.
-- **finalisation** : chaque *serveur* est accédé en séquence sur sa première connexion ouverte pour qu'il finalise son rollback. Si le rollback est tracé, la marque de fin de rollback est posée.
+- **initialisation** : chaque *database* est accédée en séquence sur sa première connexion ouverte, pour vérifier sa capacité à exécuter le rollback (état des groupes, validité du nom de la marque cible, etc) et qu'il planifie les opérations élémentaires du rollback. En cas d'anomalie, l'opération est arrêtée.
+- **verrouillage** : un verrou est posé sur les groupes de tables de chaque *database*. Des appels asynchrones sur toutes les connexions ouvertes permettent de paralléliser cette action.
+- **démarrage** : chaque *database* est accédée en séquence sur sa première connexion ouverte pour qu'il enregistre le démarrage effectif de l'opération. Si le rollback est tracé, la marque de début de rollback est posée.
+- **exécution** : chaque *database* est à nouveau sollicitée pour l'exécution des actions élémentaires planifiées, là aussi de manière asynchrone et sur l'ensemble des connexions ouvertes.
+- **finalisation** : chaque *database* est accédée en séquence sur sa première connexion ouverte pour qu'il finalise son rollback. Si le rollback est tracé, la marque de fin de rollback est posée.
 - **validation** : une fois toutes les étapes de finalisation terminées, les éventuelles marques distribuées sont enregistrées et la transaction globale est validée par un *COMMIT à deux phases*.
 
 Les rollback distribués sont enregistrés dans la base de l'extension *dist_emaj*. L'opération est également tracée dans la table dist_emaj.dist_emaj_hist.
 
-Les extensions *emaj* des *serveurs* n'ont pas connaissance du caractère distribué des rollbacks effectuées. Les fonctions E-Maj exécutées sont les mêmes que celles utilisées en contexte "non distribué". En conséquence, les mêmes contrôles et les mêmes opérations élémentaires sont réalisés ; la même tracabilité est assurée.
+Les extensions *emaj* des *databases* n'ont pas connaissance du caractère distribué des rollbacks effectuées. Les fonctions E-Maj exécutées sont les mêmes que celles utilisées en contexte "non distribué". En conséquence, les mêmes contrôles et les mêmes opérations élémentaires sont réalisés ; la même tracabilité est assurée.

@@ -89,13 +89,13 @@ select funcname, calls from pg_stat_user_functions
  _export_param_conf                        |     7
  _import_param_conf                        |     8
  _set_time_stamp                           |    64
- _verify_server                            |   105
+ _verify_database                          |   105
  dist_emaj_assign_group                    |    11
  dist_emaj_create_cluster                  |     5
- dist_emaj_create_server                   |     5
+ dist_emaj_create_database                 |     5
  dist_emaj_delete_before_mark_cluster      |     4
  dist_emaj_drop_cluster                    |     2
- dist_emaj_drop_server                     |     3
+ dist_emaj_drop_database                   |     3
  dist_emaj_export_clusters_configuration   |     3
  dist_emaj_export_clusters_configuration   |     2
  dist_emaj_export_parameters_configuration |     5

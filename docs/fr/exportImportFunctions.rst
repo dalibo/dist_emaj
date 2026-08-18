@@ -16,12 +16,12 @@ Structures JSON
 Structure JSON décrivant des clusters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-La structure JSON décrivant des clusters se compose de deux attributs de type tableaux : ``servers`` décrit les serveurs hébergeant les groupes de tables, ``clusters`` décrit les clusters avec les groupes de tables qui lui sont rattachés. Elle ressemble à : ::
+La structure JSON décrivant des clusters se compose de deux attributs de type tableaux : ``databases`` décrit les databases hébergeant les groupes de tables, ``clusters`` décrit les clusters avec les groupes de tables qui lui sont rattachés. Elle ressemble à : ::
 
    {
-      "servers": [
+      "databases": [
          {
-            "server": "sss",
+            "database": "ddd",
             "connect_string": "ccc",
             "rollback_parallel_sessions": n
          },
@@ -34,7 +34,7 @@ La structure JSON décrivant des clusters se compose de deux attributs de type t
             "cluster": "cccc",
             "groups": [
                 {
-                "server": "sss",
+                "database": "ddd",
                 "group": "ggg"
                 },
                 {
@@ -100,18 +100,18 @@ Sinon, elle retourne la structure *JSON* contenant la configuration des clusters
 
 Si le paramètre ``p_location`` est fourni, le chemin du fichier de sortie doit être accessible en écriture par l’instance PostgreSQL.
 
-Si le paramètre ``p_clusters`` est valorisé, seuls les serveurs hébergeant les groupes de tables des clusters sélectionnés sont décrits dans la structure "servers".
+Si le paramètre ``p_clusters`` est valorisé, seuls les databases hébergeant les groupes de tables des clusters sélectionnés sont décrites dans la structure "databases".
 
 La seconde variante permet de visualiser la structure ou de la stocker dans une colonne de table relationnelle. Par exemple : ::
 
    INSERT INTO ma_table (mes_clusters_json)
        VALUES ( emaj_export_clusters_configuration() );
 
-La structure *JSON* exportée comprent les attributs :ref:`"servers" et "clusters"<clusters_json>` décrits ci-dessus, précédé d’un attribut ``_comment`` : ::
+La structure *JSON* exportée comprent les attributs :ref:`"databases" et "clusters"<clusters_json>` décrits ci-dessus, précédé d’un attribut ``_comment`` : ::
 
    {
    	   "_comment": "Generated on database <db> with Distributed E-Maj version <version> at <date_heure>, including ...",
-   	   "servers": [
+   	   "databases": [
           ...
    	   ]
    	   "clusters": [

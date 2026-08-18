@@ -8,13 +8,13 @@ Distributed marks are created by the two clients: :doc:`distEmaj<distEmajClient>
 
 The function :ref:`dist_emaj_delete_before_mark_cluster()<dist_emaj_delete_before_mark_cluster>` allows you to delete the oldest distributed marks.
 
-In the E-Maj environments of the *servers*, the "distributed" nature of a mark is not known: nothing distinguishes a mark corresponding to a distributed mark from other marks. Thus, a mark corresponding to a distributed mark of a *cluster* can be renamed or deleted.
+In the E-Maj environments of the *databases*, the "distributed" nature of a mark is not known: nothing distinguishes a mark corresponding to a distributed mark from other marks. Thus, a mark corresponding to a distributed mark of a *cluster* can be renamed or deleted.
 
 **Renaming a mark** corresponding to a distributed mark does not prevent its potential use as a target for a distributed rollback.
 
 However, **deleting a mark** corresponding to a distributed mark invalidates that distributed mark for the entire *cluster* concerned.
 
-The function :ref:`dist_emaj_sync_marks_cluster()<dist_emaj_sync_marks_cluster>` allows you to synchronize distributed marks between *servers* and *dist_emaj*. It is automatically called by the two clients :doc:`distEmaj<distEmajClient>` and :doc:`distEmajRollback<distEmajRollbackClient>`. However, it can also be called on demand.
+The function :ref:`dist_emaj_sync_marks_cluster()<dist_emaj_sync_marks_cluster>` allows you to synchronize distributed marks between *databases* and *dist_emaj*. It is automatically called by the two clients :doc:`distEmaj<distEmajClient>` and :doc:`distEmajRollback<distEmajRollbackClient>`. However, it can also be called on demand.
 
 ----
 
@@ -38,7 +38,7 @@ The function returns the number of distributed marks deleted.
 
 **Notes**
 
-The function accesses all *servers* involved in the *cluster* to delete all local marks prior to the specified mark (including non-distributed marks).
+The function accesses all *databases* involved in the *cluster* to delete all local marks prior to the specified mark (including non-distributed marks).
 
 ----
 
@@ -61,7 +61,7 @@ The function returns the number of distributed marks deleted.
 
 **Notes**
 
-The function accesses all *servers* involved in the *cluster* to examine the state of the table groups and existing marks.
+The function accesses all *databases* involved in the *cluster* to examine the state of the table groups and existing marks.
 
 If a table group is inactive, all distributed marks of the *cluster* are deleted.
 

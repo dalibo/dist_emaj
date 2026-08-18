@@ -85,20 +85,20 @@ Notes
 
 The action is performed within a **global transaction**, and the table groups are **locked** for the occasion. This ensures:
 
-- That the action is correctly performed for **all table groups** across the different servers, or not performed for any of the groups in case of an anomaly,
+- That the action is correctly performed for **all table groups** across the different *databases*, or not performed for any of the groups in case of an anomaly,
 - That the distributed mark set represents **the same point in time** and **the same stable state** for all table groups in the *cluster*.
 
 **Process**
 
-The tool first checks the entered parameters and options, then opens a connection and starts a transaction on each of the *servers* hosting the relevant table groups.
+The tool first checks the entered parameters and options, then opens a connection and starts a transaction on each of the *databases* hosting the relevant table groups.
 
 Then, for each of the three possible actions, the operation is divided into 4 steps:
 
-- **Initialization**: Each *server* is accessed sequentially to verify its ability to execute the requested operation (state of the groups, validity of the new mark name, etc.). If there is an anomaly, the operation is stopped.
-- **Locking**: A lock is placed on the table groups of each *server*. Asynchronous calls allow this action to be parallelized.
-- **Execution**: Once all locks are in place, each *server* is again requested to execute the action itself, also asynchronously.
+- **Initialization**: Each *database* is accessed sequentially to verify its ability to execute the requested operation (state of the groups, validity of the new mark name, etc.). If there is an anomaly, the operation is stopped.
+- **Locking**: A lock is placed on the table groups of each *database*. Asynchronous calls allow this action to be parallelized.
+- **Execution**: Once all locks are in place, each *database* is again requested to execute the action itself, also asynchronously.
 - **Validation**: Once all execution steps are completed, the global transaction is committed using a **two-phase COMMIT**.
 
 Distributed marks are recorded in the database of the *dist_emaj* extension. The operation is also traced in the ``dist_emaj.dist_emaj_hist`` table.
 
-The *emaj* extensions on the *servers* are not aware of the distributed nature of the actions performed. The E-Maj functions executed are the same as those used in a "non-distributed" context. Consequently, the same checks and the same elementary operations are performed; the same traceability is ensured.
+The *emaj* extensions on the *databases* are not aware of the distributed nature of the actions performed. The E-Maj functions executed are the same as those used in a "non-distributed" context. Consequently, the same checks and the same elementary operations are performed; the same traceability is ensured.

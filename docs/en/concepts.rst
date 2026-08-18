@@ -4,17 +4,17 @@ Concepts
 E-Maj has 3 main concepts: the "*table group*", the "*mark*", and the "*E-Maj rollback*".
 *Distributed E-Maj* introduces 4 new concepts.
 
-Server
-------
+Database
+--------
 
-An "**E-Maj server**" represents a **PostgreSQL database containing an *emaj* extension** and hosting one or more table groups.
+An "**E-Maj database**" represents a **PostgreSQL database containing an *emaj* extension** and hosting one or more table groups.
 
 It is identified by a unique name.
 
 Cluster
 -------
 
-An "**E-Maj groups cluster**" is a **set of table groups distributed across multiple E-Maj servers**.
+An "**E-Maj groups cluster**" is a **set of table groups distributed across multiple E-Maj databases**.
 
 The *cluster* is the entity on which distributed operations are performed. It is identified by a unique name.
 

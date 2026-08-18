@@ -13,7 +13,7 @@ Pour utiliser Distributed E-Maj, on peut se connecter en tant que *SUPERUSER*. M
    * il peut exécuter toutes les fonctions  et accéder à toutes les tables du schéma *dist_emaj*, en lecture comme en mise à jour,
 * ``dist_emaj_viewer`` : le rôle pour des accès en lecture seule:
 
-   * il accède, en lecture uniquement, à toutes les tables du schéma *dist_emaj*, à l'exception des colonnes de la table *dist_emaj_server* qui décrivent les moyens d'accéder aux *serveurs* (IP, port, database, role, mot de passe).
+   * il accède, en lecture uniquement, à toutes les tables du schéma *dist_emaj*, à l'exception de la colonne de la table *dist_emaj_database* qui contient les chaînes de connexion aux *databases*.
 
 Tous les droits attribués à *dist_emaj_viewer* le sont aussi à *dist_emaj_adm*.
 

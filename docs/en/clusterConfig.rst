@@ -4,13 +4,13 @@ Configuring Distributed E-Maj Clusters
 To configure a *cluster*, you must follow these steps:
 
 - Create a *cluster* object,
-- Create *server* objects describing the databases hosting the table groups that are members of the *cluster*,
-- Assign the table groups to the *cluster*, associated with their *server*.
+- Create *database* objects describing the databases hosting the table groups that are members of the *cluster*,
+- Assign the table groups to the *cluster*, associated with their *database*.
 
 A dedicated function exists for each of these steps. Symmetrically, functions allow you to:
 
 - Remove a table group from its *cluster*,
-- Delete a *server*,
+- Delete a *database*,
 - Delete a *cluster*.
 
 ----
@@ -44,30 +44,30 @@ The ``p_ifNotExists`` parameter facilitates writing idempotent administration sc
 
 ----
 
-.. _dist_emaj_create_server:
+.. _dist_emaj_create_database:
 
-Creating or Modifying a Server
--------------------------------
+Creating or Modifying a Database
+--------------------------------
 
-The *server* object describes how to access a table group assigned to a cluster. It therefore represents a PostgreSQL database equipped with an *emaj* extension.
+The *database* object describes how to access a table group assigned to a cluster. It therefore represents a PostgreSQL database equipped with an *emaj* extension.
 
-To create or modify a *server*, execute the following SQL query::
+To create or modify a *database*, execute the following SQL query::
 
-   SELECT dist_emaj.dist_emaj_create_server(p_server, p_connectString, p_rollbackParallelSession, p_ifNotExists);
+   SELECT dist_emaj.dist_emaj_create_database(p_database, p_connectString, p_rollbackParallelSession, p_ifNotExists);
 
 **Input Parameters**
 
-- ``p_server`` (*TEXT*): **Name of the server** to create.
-- ``p_connectString`` (*TEXT*): **Connection string** to the *server*.
-- ``p_rollbackParallelSession`` (*INT*): Number of **concurrent sessions** to use for this server in **distributed rollback** operations.
+- ``p_database`` (*TEXT*): **Name of the database** to create.
+- ``p_connectString`` (*TEXT*): **Connection string** to the *database*.
+- ``p_rollbackParallelSession`` (*INT*): Number of **concurrent sessions** to use for this database in **distributed rollback** operations.
 - ``p_ifNotExists`` (*BOOLEAN*, optional):
 
-   - *FALSE*, default value: If the server already exists, the function generates an **exception**.
-   - *TRUE*: If the server already exists, the function records the new connection parameters and completes without error.
+   - *FALSE*, default value: If the database already exists, the function generates an **exception**.
+   - *TRUE*: If the database already exists, the function records the new attributes and completes without error.
 
 **Returned Data**
 
-The function returns the number of *servers* created (0 or 1).
+The function returns the number of *databases* created (0 or 1).
 
 **Notes**
 
@@ -75,15 +75,15 @@ The connection string provided by the ``p_connectString`` parameter is used by b
 
    'host=localhost port=5432 dbname=my_db user=my_emaj_adm_role password=my_password'
    'postgresql://my_emaj_adm_role:my_password@localhost:5432/my_db'
-   'service=server_1'
+   'service=database_1'
 
 .. caution::
 
-   Prefer access configurations that avoid passwords in configuration strings (e.g., *.pgpass* files, services). If your *server* configuration scripts contain plaintext passwords, ensure you protect access to these scripts.
+   Prefer access configurations that avoid passwords in configuration strings (e.g., *.pgpass* files, services). If your *database* configuration scripts contain plaintext passwords, ensure you protect access to these scripts.
 
-The role used to connect to a *server* must have the *emaj_adm* privilege on that *server*.
+The role used to connect to a *database* must have the *emaj_adm* privilege on that *database*.
 
-The function does not verify the validity of the *server* access parameters provided. To verify effective access to the *server*, you can use the functions :ref:`dist_emaj_verify_cluster()<dist_emaj_verify_cluster>` or :ref:`dist_emaj_verify_all()<dist_emaj_verify_all>`, once the table groups are assigned to the cluster.
+The function does not verify the validity of the *database* access parameters provided. To verify effective access to the *database*, you can use the functions :ref:`dist_emaj_verify_cluster()<dist_emaj_verify_cluster>` or :ref:`dist_emaj_verify_all()<dist_emaj_verify_all>`, once the table groups are assigned to the cluster.
 
 The ``p_ifNotExists`` parameter facilitates writing idempotent administration scripts.
 
@@ -96,12 +96,12 @@ Assigning a Table Group to a Cluster
 
 To assign a table group to a *cluster*, execute the following SQL query::
 
-   SELECT dist_emaj.dist_emaj_assign_group(p_cluster, p_server, p_group, p_ifNotExists);
+   SELECT dist_emaj.dist_emaj_assign_group(p_cluster, p_database, p_group, p_ifNotExists);
 
 **Input Parameters**
 
 - ``p_cluster`` (*TEXT*): **Name of the cluster**.
-- ``p_server`` (*TEXT*): **Name of the server** hosting the table group.
+- ``p_database`` (*TEXT*): **Name of the database** hosting the table group.
 - ``p_group`` (*TEXT*): **Name of the table group**.
 - ``p_ifNotExists`` (*BOOLEAN*, optional):
 
@@ -127,12 +127,12 @@ Removing a Table Group from Its Cluster
 
 To remove a table group from a *cluster*, execute the following SQL query::
 
-   SELECT dist_emaj.dist_emaj_remove_group(p_cluster, p_server, p_group, p_ifAssigned);
+   SELECT dist_emaj.dist_emaj_remove_group(p_cluster, p_database, p_group, p_ifAssigned);
 
 **Input Parameters**
 
 - ``p_cluster`` (*TEXT*): **Name of the cluster**.
-- ``p_server`` (*TEXT*): **Name of the server** hosting the table group.
+- ``p_database`` (*TEXT*): **Name of the database** hosting the table group.
 - ``p_group`` (*TEXT*): **Name of the table group**.
 - ``p_ifAssigned`` (*BOOLEAN*, optional):
 
@@ -149,30 +149,30 @@ The ``p_ifAssigned`` parameter facilitates writing idempotent administration scr
 
 ----
 
-.. _dist_emaj_drop_server:
+.. _dist_emaj_drop_database:
 
-Deleting a Server
------------------
+Deleting a Database
+-------------------
 
-To delete a *server*, execute the following SQL query::
+To delete a *database*, execute the following SQL query::
 
-   SELECT dist_emaj.dist_emaj_drop_server(p_server, p_ifExists, p_cascade);
+   SELECT dist_emaj.dist_emaj_drop_database(p_database, p_ifExists, p_cascade);
 
 **Input Parameters**
 
-- ``p_server`` (*TEXT*): **Name of the server** to delete.
+- ``p_database`` (*TEXT*): **Name of the database** to delete.
 - ``p_ifExists`` (*BOOLEAN*, optional):
 
-   - *FALSE*, default value: If the *server* does not exist, the function generates an **exception**.
-   - *TRUE*: If the *server* does not exist, the function completes without error.
+   - *FALSE*, default value: If the *database* does not exist, the function generates an **exception**.
+   - *TRUE*: If the *database* does not exist, the function completes without error.
 - ``p_cascade`` (*BOOLEAN*, optional):
 
-   - *FALSE*, default value: If the *server* is referenced by assigned table groups, the function generates an **exception**.
-   - *TRUE*: If the *server* is referenced by assigned table groups, these groups are automatically removed from their cluster, and the function completes without error.
+   - *FALSE*, default value: If the *database* is referenced by assigned table groups, the function generates an **exception**.
+   - *TRUE*: If the *database* is referenced by assigned table groups, these groups are automatically removed from their cluster, and the function completes without error.
 
 **Returned Data**
 
-The function returns the number of *servers* deleted by the function (0 or 1).
+The function returns the number of *databases* deleted by the function (0 or 1).
 
 **Notes**
 

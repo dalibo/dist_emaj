@@ -8,13 +8,13 @@ Les marques distribuées sont créées par les deux clients :doc:`distEmaj<distE
 
 La fonction :ref:`dist_emaj_delete_before_mark_cluster()<dist_emaj_delete_before_mark_cluster>` permet de supprimer les marques distribuées les plus anciennes.
 
-Sur les environnements E-Maj des *serveurs*, le caractère "distribué" d'une marque n'est pas connu : rien ne distingue une marque correspondant à une marque distribuée des autres marques. Aussi une marque correspondant à une marque distribuée d'un *cluster* peut être renommée ou supprimée.
+Sur les environnements E-Maj des *databases*, le caractère "distribué" d'une marque n'est pas connu : rien ne distingue une marque correspondant à une marque distribuée des autres marques. Aussi une marque correspondant à une marque distribuée d'un *cluster* peut être renommée ou supprimée.
 
 Le **renommage d'une marque** correspondant à une marque distribuée n'empêche pas un éventuelle utilisation comme cible d'un rollback distribué.
 
 En revanche, la **suppression d'une marque** correspondant à une marque distribuée rend caduque cette marque distribuée pour l'ensemble du *cluster* concerné.
 
-La fonction :ref:`dist_emaj_sync_marks_cluster()<dist_emaj_sync_marks_cluster>` permet de synchroniser les marques distribuées entre les *serveurs* et *dist_emaj*. Elle est appelée automatiquement par les deux clients :doc:`distEmaj<distEmajClient>` et :doc:`distEmajRollback<distEmajRollbackClient>`. Mais elle peut également être appelée à la demande.
+La fonction :ref:`dist_emaj_sync_marks_cluster()<dist_emaj_sync_marks_cluster>` permet de synchroniser les marques distribuées entre les *databases* et *dist_emaj*. Elle est appelée automatiquement par les deux clients :doc:`distEmaj<distEmajClient>` et :doc:`distEmajRollback<distEmajRollbackClient>`. Mais elle peut également être appelée à la demande.
 
 ----
 
@@ -38,7 +38,7 @@ La fonction retourne le nombre de marques distribuées supprimées.
 
 **Notes**
 
-La fonction accède à tous les *serveurs* concernés par le *cluster* pour supprimer toutes les marques locales antérieures à la marque citée (y compris les marques non distribuées).
+La fonction accède à toutes les *databases* concernées par le *cluster* pour supprimer toutes les marques locales antérieures à la marque citée (y compris les marques non distribuées).
 
 ----
 
@@ -61,7 +61,7 @@ La fonction retourne le nombre de marques distribuées supprimées.
 
 **Notes**
 
-La fonction accède à tous les *serveurs* concernés par le *cluster* pour examiner l'état des groupes de tables et les marques existantes.
+La fonction accède à toutes les *databases* concernées par le *cluster* pour examiner l'état des groupes de tables et les marques existantes.
 
 Si un groupe de tables est inactif, toutes les marques distribuées du *cluster* sont supprimées.
 

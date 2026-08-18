@@ -141,7 +141,7 @@ use warnings; use strict;
 # Do not report some messages known to not be present in the regression test suite
                             # installation conditions that are not met during the tests
       if ($msgs{$fnctId} ne 'EXCEPTION:Distributed E-Maj installation: The current postgres version (%) is too old for this dist_emaj version. '
-       && $msgs{$fnctId} !~ 'EXCEPTION:_verify_server \(\d+\): %'
+       && $msgs{$fnctId} !~ 'EXCEPTION:_verify_database \(\d+\): %'
                             # internal errors (errors that should never appear and that would be due to coding error)
        && $msgs{$fnctId} ne 'EXCEPTION:_export_param_conf: The generated JSON structure is not properly formatted. '
        && $msgs{$fnctId} ne 'EXCEPTION:_export_clusters_conf: The generated JSON structure is not properly formatted. '

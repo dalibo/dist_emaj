@@ -22,7 +22,7 @@ WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "mys
 WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp1b" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
 WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp2" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
 The 'start' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 -- Save a few identifiers
 select set_config('dist_emaj.regress_start_mark_time_id', mark_time_id::text, false)
   from dist_emaj.dist_emaj_mark where mark_cluster = 'my_cluster' and mark_name = 'START';
@@ -34,7 +34,7 @@ select set_config('dist_emaj.regress_start_mark_time_id', mark_time_id::text, fa
 select set_config('dist_emaj.regress_start_mark_local_time_id', mark_local_time_id::text, false)
   from dist_emaj.dist_emaj_mark_group
   where mark_time_id = (select max(mark_time_id) from dist_emaj.dist_emaj_mark)
-    and mark_server = 'emaj_1' and mark_group = 'myGroup1';
+    and mark_database = 'emaj_1' and mark_group = 'myGroup1';
  set_config 
 ------------
  29
@@ -45,7 +45,7 @@ select set_config('dist_emaj.regress_start_mark_local_time_id', mark_local_time_
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 --
 -- Test the distEmajRollback.pl client
 --
@@ -84,7 +84,7 @@ CONTEXT:  PL/pgSQL function dist_emaj._check_dist_mark(text,text) line 33 at RAI
 
 --   missing mark for a group
 delete from dist_emaj.dist_emaj_mark_group
-  where mark_time_id = current_setting('dist_emaj.regress_start_mark_time_id')::BIGINT and mark_server = 'emaj_1' and mark_group = 'myGroup1';
+  where mark_time_id = current_setting('dist_emaj.regress_start_mark_time_id')::BIGINT and mark_database = 'emaj_1' and mark_group = 'myGroup1';
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark START
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
@@ -96,17 +96,17 @@ insert into dist_emaj.dist_emaj_mark_group
   values (current_setting('dist_emaj.regress_start_mark_time_id')::BIGINT, 'emaj_1', 'myGroup1', current_setting('dist_emaj.regress_start_mark_local_time_id')::BIGINT);
 --   mark with different time id
 update dist_emaj.dist_emaj_mark_group set mark_local_time_id = mark_local_time_id + 1
-  where mark_time_id = current_setting('dist_emaj.regress_start_mark_time_id')::BIGINT and mark_server = 'emaj_1' and mark_group = 'myGroup1';
+  where mark_time_id = current_setting('dist_emaj.regress_start_mark_time_id')::BIGINT and mark_database = 'emaj_1' and mark_group = 'myGroup1';
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark START
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
 Error while checking the cluster and distributed rollback target mark names.
-ERROR:  _check_dist_mark: On servers emaj_1, the mark "START" does not represent the same timestamp for all groups.
+ERROR:  _check_dist_mark: On databases emaj_1, the mark "START" does not represent the same timestamp for all groups.
 CONTEXT:  PL/pgSQL function dist_emaj._check_dist_mark(text,text) line 61 at RAISE
 
 update dist_emaj.dist_emaj_mark_group set mark_local_time_id = mark_local_time_id - 1
-  where mark_time_id = current_setting('dist_emaj.regress_start_mark_time_id')::BIGINT and mark_server = 'emaj_1' and mark_group = 'myGroup1';
--- Errors on a server
+  where mark_time_id = current_setting('dist_emaj.regress_start_mark_time_id')::BIGINT and mark_database = 'emaj_1' and mark_group = 'myGroup1';
+-- Errors on a database
 --   missing groups (simulated from dist_emaj)
 insert into dist_emaj.dist_emaj_cluster_group values
   ('my_cluster', 'emaj_1', 'extraGroup_1'),
@@ -118,18 +118,18 @@ insert into dist_emaj.dist_emaj_mark_group values
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
 Error while checking the cluster.
-ERROR:  _verify_server (7): Error on server "emaj_1", some table groups (extraGroup_1, extraGroup_2) are missing.
-CONTEXT:  PL/pgSQL function dist_emaj._verify_server(text,text,text,text,boolean) line 153 at RAISE
-SQL statement "SELECT dist_emaj._verify_server(srv_name, srv_connect_string, groups_list, v_dblinkSchema, TRUE)
+ERROR:  _verify_database (7): Error on database "emaj_1", some table groups (extraGroup_1, extraGroup_2) are missing.
+CONTEXT:  PL/pgSQL function dist_emaj._verify_database(text,text,text,text,boolean) line 153 at RAISE
+SQL statement "SELECT dist_emaj._verify_database(db_name, db_connect_string, groups_list, v_dblinkSchema, TRUE)
       FROM (
-        SELECT srv_name, srv_connect_string,
+        SELECT db_name, db_connect_string,
                string_agg(quote_literal(clgrp_group), ',' ORDER BY clgrp_group) AS groups_list
           FROM dist_emaj.dist_emaj_cluster_group
-               JOIN dist_emaj.dist_emaj_server ON (dist_emaj_server.srv_name = dist_emaj_cluster_group.clgrp_server)
+               JOIN dist_emaj.dist_emaj_database ON (dist_emaj_database.db_name = dist_emaj_cluster_group.clgrp_database)
           WHERE clgrp_cluster = p_cluster
-          GROUP BY srv_name, srv_connect_string
-          ORDER BY srv_name
-        ) AS servers"
+          GROUP BY db_name, db_connect_string
+          ORDER BY db_name
+        ) AS databases"
 PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 41 at PERFORM
 
 delete from dist_emaj.dist_emaj_cluster_group where clgrp_group like 'extraGroup%';
@@ -145,7 +145,7 @@ select emaj.emaj_rename_mark_group('myGroup1', 'A_Mark_Name', 'Renamed_mark');
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark A_Mark_Name
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
-Error: the target mark is known with 2 different names (A_Mark_Name, Renamed_mark) on server emaj_1.
+Error: the target mark is known with 2 different names (A_Mark_Name, Renamed_mark) on database emaj_1.
 select emaj.emaj_rename_mark_group('myGroup1', 'Renamed_mark', 'A_Mark_Name');
  emaj_rename_mark_group 
 ------------------------
@@ -162,7 +162,7 @@ select emaj.emaj_delete_mark_group('myGroup1', 'A_Mark_Name');
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark A_Mark_Name
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
-Error: the target mark is missing (or has not the expected time_id) for 1 tables groups on server emaj_1 (time_id 30).
+Error: the target mark is missing (or has not the expected time_id) for 1 tables groups on database emaj_1 (time_id 30).
 --   mark found but not with the same time_id
 select emaj.emaj_set_mark_group('myGroup1', 'A_Mark_Name');
  emaj_set_mark_group 
@@ -173,48 +173,48 @@ select emaj.emaj_set_mark_group('myGroup1', 'A_Mark_Name');
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark A_Mark_Name
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
-Error: the target mark is missing (or has not the expected time_id) for 1 tables groups on server emaj_1 (time_id 30).
+Error: the target mark is missing (or has not the expected time_id) for 1 tables groups on database emaj_1 (time_id 30).
 -- Should be OK
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark START --logged --verbose --rt
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
 dd/mm/yyyy - hh:mn:ss Initialisation...
 dd/mm/yyyy - hh:mn:ss Cluster and distributed rollback target mark checked.
-dd/mm/yyyy - hh:mn:ss Server emaj_1: open session #1...
-dd/mm/yyyy - hh:mn:ss Server emaj_1: open session #2...
-dd/mm/yyyy - hh:mn:ss Server emaj_2: open session #3...
-dd/mm/yyyy - hh:mn:ss Server emaj_2: open session #4...
+dd/mm/yyyy - hh:mn:ss database emaj_1: open session #1...
+dd/mm/yyyy - hh:mn:ss database emaj_1: open session #2...
+dd/mm/yyyy - hh:mn:ss database emaj_2: open session #3...
+dd/mm/yyyy - hh:mn:ss database emaj_2: open session #4...
 dd/mm/yyyy - hh:mn:ss Distributed rollback id = 3003 ; Global time id = 3005 ; Rollback target mark time id = 3000.
 dd/mm/yyyy - hh:mn:ss Start transaction on session #1...
 dd/mm/yyyy - hh:mn:ss Start transaction on session #2...
 dd/mm/yyyy - hh:mn:ss Start transaction on session #3...
 dd/mm/yyyy - hh:mn:ss Start transaction on session #4...
-dd/mm/yyyy - hh:mn:ss Server emaj_1: call _rlbk_init()...
-On server 'emaj_1', Logged rollback of tables groups 'myGroup1', 'myGroup2' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 1.
-dd/mm/yyyy - hh:mn:ss Server emaj_2: call _rlbk_init()...
-On server 'emaj_2', Logged rollback of tables groups 'myGroup4', 'myGroup5', 'myGroup6', 'phil''s group#3",' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 1.
-dd/mm/yyyy - hh:mn:ss Server emaj_1 - corridor #1: call _rlbk_lock() asynchronously...
-dd/mm/yyyy - hh:mn:ss Server emaj_1 - corridor #2: call _rlbk_lock() asynchronously...
-dd/mm/yyyy - hh:mn:ss Server emaj_2 - corridor #1: call _rlbk_lock() asynchronously...
-dd/mm/yyyy - hh:mn:ss Server emaj_2 - corridor #2: call _rlbk_lock() asynchronously...
-dd/mm/yyyy - hh:mn:ss Server emaj_1 - corridor #1: get results of the _rlbk_lock() call...
-dd/mm/yyyy - hh:mn:ss Server emaj_1 - corridor #2: get results of the _rlbk_lock() call...
-dd/mm/yyyy - hh:mn:ss Server emaj_2 - corridor #1: get results of the _rlbk_lock() call...
-dd/mm/yyyy - hh:mn:ss Server emaj_2 - corridor #2: get results of the _rlbk_lock() call...
-dd/mm/yyyy - hh:mn:ss Server emaj_1: call _rlbk_start()...
-dd/mm/yyyy - hh:mn:ss Server emaj_2: call _rlbk_start()...
-dd/mm/yyyy - hh:mn:ss Server emaj_1 - corridor #1: call _rlbk_session_exec() asynchronously...
-dd/mm/yyyy - hh:mn:ss Server emaj_1 - corridor #2: call _rlbk_session_exec() asynchronously...
-dd/mm/yyyy - hh:mn:ss Server emaj_2 - corridor #1: call _rlbk_session_exec() asynchronously...
-dd/mm/yyyy - hh:mn:ss Server emaj_2 - corridor #2: call _rlbk_session_exec() asynchronously...
-dd/mm/yyyy - hh:mn:ss Server emaj_1 - corridor #1: get results of the _rlbk_session_exec() call...
-dd/mm/yyyy - hh:mn:ss Server emaj_1 - corridor #2: get results of the _rlbk_session_exec() call...
-dd/mm/yyyy - hh:mn:ss Server emaj_2 - corridor #1: get results of the _rlbk_session_exec() call...
-dd/mm/yyyy - hh:mn:ss Server emaj_2 - corridor #2: get results of the _rlbk_session_exec() call...
-dd/mm/yyyy - hh:mn:ss Server emaj_1: call _rlbk_end()...
-dd/mm/yyyy - hh:mn:ss Server emaj_2: call _rlbk_end()...
-dd/mm/yyyy - hh:mn:ss Server emaj_1: Register both marks...
-dd/mm/yyyy - hh:mn:ss Server emaj_2: Register both marks...
+dd/mm/yyyy - hh:mn:ss database emaj_1: call _rlbk_init()...
+On database 'emaj_1', Logged rollback of tables groups 'myGroup1', 'myGroup2' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 1.
+dd/mm/yyyy - hh:mn:ss database emaj_2: call _rlbk_init()...
+On database 'emaj_2', Logged rollback of tables groups 'myGroup4', 'myGroup5', 'myGroup6', 'phil''s group#3",' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 1.
+dd/mm/yyyy - hh:mn:ss database emaj_1 - corridor #1: call _rlbk_lock() asynchronously...
+dd/mm/yyyy - hh:mn:ss database emaj_1 - corridor #2: call _rlbk_lock() asynchronously...
+dd/mm/yyyy - hh:mn:ss database emaj_2 - corridor #1: call _rlbk_lock() asynchronously...
+dd/mm/yyyy - hh:mn:ss database emaj_2 - corridor #2: call _rlbk_lock() asynchronously...
+dd/mm/yyyy - hh:mn:ss database emaj_1 - corridor #1: get results of the _rlbk_lock() call...
+dd/mm/yyyy - hh:mn:ss database emaj_1 - corridor #2: get results of the _rlbk_lock() call...
+dd/mm/yyyy - hh:mn:ss database emaj_2 - corridor #1: get results of the _rlbk_lock() call...
+dd/mm/yyyy - hh:mn:ss database emaj_2 - corridor #2: get results of the _rlbk_lock() call...
+dd/mm/yyyy - hh:mn:ss database emaj_1: call _rlbk_start()...
+dd/mm/yyyy - hh:mn:ss database emaj_2: call _rlbk_start()...
+dd/mm/yyyy - hh:mn:ss database emaj_1 - corridor #1: call _rlbk_session_exec() asynchronously...
+dd/mm/yyyy - hh:mn:ss database emaj_1 - corridor #2: call _rlbk_session_exec() asynchronously...
+dd/mm/yyyy - hh:mn:ss database emaj_2 - corridor #1: call _rlbk_session_exec() asynchronously...
+dd/mm/yyyy - hh:mn:ss database emaj_2 - corridor #2: call _rlbk_session_exec() asynchronously...
+dd/mm/yyyy - hh:mn:ss database emaj_1 - corridor #1: get results of the _rlbk_session_exec() call...
+dd/mm/yyyy - hh:mn:ss database emaj_1 - corridor #2: get results of the _rlbk_session_exec() call...
+dd/mm/yyyy - hh:mn:ss database emaj_2 - corridor #1: get results of the _rlbk_session_exec() call...
+dd/mm/yyyy - hh:mn:ss database emaj_2 - corridor #2: get results of the _rlbk_session_exec() call...
+dd/mm/yyyy - hh:mn:ss database emaj_1: call _rlbk_end()...
+dd/mm/yyyy - hh:mn:ss database emaj_2: call _rlbk_end()...
+dd/mm/yyyy - hh:mn:ss database emaj_1: Register both marks...
+dd/mm/yyyy - hh:mn:ss database emaj_2: Register both marks...
 dd/mm/yyyy - hh:mn:ss Prepare transaction on session #1...
 dd/mm/yyyy - hh:mn:ss Prepare transaction on session #2...
 dd/mm/yyyy - hh:mn:ss Prepare transaction on session #3...
@@ -223,31 +223,31 @@ dd/mm/yyyy - hh:mn:ss Commit transaction on session #1...
 dd/mm/yyyy - hh:mn:ss Commit transaction on session #2...
 dd/mm/yyyy - hh:mn:ss Commit transaction on session #3...
 dd/mm/yyyy - hh:mn:ss Commit transaction on session #4...
-dd/mm/yyyy - hh:mn:ss Server emaj_1: call emaj_cleanup_rollback_state()...
-dd/mm/yyyy - hh:mn:ss Server emaj_2: call emaj_cleanup_rollback_state()...
+dd/mm/yyyy - hh:mn:ss database emaj_1: call emaj_cleanup_rollback_state()...
+dd/mm/yyyy - hh:mn:ss database emaj_2: call emaj_cleanup_rollback_state()...
 dd/mm/yyyy - hh:mn:ss Close all sessions...
 Logged rollback on cluster 'my_cluster' completed.
-It has processed 6 groups spread into 2 servers.
-  Server 'emaj_1':
+It has processed 6 groups spread into 2 databases.
+  database 'emaj_1':
     Notice: Rollback id = 1.
     Notice: 0 / 11 tables effectively processed.
     Notice: 0 / 5 sequences effectively processed.
-  Server 'emaj_2':
+  database 'emaj_2':
     Notice: Rollback id = 1.
     Notice: 0 / 14 tables effectively processed.
     Notice: 0 / 4 sequences effectively processed.
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark START
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
-On server 'emaj_1', Rollback of tables groups 'myGroup1', 'myGroup2' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 2.
-On server 'emaj_2', Rollback of tables groups 'myGroup4', 'myGroup5', 'myGroup6', 'phil''s group#3",' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 2.
+On database 'emaj_1', Rollback of tables groups 'myGroup1', 'myGroup2' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 2.
+On database 'emaj_2', Rollback of tables groups 'myGroup4', 'myGroup5', 'myGroup6', 'phil''s group#3",' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 2.
 Rollback on cluster 'my_cluster' completed.
-It has processed 6 groups spread into 2 servers.
-  Server 'emaj_1':
+It has processed 6 groups spread into 2 databases.
+  database 'emaj_1':
     Notice: Rollback id = 2.
     Notice: 0 / 11 tables effectively processed.
     Notice: 0 / 5 sequences effectively processed.
-  Server 'emaj_2':
+  database 'emaj_2':
     Notice: Rollback id = 2.
     Notice: 0 / 14 tables effectively processed.
     Notice: 0 / 4 sequences effectively processed.
@@ -262,7 +262,7 @@ select emaj.emaj_modify_table('myschema1', 'mytbl1', '{"priority":1}'::jsonb, 'P
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark START
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
-Error while calling the _rlbk_init() function for server emaj_1.
+Error while calling the _rlbk_init() function for database emaj_1.
 ERROR:  _rlbk_check: This rollback operation would cross some previous structure group change operations, which is not allowed by the current function parameters.
 CONTEXT:  PL/pgSQL function emaj._rlbk_check(text[],text,boolean,boolean) line 59 at RAISE
 SQL statement "SELECT emaj._rlbk_check(p_groups, p_mark, p_isAlterGroupAllowed, FALSE)"
@@ -272,16 +272,16 @@ PL/pgSQL function emaj._rlbk_init(text[],text,boolean,integer,boolean,boolean,te
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark START --alter-groups-allowed
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
-On server 'emaj_1', Rollback of tables groups 'myGroup1', 'myGroup2' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 3.
-On server 'emaj_2', Rollback of tables groups 'myGroup4', 'myGroup5', 'myGroup6', 'phil''s group#3",' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 3.
+On database 'emaj_1', Rollback of tables groups 'myGroup1', 'myGroup2' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 3.
+On database 'emaj_2', Rollback of tables groups 'myGroup4', 'myGroup5', 'myGroup6', 'phil''s group#3",' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 3.
 Rollback on cluster 'my_cluster' completed.
-It has processed 6 groups spread into 2 servers.
-  Server 'emaj_1':
+It has processed 6 groups spread into 2 databases.
+  database 'emaj_1':
     Notice: Rollback id = 3.
     Notice: 0 / 11 tables effectively processed.
     Notice: 0 / 5 sequences effectively processed.
     Warning: Table group change not rolled back: E-Maj priority for myschema1.mytbl1
-  Server 'emaj_2':
+  database 'emaj_2':
     Notice: Rollback id = 3.
     Notice: 0 / 14 tables effectively processed.
     Notice: 0 / 4 sequences effectively processed.
@@ -341,13 +341,13 @@ select hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_word
     3019 | DIST_EMAJ            | END                | my_cluster     |                                                                                                                                                                    | postgres
     3020 | ROLLBACK_GROUPS      | BEGIN              | my_cluster     | Rollback to mark A_Mark_Name                                                                                                                                       | postgres
     3021 | ROLLBACK_GROUPS      | TIME STAMP SET     | 3002           |                                                                                                                                                                    | postgres
-    3022 | ROLLBACK_GROUPS      | END                | my_cluster     | Error: the target mark is known with 2 different names (A_Mark_Name, Renamed_mark) on server emaj_1.                                                               | postgres
+    3022 | ROLLBACK_GROUPS      | END                | my_cluster     | Error: the target mark is known with 2 different names (A_Mark_Name, Renamed_mark) on database emaj_1.                                                             | postgres
     3023 | ROLLBACK_GROUPS      | BEGIN              | my_cluster     | Rollback to mark A_Mark_Name                                                                                                                                       | postgres
     3024 | ROLLBACK_GROUPS      | TIME STAMP SET     | 3003           |                                                                                                                                                                    | postgres
-    3025 | ROLLBACK_GROUPS      | END                | my_cluster     | Error: the target mark is missing (or has not the expected time_id) for 1 tables groups on server emaj_1 (time_id 30).                                             | postgres
+    3025 | ROLLBACK_GROUPS      | END                | my_cluster     | Error: the target mark is missing (or has not the expected time_id) for 1 tables groups on database emaj_1 (time_id 30).                                           | postgres
     3026 | ROLLBACK_GROUPS      | BEGIN              | my_cluster     | Rollback to mark A_Mark_Name                                                                                                                                       | postgres
     3027 | ROLLBACK_GROUPS      | TIME STAMP SET     | 3004           |                                                                                                                                                                    | postgres
-    3028 | ROLLBACK_GROUPS      | END                | my_cluster     | Error: the target mark is missing (or has not the expected time_id) for 1 tables groups on server emaj_1 (time_id 30).                                             | postgres
+    3028 | ROLLBACK_GROUPS      | END                | my_cluster     | Error: the target mark is missing (or has not the expected time_id) for 1 tables groups on database emaj_1 (time_id 30).                                           | postgres
     3029 | ROLLBACK_GROUPS      | BEGIN              | my_cluster     | Logged rollback to mark START                                                                                                                                      | postgres
     3030 | ROLLBACK_GROUPS      | TIME STAMP SET     | 3005           |                                                                                                                                                                    | postgres
     3031 | ROLLBACK_GROUPS      | INIT               | emaj_1         | Mark name = START ; Rollback Id = 1                                                                                                                                | postgres
@@ -385,7 +385,7 @@ select hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_word
     3063 | DIST_EMAJ            | END                | my_cluster     |                                                                                                                                                                    | postgres
     3064 | ROLLBACK_GROUPS      | BEGIN              | my_cluster     | Rollback to mark START                                                                                                                                             | postgres
     3065 | ROLLBACK_GROUPS      | TIME STAMP SET     | 3008           |                                                                                                                                                                    | postgres
-    3066 | ROLLBACK_GROUPS      | END                | my_cluster     | Error while calling the _rlbk_init() function for server emaj_1.                                                                                                  +| postgres
+    3066 | ROLLBACK_GROUPS      | END                | my_cluster     | Error while calling the _rlbk_init() function for database emaj_1.                                                                                                +| postgres
          |                      |                    |                | ERROR:  _rlbk_check: This rollback operation would cross some previous structure group change operations, which is not allowed by the current function parameters.+| 
          |                      |                    |                | CONTEXT:  PL/pgSQL function emaj._rlbk_check(text[],text,boolean,boolean) line 59 at RAISE                                                                        +| 
          |                      |                    |                | SQL statement "SELECT emaj._rlbk_check(p_groups, p_mark, p_isAlterGroupAllowed, FALSE)"                                                                           +| 
@@ -417,16 +417,16 @@ select mark_cluster, regexp_replace(mark_name, E'\\d\\d\.\\d\\d\\.\\d\\d\\.\\d\\
  my_cluster   | START          |         3000
 (1 row)
 
-select mark_time_id, mark_server, mark_group, mark_local_time_id
+select mark_time_id, mark_database, mark_group, mark_local_time_id
   from dist_emaj.dist_emaj_mark_group order by 1, 2, 3;
- mark_time_id | mark_server |    mark_group    | mark_local_time_id 
---------------+-------------+------------------+--------------------
-         3000 | emaj_1      | myGroup1         |                 29
-         3000 | emaj_1      | myGroup2         |                 29
-         3000 | emaj_2      | myGroup4         |                 28
-         3000 | emaj_2      | myGroup5         |                 28
-         3000 | emaj_2      | myGroup6         |                 28
-         3000 | emaj_2      | phil's group#3", |                 28
+ mark_time_id | mark_database |    mark_group    | mark_local_time_id 
+--------------+---------------+------------------+--------------------
+         3000 | emaj_1        | myGroup1         |                 29
+         3000 | emaj_1        | myGroup2         |                 29
+         3000 | emaj_2        | myGroup4         |                 28
+         3000 | emaj_2        | myGroup5         |                 28
+         3000 | emaj_2        | myGroup6         |                 28
+         3000 | emaj_2        | phil's group#3", |                 28
 (6 rows)
 
 select rlbk_id, rlbk_cluster, rlbk_mark, rlbk_mark_time_id, rlbk_time_id, rlbk_is_logged, rlbk_is_alter_group_allowed, rlbk_comment, rlbk_status
@@ -442,14 +442,14 @@ select rlbk_id, rlbk_cluster, rlbk_mark, rlbk_mark_time_id, rlbk_time_id, rlbk_i
     3006 | my_cluster   | START       |              3000 |         3009 | f              | t                           |              | COMMITTED
 (7 rows)
 
-select rlbs_rlbk_id, rlbs_server, rlbs_local_rlbk_id from dist_emaj.dist_emaj_rlbk_server order by 1,2;
- rlbs_rlbk_id | rlbs_server | rlbs_local_rlbk_id 
---------------+-------------+--------------------
-         3003 | emaj_1      |                  1
-         3003 | emaj_2      |                  1
-         3004 | emaj_1      |                  2
-         3004 | emaj_2      |                  2
-         3006 | emaj_1      |                  3
-         3006 | emaj_2      |                  3
+select rlbd_rlbk_id, rlbd_database, rlbd_local_rlbk_id from dist_emaj.dist_emaj_rlbk_database order by 1,2;
+ rlbd_rlbk_id | rlbd_database | rlbd_local_rlbk_id 
+--------------+---------------+--------------------
+         3003 | emaj_1        |                  1
+         3003 | emaj_2        |                  1
+         3004 | emaj_1        |                  2
+         3004 | emaj_2        |                  2
+         3006 | emaj_1        |                  3
+         3006 | emaj_2        |                  3
 (6 rows)
 

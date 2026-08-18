@@ -17,7 +17,7 @@ Architecture
 Les extensions emaj
 ^^^^^^^^^^^^^^^^^^^
 
-Chaque *serveur E-Maj* a son extension *emaj*, sur lequel sont créés et configurés ses groupes de tables.
+Chaque *database E-Maj* a son extension *emaj*, sur lequel sont créés et configurés ses groupes de tables.
 
 L'extension dist_emaj
 ^^^^^^^^^^^^^^^^^^^^^
@@ -26,7 +26,7 @@ Une extension **dist_emaj** doit être créée dans une base de donnée PostgreS
 
 L'extension *dist_emaj* contient quelques tables techniques et fonctions permettant son utilisation. 
 
-Les fonctions permettent notamment de **configurer** les *clusters* (avec les groupes de tables qui y sont rattachés) et les *serveurs* (avec leur paramètres d'accès réseau).
+Les fonctions permettent notamment de **configurer** les *clusters* (avec les groupes de tables qui y sont rattachés) et les *databases* (avec leur paramètres d'accès réseau).
 
 ----
 
@@ -50,18 +50,18 @@ La mise en oeuvre de transactions globales nécessite que les opérations concer
 Parallélisation
 ^^^^^^^^^^^^^^^
 
-Les étapes les plus longues des opérations sont **exécutées en parallèle** sur tous les *serveurs* du *cluster*.
+Les étapes les plus longues des opérations sont **exécutées en parallèle** sur toutes les *databases* du *cluster*.
 
-De plus, les principales étapes d'un **rollback** sur un *serveur* peuvent elles-mêmes être réparties sur **plusieurs sessions**. Le nombre de *sessions de rollback* à utiliser est un des paramètres de configuration d'un serveur.
+De plus, les étapes élémentaires d'un **rollback** sur une *database* peuvent elles-mêmes être réparties sur **plusieurs sessions**. Le nombre de *sessions de rollback* à utiliser est un des paramètres de configuration d'une database.
 
 Indépendance entre emaj et dist-emaj
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 **Les extensions emaj n’ont pas connaissance des extensions dist_emaj** qui les référencent.
 
-Ainsi, pour un *serveur* donné :
+Ainsi, pour une *database* donnée :
 
-- le démarrage ou l'arrêt d'un *cluster* se traduit localement par le "simple" démarrage ou arrêt des groupes de tables hébergés par le *serveur*,
+- le démarrage ou l'arrêt d'un *cluster* se traduit localement par le "simple" démarrage ou arrêt des groupes de tables hébergés par la *database*,
 - la pose d'une *marque distribuée* se traduit localement par la pose d'une simple *marque* sur les groupes de tables,
 - l'exécution d'un *rollback distribué* se déroule localement comme un rollback standard des groupes de tables.
 
@@ -81,7 +81,7 @@ Configuration simple d'un cluster
 
    Figure 1 – Configuration d'un *cluster*.
 
-Ici, 1 *cluster* comprend 4 groupes de tables qui sont répartis sur 3 *serveurs* différents, "grp_A" et "grp_B" se trouvant sur la même base de données.
+Ici, 1 *cluster* comprend 4 groupes de tables qui sont répartis sur 3 *databases* différentes, "grp_A" et "grp_B" se trouvant sur la même base de données.
 
 Configuration complexe de plusieurs clusters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -95,5 +95,5 @@ Configuration complexe de plusieurs clusters
 On trouve ici :
 
 - 3 *clusters* répartis dans 2 extensions *dist_emaj*,
-- les deux extensions *dist_emaj* et *emaj* cohabitent sur le *serveur* "srv_4",
-- sur le serveur "srv_3", le groupe de tables "grp_H" n'est associé à aucun *cluster*.
+- les deux extensions *dist_emaj* et *emaj* cohabitent sur la *database* "db_4",
+- sur la *database* "db_3", le groupe de tables "grp_H" n'est associé à aucun *cluster*.

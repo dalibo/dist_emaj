@@ -103,23 +103,23 @@ select dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_1', 'extraGroup_2');
 (1 row)
 
 -- add non emaj adm user
-update dist_emaj.dist_emaj_server
-  set srv_connect_string = replace(srv_connect_string, '_regress_emaj_adm:adm', '_regress_dist_emaj_anonym:anonym')
-  where srv_name = 'emaj_2';
+update dist_emaj.dist_emaj_database
+  set db_connect_string = replace(db_connect_string, '_regress_emaj_adm:adm', '_regress_dist_emaj_anonym:anonym')
+  where db_name = 'emaj_2';
 select * from dist_emaj.dist_emaj_verify_all();
-                                 dist_emaj_verify_all                                  
----------------------------------------------------------------------------------------
+                                  dist_emaj_verify_all                                   
+-----------------------------------------------------------------------------------------
  Warning: the cluster "empty_cluster" has no assigned table group.
- Warning: the server "no_emaj" has no assigned table group.
- Error on server "emaj_1", some table groups (extraGroup_1, extraGroup_2) are missing.
- Error on server "emaj_2", the configured user is not an E-Maj administrator.
- Error on server "no_emaj", the emaj extension is not installed in the database.
+ Warning: the database "no_emaj" has no assigned table group.
+ Error on database "emaj_1", some table groups (extraGroup_1, extraGroup_2) are missing.
+ Error on database "emaj_2", the configured user is not an E-Maj administrator.
+ Error on database "no_emaj", the emaj extension is not installed in the database.
 (5 rows)
 
 -- clean up errors and recheck
-update dist_emaj.dist_emaj_server
-  set srv_connect_string = replace(srv_connect_string, '_regress_dist_emaj_anonym:anonym', '_regress_emaj_adm:adm')
-  where srv_name = 'emaj_2';
+update dist_emaj.dist_emaj_database
+  set db_connect_string = replace(db_connect_string, '_regress_dist_emaj_anonym:anonym', '_regress_emaj_adm:adm')
+  where db_name = 'emaj_2';
 select dist_emaj.dist_emaj_remove_group('my_cluster', 'emaj_1', 'extraGroup_1');
  dist_emaj_remove_group 
 ------------------------
@@ -132,10 +132,10 @@ select dist_emaj.dist_emaj_remove_group('my_cluster', 'emaj_1', 'extraGroup_2');
                       1
 (1 row)
 
-select dist_emaj.dist_emaj_drop_server('no_emaj');
- dist_emaj_drop_server 
------------------------
-                     1
+select dist_emaj.dist_emaj_drop_database('no_emaj');
+ dist_emaj_drop_database 
+-------------------------
+                       1
 (1 row)
 
 drop database regression_no_emaj;
@@ -159,17 +159,17 @@ ERROR:  _check_dist_mark: The mark "dummy_mark" is unknown within the cluster "m
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark DM2
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark DM3
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 select dist_emaj.dist_emaj_delete_before_mark_cluster('my_cluster', 'START');
  dist_emaj_delete_before_mark_cluster 
 --------------------------------------
@@ -516,7 +516,7 @@ select dist_emaj.dist_emaj_set_param('history_retention', NULL);
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'stop' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action start --cluster my_cluster --mark START
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
@@ -527,7 +527,7 @@ WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "mys
 WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp1b" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
 WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp2" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
 The 'start' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 servers.
+It has processed 6 groups spread into 2 databases.
 select dist_emaj.dist_emaj_purge_histories('0 SECOND');
    dist_emaj_purge_histories    
 --------------------------------

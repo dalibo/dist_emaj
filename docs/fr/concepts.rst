@@ -5,17 +5,17 @@ Les 3 principaux concepts d'E-Maj sont : le « *groupe de tables* », la « *ma
 
 *Distributed E-Maj* introduit 4 nouveaux concepts.
 
-Serveur
--------
+Database
+--------
 
-Un « **serveur E-Maj** » (*E-Maj server*) représente une **base de données PostgreSQL contenant une extension emaj** et hébergeant un ou plusieurs groupes de tables.
+Une « **database E-Maj** » (*E-Maj database*) représente une **base de données PostgreSQL contenant une extension emaj** et hébergeant un ou plusieurs groupes de tables.
 
 Il est identifié par un nom unique.
 
 Cluster
 -------
 
-Un « **cluster de groupes E-Maj** » (*E-Maj groups cluster*) est un ensemble de **groupes de tables répartis dans plusieurs serveurs** E-Maj.
+Un « **cluster de groupes E-Maj** » (*E-Maj groups cluster*) est un ensemble de **groupes de tables répartis dans plusieurs databases** E-Maj.
 
 Le *cluster* est l’entité sur laquelle s’effectuent les opérations distribuées. Il est identifié par un nom unique.
 
