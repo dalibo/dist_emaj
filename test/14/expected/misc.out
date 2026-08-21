@@ -90,23 +90,24 @@ ERROR:  dist_emaj_default_param_before_stmt_trg: Modifying the dist_emaj_default
 -- Test dist_emaj_verify_all()
 -----------------------------
 -- add missing groups
-select dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_1', 'extraGroup_1');
+begin;
+  select dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_1', 'extraGroup_1');
  dist_emaj_assign_group 
 ------------------------
                       1
 (1 row)
 
-select dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_1', 'extraGroup_2');
+  select dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_1', 'extraGroup_2');
  dist_emaj_assign_group 
 ------------------------
                       1
 (1 row)
 
 -- add non emaj adm user
-update dist_emaj.dist_emaj_database
-  set db_connect_string = replace(db_connect_string, '_regress_emaj_adm:adm', '_regress_dist_emaj_anonym:anonym')
-  where db_name = 'emaj_2';
-select * from dist_emaj.dist_emaj_verify_all();
+  update dist_emaj.dist_emaj_database
+    set db_connect_string = replace(db_connect_string, '_regress_emaj_adm:adm', '_regress_dist_emaj_anonym:anonym')
+    where db_name = 'emaj_2';
+  select * from dist_emaj.dist_emaj_verify_all();
                                   dist_emaj_verify_all                                   
 -----------------------------------------------------------------------------------------
  Warning: the cluster "empty_cluster" has no assigned table group.
@@ -116,22 +117,8 @@ select * from dist_emaj.dist_emaj_verify_all();
  Error on database "no_emaj", the emaj extension is not installed in the database.
 (5 rows)
 
+rollback;
 -- clean up errors and recheck
-update dist_emaj.dist_emaj_database
-  set db_connect_string = replace(db_connect_string, '_regress_dist_emaj_anonym:anonym', '_regress_emaj_adm:adm')
-  where db_name = 'emaj_2';
-select dist_emaj.dist_emaj_remove_group('my_cluster', 'emaj_1', 'extraGroup_1');
- dist_emaj_remove_group 
-------------------------
-                      1
-(1 row)
-
-select dist_emaj.dist_emaj_remove_group('my_cluster', 'emaj_1', 'extraGroup_2');
- dist_emaj_remove_group 
-------------------------
-                      1
-(1 row)
-
 select dist_emaj.dist_emaj_drop_database('no_emaj');
  dist_emaj_drop_database 
 -------------------------
@@ -191,9 +178,9 @@ select dist_emaj.dist_emaj_delete_before_mark_cluster('my_cluster', 'DM1');
 select * from dist_emaj.dist_emaj_mark order by mark_time_id;
  mark_cluster | mark_name | mark_time_id 
 --------------+-----------+--------------
- my_cluster   | DM1       |         4005
- my_cluster   | DM2       |         4006
- my_cluster   | DM3       |         4007
+ my_cluster   | DM1       |         4003
+ my_cluster   | DM2       |         4004
+ my_cluster   | DM3       |         4005
 (3 rows)
 
 -- local mark deletion for a group and renaming for another
@@ -224,7 +211,7 @@ select dist_emaj.dist_emaj_delete_before_mark_cluster('my_cluster', 'DM3');
 select * from dist_emaj.dist_emaj_mark order by mark_time_id;
  mark_cluster | mark_name | mark_time_id 
 --------------+-----------+--------------
- my_cluster   | DM3       |         4007
+ my_cluster   | DM3       |         4005
 (1 row)
 
 select hist_id, hist_function, hist_event, hist_object, hist_wording
@@ -233,29 +220,29 @@ select hist_id, hist_function, hist_event, hist_object, hist_wording
   order by 1;
  hist_id |       hist_function        |  hist_event   | hist_object |                      hist_wording                       
 ---------+----------------------------+---------------+-------------+---------------------------------------------------------
-    4023 | SYNC_MARKS_CLUSTER         | BEGIN         | my_cluster  | 
-    4024 | SYNC_MARKS_CLUSTER         | END           | my_cluster  | 0 distributed marks deleted
-    4034 | SYNC_MARKS_CLUSTER         | BEGIN         | my_cluster  | 
-    4035 | SYNC_MARKS_CLUSTER         | END           | my_cluster  | 0 distributed marks deleted
-    4045 | SYNC_MARKS_CLUSTER         | BEGIN         | my_cluster  | 
-    4046 | SYNC_MARKS_CLUSTER         | END           | my_cluster  | 0 distributed marks deleted
-    4055 | DELETE_BEFORE_MARK_CLUSTER | BEGIN         | my_cluster  | START
-    4056 | SYNC_MARKS_CLUSTER         | BEGIN         | my_cluster  | 
-    4057 | SYNC_MARKS_CLUSTER         | END           | my_cluster  | 0 distributed marks deleted
-    4058 | DELETE_BEFORE_MARK_CLUSTER | END           | my_cluster  | 0 distributed marks deleted ; 0 local marks deleted
-    4059 | DELETE_BEFORE_MARK_CLUSTER | BEGIN         | my_cluster  | DM1
-    4060 | SYNC_MARKS_CLUSTER         | BEGIN         | my_cluster  | 
-    4061 | SYNC_MARKS_CLUSTER         | END           | my_cluster  | 0 distributed marks deleted
-    4062 | DELETE_BEFORE_MARK_CLUSTER | END           | my_cluster  | 1 distributed marks deleted ; 6 local marks deleted
-    4063 | DELETE_BEFORE_MARK_CLUSTER | BEGIN         | my_cluster  | DM1
-    4064 | SYNC_MARKS_CLUSTER         | BEGIN         | my_cluster  | 
-    4065 | SYNC_MARKS_CLUSTER         | END           | my_cluster  | 0 distributed marks deleted
-    4066 | DELETE_BEFORE_MARK_CLUSTER | END           | my_cluster  | 0 distributed marks deleted ; 0 local marks deleted
-    4071 | DELETE_BEFORE_MARK_CLUSTER | BEGIN         | my_cluster  | DM3
-    4072 | SYNC_MARKS_CLUSTER         | BEGIN         | my_cluster  | 
-    4073 | SYNC_MARKS_CLUSTER         | DELETED MARKS | emaj_1      | Some deleted local marks => 1 distributed marks deleted
-    4074 | SYNC_MARKS_CLUSTER         | END           | my_cluster  | 1 distributed marks deleted
-    4075 | DELETE_BEFORE_MARK_CLUSTER | END           | my_cluster  | 1 distributed marks deleted ; 11 local marks deleted
+    4017 | SYNC_MARKS_CLUSTER         | BEGIN         | my_cluster  | 
+    4018 | SYNC_MARKS_CLUSTER         | END           | my_cluster  | 0 distributed marks deleted
+    4028 | SYNC_MARKS_CLUSTER         | BEGIN         | my_cluster  | 
+    4029 | SYNC_MARKS_CLUSTER         | END           | my_cluster  | 0 distributed marks deleted
+    4039 | SYNC_MARKS_CLUSTER         | BEGIN         | my_cluster  | 
+    4040 | SYNC_MARKS_CLUSTER         | END           | my_cluster  | 0 distributed marks deleted
+    4049 | DELETE_BEFORE_MARK_CLUSTER | BEGIN         | my_cluster  | START
+    4050 | SYNC_MARKS_CLUSTER         | BEGIN         | my_cluster  | 
+    4051 | SYNC_MARKS_CLUSTER         | END           | my_cluster  | 0 distributed marks deleted
+    4052 | DELETE_BEFORE_MARK_CLUSTER | END           | my_cluster  | 0 distributed marks deleted ; 0 local marks deleted
+    4053 | DELETE_BEFORE_MARK_CLUSTER | BEGIN         | my_cluster  | DM1
+    4054 | SYNC_MARKS_CLUSTER         | BEGIN         | my_cluster  | 
+    4055 | SYNC_MARKS_CLUSTER         | END           | my_cluster  | 0 distributed marks deleted
+    4056 | DELETE_BEFORE_MARK_CLUSTER | END           | my_cluster  | 1 distributed marks deleted ; 6 local marks deleted
+    4057 | DELETE_BEFORE_MARK_CLUSTER | BEGIN         | my_cluster  | DM1
+    4058 | SYNC_MARKS_CLUSTER         | BEGIN         | my_cluster  | 
+    4059 | SYNC_MARKS_CLUSTER         | END           | my_cluster  | 0 distributed marks deleted
+    4060 | DELETE_BEFORE_MARK_CLUSTER | END           | my_cluster  | 0 distributed marks deleted ; 0 local marks deleted
+    4065 | DELETE_BEFORE_MARK_CLUSTER | BEGIN         | my_cluster  | DM3
+    4066 | SYNC_MARKS_CLUSTER         | BEGIN         | my_cluster  | 
+    4067 | SYNC_MARKS_CLUSTER         | DELETED MARKS | emaj_1      | Some deleted local marks => 1 distributed marks deleted
+    4068 | SYNC_MARKS_CLUSTER         | END           | my_cluster  | 1 distributed marks deleted
+    4069 | DELETE_BEFORE_MARK_CLUSTER | END           | my_cluster  | 1 distributed marks deleted ; 11 local marks deleted
 (23 rows)
 
 -----------------------------
@@ -451,28 +438,28 @@ select hist_id, hist_function, hist_wording from dist_emaj.dist_emaj_hist where 
     4000 | SET_PARAM         | From: 1 year to: 1 MONTH
     4001 | SET_PARAM         | From: 1 MONTH to: 2 MONTHS
     4002 | SET_PARAM         | From: 2 MONTHS to: 1 year
-    4076 | SET_PARAM         | From: 1 year to: 2 days
+    4070 | SET_PARAM         | From: 1 year to: 2 days
+    4078 | IMPORT_PARAMETERS | 
+    4079 | IMPORT_PARAMETERS | From: 2 days to: 1 day
+    4080 | IMPORT_PARAMETERS | 1 imported parameters, 1 modified parameters
+    4081 | IMPORT_PARAMETERS | 
+    4082 | IMPORT_PARAMETERS | From: 1 day to: 2 days
+    4083 | IMPORT_PARAMETERS | 1 imported parameters, 1 modified parameters
     4084 | IMPORT_PARAMETERS | 
-    4085 | IMPORT_PARAMETERS | From: 2 days to: 1 day
-    4086 | IMPORT_PARAMETERS | 1 imported parameters, 1 modified parameters
-    4087 | IMPORT_PARAMETERS | 
-    4088 | IMPORT_PARAMETERS | From: 1 day to: 2 days
-    4089 | IMPORT_PARAMETERS | 1 imported parameters, 1 modified parameters
-    4090 | IMPORT_PARAMETERS | 
-    4091 | IMPORT_PARAMETERS | 1 imported parameters, 0 modified parameters
-    4092 | IMPORT_PARAMETERS | 
-    4093 | IMPORT_PARAMETERS | 1 imported parameters, 0 modified parameters
-    4094 | SET_PARAM         | From: 2 days to: 1 day
-    4095 | IMPORT_PARAMETERS | 
-    4096 | IMPORT_PARAMETERS | 0 imported parameters, 0 modified parameters
-    4097 | IMPORT_PARAMETERS | 
-    4098 | IMPORT_PARAMETERS | From: 1 day to: 1 year
-    4099 | IMPORT_PARAMETERS | 0 imported parameters, 1 modified parameters
-    4104 | IMPORT_PARAMETERS | Input file: '/tmp/emaj_14/misc/orig_param_config'
-    4105 | IMPORT_PARAMETERS | From: 1 year to: 2 days
-    4106 | IMPORT_PARAMETERS | 1 imported parameters, 1 modified parameters
-    4107 | IMPORT_PARAMETERS | Input file: '/tmp/emaj_14/misc/orig_param_config'
-    4108 | IMPORT_PARAMETERS | 1 imported parameters, 0 modified parameters
+    4085 | IMPORT_PARAMETERS | 1 imported parameters, 0 modified parameters
+    4086 | IMPORT_PARAMETERS | 
+    4087 | IMPORT_PARAMETERS | 1 imported parameters, 0 modified parameters
+    4088 | SET_PARAM         | From: 2 days to: 1 day
+    4089 | IMPORT_PARAMETERS | 
+    4090 | IMPORT_PARAMETERS | 0 imported parameters, 0 modified parameters
+    4091 | IMPORT_PARAMETERS | 
+    4092 | IMPORT_PARAMETERS | From: 1 day to: 1 year
+    4093 | IMPORT_PARAMETERS | 0 imported parameters, 1 modified parameters
+    4098 | IMPORT_PARAMETERS | Input file: '/tmp/emaj_14/misc/orig_param_config'
+    4099 | IMPORT_PARAMETERS | From: 1 year to: 2 days
+    4100 | IMPORT_PARAMETERS | 1 imported parameters, 1 modified parameters
+    4101 | IMPORT_PARAMETERS | Input file: '/tmp/emaj_14/misc/orig_param_config'
+    4102 | IMPORT_PARAMETERS | 1 imported parameters, 0 modified parameters
 (25 rows)
 
 -----------------------------
@@ -502,7 +489,7 @@ select dist_emaj.dist_emaj_set_param('history_retention', '1 second');
 select dist_emaj.dist_emaj_purge_histories();
                         dist_emaj_purge_histories                        
 -------------------------------------------------------------------------
- 384 dist_emaj_hist rows deleted ; 7 distributed rollback events deleted
+ 372 dist_emaj_hist rows deleted ; 7 distributed rollback events deleted
 (1 row)
 
 select dist_emaj.dist_emaj_set_param('history_retention', NULL);
@@ -542,7 +529,7 @@ select dist_emaj.dist_emaj_purge_histories('0 SECOND');
 select hist_id, hist_function, hist_wording from dist_emaj.dist_emaj_hist where hist_id >= 4000 and hist_function = 'PURGE_HISTORIES' order by hist_id;
  hist_id |  hist_function  |          hist_wording          
 ---------+-----------------+--------------------------------
-    4130 | PURGE_HISTORIES | 62 dist_emaj_hist rows deleted
+    4124 | PURGE_HISTORIES | 62 dist_emaj_hist rows deleted
 (1 row)
 
 select rlbk_id, rlbk_time_id from dist_emaj.dist_emaj_rlbk order by rlbk_id;
@@ -553,7 +540,7 @@ select rlbk_id, rlbk_time_id from dist_emaj.dist_emaj_rlbk order by rlbk_id;
 select min(time_id) from dist_emaj.dist_emaj_time_stamp;
  min  
 ------
- 4008
+ 4006
 (1 row)
 
 --

@@ -230,12 +230,16 @@ CREATE TABLE dist_emaj.dist_emaj_rlbk (
   rlbk_status                  dist_emaj._rlbk_status_enum,-- rollback status
   PRIMARY KEY (rlbk_id),
   FOREIGN KEY (rlbk_time_id) REFERENCES dist_emaj.dist_emaj_time_stamp (time_id),
-  FOREIGN KEY (rlbk_mark_time_id) REFERENCES dist_emaj.dist_emaj_time_stamp (time_id)
+  FOREIGN KEY (rlbk_mark_time_id) REFERENCES dist_emaj.dist_emaj_time_stamp (time_id),
+  FOREIGN KEY (rlbk_cluster) REFERENCES dist_emaj.dist_emaj_cluster (clst_name)
   );
 COMMENT ON TABLE dist_emaj.dist_emaj_rlbk IS
 $$Contains description of distributed rollback operations.$$;
--- Partial index on emaj_rlbk targeting in progress rollbacks (not yet committed or marked as aborted).
-CREATE INDEX dist_emaj_rlbk_idx1 ON dist_emaj.dist_emaj_rlbk (rlbk_status)
+
+CREATE INDEX dist_emaj_rlbk_idx1 ON dist_emaj.dist_emaj_rlbk(rlbk_cluster);
+
+-- Partial index on dist_emaj_rlbk targeting in progress rollbacks (not yet committed or marked as aborted).
+CREATE INDEX dist_emaj_rlbk_idx2 ON dist_emaj.dist_emaj_rlbk (rlbk_status)
     WHERE rlbk_status IN ('PLANNING', 'LOCKING', 'EXECUTING', 'COMPLETED');
 
 -- Table containing local rollback data linked to distributed rollback operations.
@@ -810,6 +814,11 @@ $dist_emaj_drop_cluster$
 -- Some groups are assigned to the cluster but the function is not allowed to remove them.
           RAISE EXCEPTION 'dist_emaj_drop_cluster: The cluster "%" has % groups assigned to it.', p_cluster, v_nbGroup;
         ELSE
+-- Delete distributed rollbacks and distributed marks linked to this cluster.
+          DELETE FROM dist_emaj.dist_emaj_mark
+            WHERE mark_cluster = p_cluster;
+          DELETE FROM dist_emaj.dist_emaj_rlbk
+            WHERE rlbk_cluster = p_cluster;
 -- Delete groups that were assigned to the cluster.
           DELETE FROM dist_emaj.dist_emaj_cluster_group
             WHERE clgrp_cluster = p_cluster;

@@ -88,7 +88,7 @@ select funcname, calls from pg_stat_user_functions
  _export_clusters_conf                     |     6
  _export_param_conf                        |     7
  _import_param_conf                        |     8
- _set_time_stamp                           |    64
+ _set_time_stamp                           |    62
  _verify_database                          |   105
  dist_emaj_assign_group                    |    11
  dist_emaj_create_cluster                  |     5
@@ -104,7 +104,7 @@ select funcname, calls from pg_stat_user_functions
  dist_emaj_import_parameters_configuration |     6
  dist_emaj_import_parameters_configuration |     2
  dist_emaj_purge_histories                 |    18
- dist_emaj_remove_group                    |     4
+ dist_emaj_remove_group                    |     2
  dist_emaj_set_param                       |    10
  dist_emaj_sync_marks_cluster              |    24
  dist_emaj_verify_all                      |     2
@@ -115,7 +115,7 @@ select funcname, calls from pg_stat_user_functions
 select sum(calls) from pg_stat_user_functions where funcname like E'dist\\_emaj\\_%';
  sum 
 -----
- 173
+ 171
 (1 row)
 
 -----------------------------
