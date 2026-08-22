@@ -896,6 +896,9 @@ $dist_emaj_assign_group$
 -- Insert the row describing the assignment into the dist_emaj_cluster_group table.
       INSERT INTO dist_emaj.dist_emaj_cluster_group (clgrp_cluster, clgrp_database, clgrp_group, clgrp_last_assign_time_id)
         VALUES (p_cluster, p_database, p_group, v_timeId);
+-- Delete distributed marks linked to the cluster. This avoids future distributed rollback targeting a mark set before the assignment.
+      DELETE FROM dist_emaj.dist_emaj_mark
+        WHERE mark_cluster = p_cluster;
 -- Update the cluster clst_last_alter_time_id column.
       UPDATE dist_emaj.dist_emaj_cluster
         SET clst_last_alter_time_id = v_timeId

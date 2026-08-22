@@ -116,6 +116,8 @@ La fonction retourne le nombre de groupe de tables assigné par la fonction (0 o
 
 Un groupe de tables peut être assigné à **plusieurs clusters** différents.
 
+Quand un groupe de tables est assigné à un *cluster*, les *marques distribuées* du *cluster* sont supprimées. En effet, il n'est alors plus possible d'effectuer un *rollback distribué* ciblant une marque antérieure à l'assignation, car le nouveau groupe ne pourrait pas être ramené à un état antérieur.
+
 Le paramètre ``p_ifNotExists`` facilite l'écriture de scripts d'administration idempotents.
 
 ----

@@ -116,6 +116,8 @@ The function returns the number of table groups assigned by the function (0 or 1
 
 A table group can be assigned to **multiple different clusters**.
 
+When a table group is assigned to a *cluster*, *distributed marks* of this *cluster* are deleted. Indeed, it is not possible to execute a *distributed rollback* targeting a *distributed mark* prior the assignment because the new table group could not be reset to a prior state.
+
 The ``p_ifNotExists`` parameter facilitates writing idempotent administration scripts.
 
 ----
