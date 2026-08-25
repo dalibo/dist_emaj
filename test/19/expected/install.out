@@ -62,7 +62,7 @@ select relname from pg_catalog.pg_class,
  dist_emaj_hist
  dist_emaj_hist_hist_id_seq
  dist_emaj_mark
- dist_emaj_mark_group
+ dist_emaj_mark_database
  dist_emaj_param
  dist_emaj_rlbk
  dist_emaj_rlbk_database

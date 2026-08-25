@@ -58,7 +58,7 @@ select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_mark
  select ok
 (1 row)
 
-select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_mark_group) as t;
+select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_mark_database) as t;
   result   
 -----------
  select ok

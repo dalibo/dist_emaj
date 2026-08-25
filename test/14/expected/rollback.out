@@ -31,10 +31,10 @@ select set_config('dist_emaj.regress_start_mark_time_id', mark_time_id::text, fa
  3000
 (1 row)
 
-select set_config('dist_emaj.regress_start_mark_local_time_id', mark_local_time_id::text, false)
-  from dist_emaj.dist_emaj_mark_group
-  where mark_time_id = (select max(mark_time_id) from dist_emaj.dist_emaj_mark)
-    and mark_database = 'emaj_1' and mark_group = 'myGroup1';
+select set_config('dist_emaj.regress_start_mark_local_time_id', mkdb_local_time_id::text, false)
+  from dist_emaj.dist_emaj_mark_database
+  where mkdb_time_id = (select max(mark_time_id) from dist_emaj.dist_emaj_mark)
+    and mkdb_database = 'emaj_1';
  set_config 
 ------------
  29
@@ -78,42 +78,15 @@ CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) lin
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark dummy
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
-Error while checking the cluster and distributed rollback target mark names.
+Error while checking the distributed rollback target mark name.
 ERROR:  _check_dist_mark: The mark "dummy" is unknown within the cluster "my_cluster".
-CONTEXT:  PL/pgSQL function dist_emaj._check_dist_mark(text,text) line 33 at RAISE
+CONTEXT:  PL/pgSQL function dist_emaj._check_dist_mark(text,text) line 31 at RAISE
 
---   missing mark for a group
-delete from dist_emaj.dist_emaj_mark_group
-  where mark_time_id = current_setting('dist_emaj.regress_start_mark_time_id')::BIGINT and mark_database = 'emaj_1' and mark_group = 'myGroup1';
-\! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark START
- Distributed E-Maj Rollback (version <devel>)
---------------------------------------------
-Error while checking the cluster and distributed rollback target mark names.
-ERROR:  _check_dist_mark: The mark "START" is unknown for groups "emaj_1.myGroup1" (or has not the same timestamp).
-CONTEXT:  PL/pgSQL function dist_emaj._check_dist_mark(text,text) line 46 at RAISE
-
-insert into dist_emaj.dist_emaj_mark_group
-  values (current_setting('dist_emaj.regress_start_mark_time_id')::BIGINT, 'emaj_1', 'myGroup1', current_setting('dist_emaj.regress_start_mark_local_time_id')::BIGINT);
---   mark with different time id
-update dist_emaj.dist_emaj_mark_group set mark_local_time_id = mark_local_time_id + 1
-  where mark_time_id = current_setting('dist_emaj.regress_start_mark_time_id')::BIGINT and mark_database = 'emaj_1' and mark_group = 'myGroup1';
-\! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark START
- Distributed E-Maj Rollback (version <devel>)
---------------------------------------------
-Error while checking the cluster and distributed rollback target mark names.
-ERROR:  _check_dist_mark: On databases emaj_1, the mark "START" does not represent the same timestamp for all groups.
-CONTEXT:  PL/pgSQL function dist_emaj._check_dist_mark(text,text) line 61 at RAISE
-
-update dist_emaj.dist_emaj_mark_group set mark_local_time_id = mark_local_time_id - 1
-  where mark_time_id = current_setting('dist_emaj.regress_start_mark_time_id')::BIGINT and mark_database = 'emaj_1' and mark_group = 'myGroup1';
 -- Errors on a database
 --   missing groups (simulated from dist_emaj)
 insert into dist_emaj.dist_emaj_cluster_group values
   ('my_cluster', 'emaj_1', 'extraGroup_1'),
   ('my_cluster', 'emaj_1', 'extraGroup_2');
-insert into dist_emaj.dist_emaj_mark_group values
-  (current_setting('dist_emaj.regress_start_mark_time_id')::BIGINT, 'emaj_1', 'extraGroup_1', current_setting('dist_emaj.regress_start_mark_local_time_id')::BIGINT),
-  (current_setting('dist_emaj.regress_start_mark_time_id')::BIGINT, 'emaj_1', 'extraGroup_2', current_setting('dist_emaj.regress_start_mark_local_time_id')::BIGINT);
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark START
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
@@ -133,7 +106,6 @@ SQL statement "SELECT dist_emaj._verify_database(db_name, db_connect_string, gro
 PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 41 at PERFORM
 
 delete from dist_emaj.dist_emaj_cluster_group where clgrp_group like 'extraGroup%';
-delete from dist_emaj.dist_emaj_mark_group where mark_group like 'extraGroup%';
 \c regression_1
 --   renamed mark on emaj side
 select emaj.emaj_rename_mark_group('myGroup1', 'A_Mark_Name', 'Renamed_mark');
@@ -417,17 +389,13 @@ select mark_cluster, regexp_replace(mark_name, E'\\d\\d\.\\d\\d\\.\\d\\d\\.\\d\\
  my_cluster   | START          |         3000
 (1 row)
 
-select mark_time_id, mark_database, mark_group, mark_local_time_id
-  from dist_emaj.dist_emaj_mark_group order by 1, 2, 3;
- mark_time_id | mark_database |    mark_group    | mark_local_time_id 
---------------+---------------+------------------+--------------------
-         3000 | emaj_1        | myGroup1         |                 29
-         3000 | emaj_1        | myGroup2         |                 29
-         3000 | emaj_2        | myGroup4         |                 28
-         3000 | emaj_2        | myGroup5         |                 28
-         3000 | emaj_2        | myGroup6         |                 28
-         3000 | emaj_2        | phil's group#3", |                 28
-(6 rows)
+select mkdb_time_id, mkdb_database, mkdb_local_time_id
+  from dist_emaj.dist_emaj_mark_database order by 1, 2, 3;
+ mkdb_time_id | mkdb_database | mkdb_local_time_id 
+--------------+---------------+--------------------
+         3000 | emaj_1        |                 29
+         3000 | emaj_2        |                 28
+(2 rows)
 
 select rlbk_id, rlbk_cluster, rlbk_mark, rlbk_mark_time_id, rlbk_time_id, rlbk_is_logged, rlbk_is_alter_group_allowed, rlbk_comment, rlbk_status
   from dist_emaj.dist_emaj_rlbk order by 1;

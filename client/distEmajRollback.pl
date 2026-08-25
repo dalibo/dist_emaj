@@ -176,7 +176,7 @@ $sql = qq(
 	SELECT dist_emaj._check_dist_mark( ?, ? )
 	);
 ($targetMarkTimeId) = $dbh->selectrow_array($sql, undef, $cluster, $targetMark)
-	or traceDie("Error while checking the cluster and distributed rollback target mark names.\n$DBI::errstr\n\n");
+	or traceDie("Error while checking the distributed rollback target mark name.\n$DBI::errstr\n\n");
 traceIfVerbose("Cluster and distributed rollback target mark checked.");
 
 # The conditions to start the operation are met.
@@ -213,10 +213,9 @@ $sthTrace->execute('ROLLBACK_GROUPS', 'BEGIN', $cluster, "$msgRlbk to mark $targ
 $sql = qq(
     SELECT db_name AS name, db_connect_string AS connect_string, db_rlbk_parallel_session AS nb_session,
            db_groups_array AS groups_array, db_groups_list AS groups_list, db_nb_group AS nb_group,
-           mark_local_time_id
+           mkdb_local_time_id AS mark_local_time_id
 		FROM dist_emaj.dist_emaj_database_aggregates
-          JOIN dist_emaj.dist_emaj_mark_group ON (mark_time_id = ? AND mark_database = db_name AND
-                                                  mark_group = db_groups_array[1])
+          JOIN dist_emaj.dist_emaj_mark_database ON (mkdb_time_id = ? AND mkdb_database = db_name)
 		WHERE clst_name = ?
 		ORDER BY db_name;
 	);
@@ -546,23 +545,21 @@ if ($isLogged) {
 
 # Record the marks into dist_emaj_mark_group.
 		$sql = qq(
-			INSERT INTO dist_emaj.dist_emaj_mark_group (mark_time_id, mark_database, mark_group, mark_local_time_id)
-				SELECT ?, ?, group_name, ?
-					FROM unnest(?::TEXT[]) AS group_name
+			INSERT INTO dist_emaj.dist_emaj_mark_database (mkdb_time_id, mkdb_database, mkdb_local_time_id)
+				VALUES (?, ?, ?)
 		);
 		$sth = $dbh2->prepare($sql)
-			or traceDie("Error while preparing the INSERT into dist_emaj_mark_group statement.\n$DBI::errstr\n\n");
+			or traceDie("Error while preparing the INSERT into dist_emaj_mark_database statement.\n$DBI::errstr\n\n");
 		
 		$sth->bind_param(1, $globalTimeId, { pg_type => PG_INT8 });
 		$sth->bind_param(2, $db->{name}, { pg_type => PG_TEXT });
 		$sth->bind_param(3, $db->{start_mark_time_id}, { pg_type => PG_INT8 });
-		$sth->bind_param(4, $db->{groups_array}, { pg_type => PG_TEXTARRAY });
 		$sth->execute()
-			or traceDie("Error while inserting the rollback start marks for database $db->{name}.\n$DBI::errstr\n\n");
+			or traceDie("Error while inserting the rollback start mark local time id for database $db->{name}.\n$DBI::errstr\n\n");
 		$sth->bind_param(1, $globalEndTimeId, { pg_type => PG_INT8 });
 		$sth->bind_param(3, $db->{done_mark_time_id}, { pg_type => PG_INT8 });
 		$sth->execute()
-			or traceDie("Error while inserting the rollback done marks for database $db->{name}.\n$DBI::errstr\n\n");
+			or traceDie("Error while inserting the rollback done mark local time id for database $db->{name}.\n$DBI::errstr\n\n");
 
 		$sth->finish;
 	}

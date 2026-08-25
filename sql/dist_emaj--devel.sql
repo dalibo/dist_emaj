@@ -146,7 +146,7 @@ CREATE TABLE dist_emaj.dist_emaj_time_stamp (
 COMMENT ON TABLE dist_emaj.dist_emaj_time_stamp IS
 $$Contains the time stamps of major Distributed E-Maj events.$$;
 
--- Table containing the E-Maj servers characteristics.
+-- Table containing the E-Maj databases characteristics.
 CREATE TABLE dist_emaj.dist_emaj_database (
   db_name                      TEXT NOT NULL,              -- database name
   db_connect_string            TEXT NOT NULL,              -- libpq database connect string (may include ip address or unix socket,
@@ -199,20 +199,19 @@ $$Contains the distributed marks.$$;
 
 CREATE UNIQUE INDEX dist_emaj_mark_idx1 ON dist_emaj.dist_emaj_mark(mark_time_id);
 
--- Table describing the relationship between distributed marks and E-Maj table groups.
-CREATE TABLE dist_emaj.dist_emaj_mark_group (
-  mark_time_id                 BIGINT NOT NULL,            -- time stamp of the distributed mark
-  mark_database                TEXT NOT NULL,              -- database hosting the table group
-  mark_group                   TEXT NOT NULL,              -- table group name on the foreign database
-  mark_local_time_id           BIGINT,                     -- local time stamp of the mark on the foreign database
-  PRIMARY KEY (mark_time_id, mark_database, mark_group),
-  FOREIGN KEY (mark_time_id) REFERENCES dist_emaj.dist_emaj_mark (mark_time_id) ON DELETE CASCADE,
-  FOREIGN KEY (mark_database) REFERENCES dist_emaj.dist_emaj_database (db_name)
+-- Table containing the local time ids corresponding to distributed marks time ids on databases.
+CREATE TABLE dist_emaj.dist_emaj_mark_database (
+  mkdb_time_id                 BIGINT NOT NULL,            -- distributed mark global time id
+  mkdb_database                TEXT NOT NULL,              -- database name
+  mkdb_local_time_id           BIGINT,                     -- local time stamp for the database
+  PRIMARY KEY (mkdb_time_id, mkdb_database),
+  FOREIGN KEY (mkdb_database) REFERENCES dist_emaj.dist_emaj_database (db_name),
+  FOREIGN KEY (mkdb_time_id) REFERENCES dist_emaj.dist_emaj_mark (mark_time_id) ON DELETE CASCADE
   );
-COMMENT ON TABLE dist_emaj.dist_emaj_mark_group IS
-$$Describes the relationship between distributed marks and E-Maj table groups.$$;
+COMMENT ON TABLE dist_emaj.dist_emaj_database IS
+$$Contains the local time ids corresponding to distributed marks time ids on databases.$$;
 
-CREATE INDEX dist_emaj_mark_group_idx1 ON dist_emaj.dist_emaj_mark_group(mark_local_time_id);
+CREATE INDEX dist_emaj_mark_database_idx1 ON dist_emaj.dist_emaj_mark_database(mkdb_database);
 
 -- Table containing distributed rollback operations.
 CREATE TABLE dist_emaj.dist_emaj_rlbk (
@@ -432,8 +431,6 @@ $_check_dist_mark$
 -- Output: distributed mark time id
   DECLARE
     v_markTimeId             BIGINT;
-    v_errGroupsList          TEXT;
-    v_errDatabasesList       TEXT;
   BEGIN
 -- Check that the cluster exists.
     PERFORM 0
@@ -458,36 +455,7 @@ $_check_dist_mark$
     IF v_markTimeId IS NULL THEN
       RAISE EXCEPTION '_check_dist_mark: The mark "%" is unknown within the cluster "%".', p_mark, p_cluster;
     END IF;
--- Verify that all table group of the cluster have a mark for this time_id.
-    SELECT string_agg(group_id, ', ' ORDER BY group_id) FILTER (WHERE mark_local_time_id IS NULL)
-      INTO v_errGroupsList
-      FROM (
-        SELECT clgrp_database || '.' || clgrp_group AS group_id, mark_local_time_id
-          FROM dist_emaj.dist_emaj_cluster_group
-               LEFT OUTER JOIN dist_emaj.dist_emaj_mark_group ON (mark_time_id = v_markTimeId AND mark_database = clgrp_database
-                                                            AND mark_group = clgrp_group)
-          WHERE clgrp_cluster = p_cluster
-      ) AS t;
-    IF v_errGroupsList IS NOT NULL THEN
-      RAISE EXCEPTION '_check_dist_mark: The mark "%" is unknown for groups "%" (or has not the same timestamp).',
-                      p_mark, v_errGroupsList;
-    END IF;
--- Verify that all table groups of each database have the same local time id.
-    SELECT string_agg(clgrp_database, ', ' ORDER BY clgrp_database) FILTER (WHERE  distinct_local_time_id > 1)
-      INTO v_errDatabasesList
-      FROM (
-        SELECT clgrp_database, count(DISTINCT mark_local_time_id) AS distinct_local_time_id
-          FROM dist_emaj.dist_emaj_cluster_group
-               JOIN dist_emaj.dist_emaj_mark_group ON (mark_time_id = v_markTimeId AND mark_database = clgrp_database
-                                                 AND mark_group = clgrp_group)
-          WHERE clgrp_cluster = p_cluster
-          GROUP BY clgrp_database
-      ) AS t;
-    IF v_errDatabasesList IS NOT NULL THEN
-      RAISE EXCEPTION '_check_dist_mark: On databases %, the mark "%" does not represent the same timestamp for all groups.',
-                      v_errDatabasesList, p_mark;
-    END IF;
--- Build and return the databases characteristics.
+-- Return the time id of the distributed mark.
     RETURN v_markTimeId;
   END;
 $_check_dist_mark$;
@@ -1192,16 +1160,15 @@ $dist_emaj_delete_before_mark_cluster$
 -- Log on the database.
       EXECUTE format('SELECT %I.dblink_connect(%L)',
                      v_dblinkSchema, r_database.db_connect_string);
+-- Get the local time_id of the mark for all groups of the database.
+      SELECT mkdb_local_time_id
+        INTO v_localTimeId
+        FROM dist_emaj.dist_emaj_mark_database
+        WHERE mkdb_time_id = v_markTimeId
+          AND mkdb_database = r_database.db_name;
 -- Process each group of the database.
       FOREACH v_group IN ARRAY r_database.groups_array
       LOOP
--- Get the local time_id of the mark for the group.
-        SELECT mark_local_time_id
-          INTO v_localTimeId
-          FROM dist_emaj.dist_emaj_mark_group
-          WHERE mark_time_id = v_markTimeId
-            AND mark_database = r_database.db_name
-            AND mark_group = v_group;
 -- Execute the emaj_delete_before_mark_group() function.
         v_stmt = 'SELECT emaj.emaj_delete_before_mark_group(' || quote_literal(v_group) || ', mark_name) '
                    'FROM emaj.emaj_mark '
@@ -1558,7 +1525,7 @@ $dist_emaj_sync_marks_cluster$
                      v_dblinkSchema, v_stmt)
         INTO v_mostRecentStart, v_nbGroup;
 -- If any group is missing, it means that at least one group is in IDLE state, thus invalidating all distributed marks for the entire
---   cluster. So delete all distributed marks.
+--   cluster. So delete all distributed marks of the cluster.
       IF v_nbGroup < r_database.nb_groups_in_cluster THEN
         DELETE FROM dist_emaj.dist_emaj_mark
           WHERE mark_cluster = p_cluster;
@@ -1569,16 +1536,15 @@ $dist_emaj_sync_marks_cluster$
           VALUES ('SYNC_MARKS_CLUSTER', 'DELETED MARKS', r_database.db_name, v_databaseHistMsg);
         EXIT;
       END IF;
--- Otherwise, delete all distributed marks whose time id is older than the most recent group start.
+-- Otherwise, delete all distributed marks of the cluster whose time id is older than the most recent group start.
       v_databaseHistMsg = '';
       DELETE FROM dist_emaj.dist_emaj_mark
         WHERE mark_cluster = p_cluster
           AND mark_time_id <= (
-              SELECT max(mark_time_id)
-                FROM dist_emaj.dist_emaj_mark_group
-                WHERE mark_database = r_database.db_name
-                  AND mark_group = ANY (r_database.groups_array)
-                  AND mark_local_time_id < v_mostRecentStart
+              SELECT max(mkdb_time_id)
+                FROM dist_emaj.dist_emaj_mark_database
+                WHERE mkdb_database = r_database.db_name
+                  AND mkdb_local_time_id < v_mostRecentStart
               );
       GET DIAGNOSTICS v_nbMark = ROW_COUNT;
       IF v_nbMark > 0 THEN
@@ -1588,10 +1554,9 @@ $dist_emaj_sync_marks_cluster$
 -- Build the list of remaining distributed marks local time ids.
       SELECT string_agg('(' || time_id::text || ')', ',')
         FROM (
-          SELECT DISTINCT mark_local_time_id
-            FROM dist_emaj.dist_emaj_mark_group
-            WHERE mark_database = r_database.db_name
-              AND mark_group = ANY (r_database.groups_array)
+          SELECT mkdb_local_time_id
+            FROM dist_emaj.dist_emaj_mark_database
+            WHERE mkdb_database = r_database.db_name
             ORDER BY 1
           ) AS t(time_id)
         INTO v_timeIdList;
@@ -1616,11 +1581,10 @@ $dist_emaj_sync_marks_cluster$
           DELETE FROM dist_emaj.dist_emaj_mark
             WHERE mark_cluster = p_cluster
               AND mark_time_id = (
-                  SELECT mark_time_id
-                    FROM dist_emaj.dist_emaj_mark_group
-                    WHERE mark_database = r_database.db_name
-                      AND mark_group = ANY (r_database.groups_array)
-                      AND mark_local_time_id = v_localTimeId
+                  SELECT mkdb_time_id
+                    FROM dist_emaj.dist_emaj_mark_database
+                    WHERE mkdb_database = r_database.db_name
+                      AND mkdb_local_time_id = v_localTimeId
                     LIMIT 1
                   );
         END LOOP;
@@ -2383,7 +2347,7 @@ SELECT pg_catalog.pg_extension_config_dump('dist_emaj_database', '');
 SELECT pg_catalog.pg_extension_config_dump('dist_emaj_cluster', '');
 SELECT pg_catalog.pg_extension_config_dump('dist_emaj_cluster_group', '');
 SELECT pg_catalog.pg_extension_config_dump('dist_emaj_mark', '');
-SELECT pg_catalog.pg_extension_config_dump('dist_emaj_mark_group', '');
+SELECT pg_catalog.pg_extension_config_dump('dist_emaj_mark_database', '');
 SELECT pg_catalog.pg_extension_config_dump('dist_emaj_rlbk', '');
 SELECT pg_catalog.pg_extension_config_dump('dist_emaj_rlbk_database', '');
 -- Register dist_sequences values as candidate for pg_dump.

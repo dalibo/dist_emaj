@@ -23,7 +23,7 @@ select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_time
 select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_cluster) as t;
 select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_cluster_group) as t;
 select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_mark) as t;
-select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_mark_group) as t;
+select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_mark_database) as t;
 select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_rlbk) as t;
 select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_rlbk_database) as t;
 

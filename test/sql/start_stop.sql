@@ -138,8 +138,8 @@ select hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_word
   from dist_emaj.dist_emaj_hist where hist_id >= 2000 order by 1;
 select mark_cluster, regexp_replace(mark_name,E'\\d\\d\.\\d\\d\\.\\d\\d\\.\\d\\d\\d\\d', '%', 'g'), mark_time_id
   from dist_emaj.dist_emaj_mark order by 1, 3;
-select mark_time_id, mark_database, mark_group, mark_local_time_id
-  from dist_emaj.dist_emaj_mark_group order by 1, 2, 3;
+select mkdb_time_id, mkdb_database, mkdb_local_time_id
+  from dist_emaj.dist_emaj_mark_database order by 1, 2, 3;
 
 -- Check emaj tables
 \c regression_1

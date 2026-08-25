@@ -566,25 +566,21 @@ if (!($action eq 'stop' && $resetLogs)) {
   $dbh->do($sql, undef, $cluster, $realMarkName, $globalTimeId)
   	or die "Error while inserting the distributed mark.\n$DBI::errstr\n\n";
 
-# Record the local mark attributes for each tables group on dist_emaj.
+# Record the mark local time ids for databases on dist_emaj.
 	$sql = qq(
-		INSERT INTO dist_emaj.dist_emaj_mark_group (mark_time_id, mark_database, mark_group, mark_local_time_id)
-			SELECT ?, ?, clgrp_group, ?
-				FROM dist_emaj.dist_emaj_cluster_group
-				WHERE clgrp_cluster = ? AND clgrp_database = ?
+		INSERT INTO dist_emaj.dist_emaj_mark_database (mkdb_time_id, mkdb_database, mkdb_local_time_id)
+			VALUES (?, ?, ?)
 	);
 	$sth = $dbh->prepare($sql)
-		or die "Error while preparing the INSERT into dist_emaj_mark_group statement.\n$DBI::errstr\n\n";
+		or die "Error while preparing the INSERT into dist_emaj_mark_database statement.\n$DBI::errstr\n\n";
 
 	$sth->bind_param(1, $globalTimeId, { pg_type => PG_INT8 });
-	$sth->bind_param(4, $cluster, { pg_type => PG_TEXT });
 
 	foreach my $db (@$databasesArray) {
 		$sth->bind_param(2, $db->{name}, { pg_type => PG_TEXT });
 		$sth->bind_param(3, $db->{time_id}, { pg_type => PG_INT8 });
-		$sth->bind_param(5, $db->{name}, { pg_type => PG_TEXT });
 		$sth->execute()
-			or die "Error while inserting the operation distributed mark for database $db->{name}.\n$DBI::errstr\n\n";
+			or die "Error while inserting the mark local time id for database $db->{name}.\n$DBI::errstr\n\n";
 	}
 	$sth->finish;
 }
