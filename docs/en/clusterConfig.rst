@@ -147,6 +147,8 @@ The function returns the number of table groups removed by the function (0 or 1)
 
 **Notes**
 
+Once a table group is removed from a *cluster*, a *distributed rollback* targeting a mark set prior the group's removal can always be launched for this *cluster*. But of course, the removed table group would not be processed by this *distributed rollback*.
+
 The ``p_ifAssigned`` parameter facilitates writing idempotent administration scripts.
 
 ----

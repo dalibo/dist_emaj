@@ -147,6 +147,8 @@ La fonction retourne le nombre de groupe de tables retiré par la fonction (0 ou
 
 **Notes**
 
+Un fois un groupe de tables retiré d'un *cluster*, il est toujours possible d'effectuer un *rollback distribué* de ce *cluster* ciblant une marque antérieure à la sortie du groupe. Mais naturellement, le groupe sorti du *cluster* n'est pas traité par ce *rollback distribué*.
+
 Le paramètre ``p_ifAssigned`` facilite l'écriture de scripts d'administration idempotents.
 
 ----
