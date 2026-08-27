@@ -85,12 +85,14 @@ The tool first checks the entered parameters and options. Then, on each of the *
 
 The rollback operation is then divided into **6 steps**:
 
-- **Initialization**: Each *database* is accessed sequentially on its first opened connection to verify its ability to execute the rollback (state of the groups, validity of the target mark name, etc.) and to schedule the elementary rollback operations. If there is an anomaly, the operation is stopped.
-- **Locking**: A lock is placed on the table groups of each *database*. Asynchronous calls on all opened connections allow this action to be parallelized.
-- **Starting**: Each *database* is accessed sequentially on its first opened connection to record the effective start of the operation. If the rollback is logged, the rollback start mark is set.
-- **Execution**: Each *database* is again requested to execute the scheduled elementary actions, also asynchronously and across all opened connections.
-- **Finalization**: Each *database* is accessed sequentially on its first opened connection to finalize its rollback. If the rollback is logged, the rollback end mark is set.
-- **Validation**: Once all finalization steps are completed, any distributed marks are recorded, and the global transaction is committed using a **two-phase COMMIT**.
+1. **Initialization**: Each *database* is accessed sequentially on its first opened connection to verify its ability to execute the rollback (state of the groups, validity of the target mark name, etc.) and to schedule the elementary rollback operations. If there is an anomaly, the operation is stopped.
+2. **Locking**: A lock is placed on the table groups of each *database*. Asynchronous calls on all opened connections allow this action to be parallelized.
+3. **Starting**: Each *database* is accessed sequentially on its first opened connection to record the effective start of the operation. If the rollback is logged, the rollback start mark is set.
+4. **Execution**: Each *database* is again requested to execute the scheduled elementary actions, also asynchronously and across all opened connections.
+5. **Finalization**: Each *database* is accessed sequentially on its first opened connection to finalize its rollback. If the rollback is logged, the rollback end mark is set.
+6. **Validation**: Once all finalization steps are completed, any distributed marks are recorded, and the global transaction is committed using a **two-phase COMMIT**.
+
+During the execution of a *distributed rollback*, any other operation on the concerned *cluster* (configuration change, mark set, etc) is postponed until the *distributed rollback* completion.
 
 Distributed rollbacks are recorded in the database of the *dist_emaj* extension. The operation is also traced in the ``dist_emaj.dist_emaj_hist`` table.
 

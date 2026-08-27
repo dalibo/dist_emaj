@@ -382,6 +382,32 @@ WITH inserted_time_stamp AS (
   SELECT time_id FROM inserted_time_stamp;
 $$;
 
+CREATE OR REPLACE FUNCTION dist_emaj._does_exist_cluster(p_cluster TEXT, p_lock BOOLEAN DEFAULT FALSE)
+RETURNS BOOLEAN
+ LANGUAGE plpgsql AS
+$_does_exist_cluster$
+-- This function returns a boolean indicating whether a cluster exists.
+-- If requested, it locks the cluster using a FOR UPDATE clause in the SELECT statement.
+-- Input: cluster name,
+--        boolean indicating whether the cluster must be locked.
+-- Output: boolean indicating whether the cluster exists.
+  BEGIN
+    IF p_lock THEN
+-- Check that the cluster exists and set a lock if it exists.
+       PERFORM 0
+         FROM dist_emaj.dist_emaj_cluster
+         WHERE clst_name = p_cluster
+         FOR UPDATE;
+    ELSE
+-- Check that the cluster exists without explicit lock.
+       PERFORM 0
+         FROM dist_emaj.dist_emaj_cluster
+         WHERE clst_name = p_cluster;
+    END IF;
+    RETURN FOUND;
+  END;
+$_does_exist_cluster$;
+
 CREATE OR REPLACE FUNCTION dist_emaj._check_new_dist_mark(p_cluster TEXT, p_mark TEXT, p_check_exists BOOLEAN DEFAULT TRUE)
 RETURNS TEXT LANGUAGE plpgsql AS
 $_check_new_dist_mark$
@@ -433,10 +459,7 @@ $_check_dist_mark$
     v_markTimeId             BIGINT;
   BEGIN
 -- Check that the cluster exists.
-    PERFORM 0
-      FROM dist_emaj.dist_emaj_cluster
-      WHERE clst_name = p_cluster;
-    IF NOT FOUND THEN
+    IF NOT dist_emaj._does_exist_cluster(p_cluster, FALSE) THEN
       RAISE EXCEPTION '_check_dist_mark: The cluster "%" is unknown.', p_cluster;
     END IF;
 -- Check that the cluster has at least an assigned table group.
@@ -709,11 +732,7 @@ $dist_emaj_create_cluster$
       RAISE EXCEPTION 'dist_emaj_create_cluster: The cluster name can''t be NULL or empty.';
     END IF;
 -- Determine whether the cluster already exists in dist_emaj_cluster table.
-    v_exist = EXISTS
-                (SELECT 0
-                   FROM dist_emaj.dist_emaj_cluster
-                   WHERE clst_name = p_cluster
-                );
+    v_exist = dist_emaj._does_exist_cluster(p_cluster, FALSE);
 -- Abort if the cluster already exists and it should not.
     IF v_exist AND NOT p_ifNotExists THEN
       RAISE EXCEPTION 'dist_emaj_create_cluster: The cluster "%" already exists.', p_cluster;
@@ -757,12 +776,8 @@ $dist_emaj_drop_cluster$
 -- Insert a BEGIN event into the history.
     INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object)
       VALUES ('DROP_CLUSTER', 'BEGIN', p_cluster);
--- Determine whether the cluster exists in dist_emaj_cluster table.
-    v_exist = EXISTS
-                (SELECT 0
-                   FROM dist_emaj.dist_emaj_cluster
-                   WHERE clst_name = p_cluster
-                );
+-- Determine whether the cluster exists in dist_emaj_cluster table. If yes, lock the cluster.
+    v_exist = dist_emaj._does_exist_cluster(p_cluster, TRUE);
 -- Abort if the cluster does not exist and it should.
     IF NOT v_exist AND NOT p_ifExists THEN
       RAISE EXCEPTION 'dist_emaj_drop_cluster: The cluster "%" does not exist.', p_cluster;
@@ -825,22 +840,15 @@ $dist_emaj_assign_group$
 -- Insert a BEGIN event into the history.
     INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object, hist_wording)
       VALUES ('ASSIGN_GROUP', 'BEGIN', p_database || '.' || p_group, 'To cluster ' || p_cluster);
--- Check that the cluster exists.
-    v_exist = EXISTS
-                (SELECT 0
-                   FROM dist_emaj.dist_emaj_cluster
-                   WHERE clst_name = p_cluster
-                );
-    IF NOT v_exist THEN
+-- Check that the cluster exists and lock it.
+    IF NOT dist_emaj._does_exist_cluster(p_cluster, TRUE) THEN
       RAISE EXCEPTION 'dist_emaj_assign_group: The cluster "%" does not exist.', p_cluster;
     END IF;
 -- Check that the database exists.
-    v_exist = EXISTS
-                (SELECT 0
-                   FROM dist_emaj.dist_emaj_database
-                   WHERE db_name = p_database
-                );
-    IF NOT v_exist THEN
+    PERFORM 0
+      FROM dist_emaj.dist_emaj_database
+      WHERE db_name = p_database;
+    IF NOT FOUND THEN
       RAISE EXCEPTION 'dist_emaj_assign_group: The database "%" does not exist.', p_database;
     END IF;
 -- Determine whether the table group is already assigned to the cluster.
@@ -901,22 +909,15 @@ $dist_emaj_remove_group$
 -- Insert a BEGIN event into the history.
     INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object, hist_wording)
       VALUES ('REMOVE_GROUP', 'BEGIN', p_database || '.' || p_group, 'From cluster ' || p_cluster);
--- Check that the cluster exists.
-    v_exist = EXISTS
-                (SELECT 0
-                   FROM dist_emaj.dist_emaj_cluster
-                   WHERE clst_name = p_cluster
-                );
-    IF NOT v_exist THEN
+-- Check that the cluster exists and lock it.
+    IF NOT dist_emaj._does_exist_cluster(p_cluster, TRUE) THEN
       RAISE EXCEPTION 'dist_emaj_remove_group: The cluster "%" does not exist.', p_cluster;
     END IF;
 -- Check that the database exists.
-    v_exist = EXISTS
-                (SELECT 0
-                   FROM dist_emaj.dist_emaj_database
-                   WHERE db_name = p_database
-                );
-    IF NOT v_exist THEN
+    PERFORM 0
+      FROM dist_emaj.dist_emaj_database
+      WHERE db_name = p_database;
+    IF NOT FOUND THEN
       RAISE EXCEPTION 'dist_emaj_remove_group: The database "%" does not exist.', p_database;
     END IF;
 -- Determine whether the table group is already assigned to the cluster.
@@ -1395,11 +1396,8 @@ $dist_emaj_verify_cluster$
     v_dblinkSchema           TEXT;
     r_rlbk                   RECORD;
   BEGIN
--- Check that the cluster exists.
-    PERFORM 0
-      FROM dist_emaj.dist_emaj_cluster
-      WHERE clst_name = p_cluster;
-    IF NOT FOUND THEN
+-- Check that the cluster exists and lock it.
+    IF NOT dist_emaj._does_exist_cluster(p_cluster, TRUE) THEN
       RAISE EXCEPTION 'dist_emaj_verify_cluster: The cluster "%" is unknown.', p_cluster;
     END IF;
 -- If requested, check that the cluster has at least 1 assigned table group.
@@ -1487,11 +1485,8 @@ $dist_emaj_sync_marks_cluster$
 -- Record the BEGIN event into dist_emaj_hist.
     INSERT INTO dist_emaj.dist_emaj_hist(hist_function, hist_event, hist_object)
       VALUES ('SYNC_MARKS_CLUSTER', 'BEGIN', p_cluster);
--- Check that the cluster exists.
-    PERFORM 0
-      FROM dist_emaj.dist_emaj_cluster
-      WHERE clst_name = p_cluster;
-    IF NOT FOUND THEN
+-- Check that the cluster exists and lock it.
+    IF NOT dist_emaj._does_exist_cluster(p_cluster, TRUE) THEN
       RAISE EXCEPTION 'dist_emaj_sync_marks_cluster: The cluster "%" is unknown.', p_cluster;
     END IF;
 -- Look for the schema holding the dblink functions.

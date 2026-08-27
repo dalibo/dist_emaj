@@ -8,7 +8,7 @@ select count(*) as all_functions from pg_proc, pg_namespace
   where pg_namespace.oid=pronamespace and nspname = 'dist_emaj' and (proname like E'dist\\_emaj\\_%' or proname like E'\\_%');
  all_functions 
 ---------------
-            30
+            31
 (1 row)
 
 select count(*) as user_callable_functions from pg_proc, pg_namespace 
@@ -85,6 +85,7 @@ select funcname, calls from pg_stat_user_functions
  _check_new_dist_mark                      |    28
  _dist_emaj_default_param_before_stmt_fnct |     0
  _dist_emaj_param_before_stmt_fnct         |     0
+ _does_exist_cluster                       |   124
  _export_clusters_conf                     |     6
  _export_param_conf                        |     7
  _import_param_conf                        |     8
@@ -109,7 +110,7 @@ select funcname, calls from pg_stat_user_functions
  dist_emaj_sync_marks_cluster              |    24
  dist_emaj_verify_all                      |     2
  dist_emaj_verify_cluster                  |    49
-(29 rows)
+(30 rows)
 
 -- count the total number of user-callable function calls (those who failed are not counted)
 select sum(calls) from pg_stat_user_functions where funcname like E'dist\\_emaj\\_%';

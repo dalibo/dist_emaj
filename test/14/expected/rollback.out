@@ -71,7 +71,7 @@ Error: the user is not allowed to access the dist_emaj database.
 --------------------------------------------
 Error while checking the cluster.
 ERROR:  dist_emaj_verify_cluster: The cluster "empty_cluster" is empty.
-CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 31 at RAISE
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 28 at RAISE
 
 -- Errors in rollback target mark
 --   unknown mark
@@ -80,7 +80,7 @@ CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) lin
 --------------------------------------------
 Error while checking the distributed rollback target mark name.
 ERROR:  _check_dist_mark: The mark "dummy" is unknown within the cluster "my_cluster".
-CONTEXT:  PL/pgSQL function dist_emaj._check_dist_mark(text,text) line 31 at RAISE
+CONTEXT:  PL/pgSQL function dist_emaj._check_dist_mark(text,text) line 28 at RAISE
 
 -- Errors on a database
 --   missing groups (simulated from dist_emaj)
@@ -103,7 +103,7 @@ SQL statement "SELECT dist_emaj._verify_database(db_name, db_connect_string, gro
           GROUP BY db_name, db_connect_string
           ORDER BY db_name
         ) AS databases"
-PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 41 at PERFORM
+PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 38 at PERFORM
 
 delete from dist_emaj.dist_emaj_cluster_group where clgrp_group like 'extraGroup%';
 \c regression_1

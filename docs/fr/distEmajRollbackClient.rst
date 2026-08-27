@@ -85,12 +85,14 @@ L'outil contrôle d'abord les paramètres et options saisis. Puis, sur chacune d
 
 Ensuite, l'opération de rollback est découpée en **6 étapes** :
 
-- **initialisation** : chaque *database* est accédée en séquence sur sa première connexion ouverte, pour vérifier sa capacité à exécuter le rollback (état des groupes, validité du nom de la marque cible, etc) et qu'il planifie les opérations élémentaires du rollback. En cas d'anomalie, l'opération est arrêtée.
-- **verrouillage** : un verrou est posé sur les groupes de tables de chaque *database*. Des appels asynchrones sur toutes les connexions ouvertes permettent de paralléliser cette action.
-- **démarrage** : chaque *database* est accédée en séquence sur sa première connexion ouverte pour qu'il enregistre le démarrage effectif de l'opération. Si le rollback est tracé, la marque de début de rollback est posée.
-- **exécution** : chaque *database* est à nouveau sollicitée pour l'exécution des actions élémentaires planifiées, là aussi de manière asynchrone et sur l'ensemble des connexions ouvertes.
-- **finalisation** : chaque *database* est accédée en séquence sur sa première connexion ouverte pour qu'il finalise son rollback. Si le rollback est tracé, la marque de fin de rollback est posée.
-- **validation** : une fois toutes les étapes de finalisation terminées, les éventuelles marques distribuées sont enregistrées et la transaction globale est validée par un *COMMIT à deux phases*.
+1. **initialisation** : chaque *database* est accédée en séquence sur sa première connexion ouverte, pour vérifier sa capacité à exécuter le rollback (état des groupes, validité du nom de la marque cible, etc) et qu'il planifie les opérations élémentaires du rollback. En cas d'anomalie, l'opération est arrêtée.
+2. **verrouillage** : un verrou est posé sur les groupes de tables de chaque *database*. Des appels asynchrones sur toutes les connexions ouvertes permettent de paralléliser cette action.
+3. **démarrage** : chaque *database* est accédée en séquence sur sa première connexion ouverte pour qu'il enregistre le démarrage effectif de l'opération. Si le rollback est tracé, la marque de début de rollback est posée.
+4. **exécution** : chaque *database* est à nouveau sollicitée pour l'exécution des actions élémentaires planifiées, là aussi de manière asynchrone et sur l'ensemble des connexions ouvertes.
+5. **finalisation** : chaque *database* est accédée en séquence sur sa première connexion ouverte pour qu'il finalise son rollback. Si le rollback est tracé, la marque de fin de rollback est posée.
+6. **validation** : une fois toutes les étapes de finalisation terminées, les éventuelles marques distribuées sont enregistrées et la transaction globale est validée par un *COMMIT à deux phases*.
+
+Durant l'exécution du *rollback distribué*, toute opération lancée en parallèle sur le *cluster* (modification de configuration, pose de marque, etc) est mise en attente jusqu'à la fin du *rollback distribué*.
 
 Les rollback distribués sont enregistrés dans la base de l'extension *dist_emaj*. L'opération est également tracée dans la table dist_emaj.dist_emaj_hist.
 

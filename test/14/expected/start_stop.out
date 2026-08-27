@@ -59,7 +59,7 @@ SQL statement "SELECT dist_emaj._verify_database(db_name, db_connect_string, gro
           GROUP BY db_name, db_connect_string
           ORDER BY db_name
         ) AS databases"
-PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 41 at PERFORM
+PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 38 at PERFORM
 
 delete from dist_emaj.dist_emaj_cluster_group where clgrp_cluster = 'my_cluster' and clgrp_database = 'emaj_1' and clgrp_group like 'extraGroup%';
 -- Start a cluster (with a comment and useless --reset-logs and --idle-groups-allowed)
@@ -234,7 +234,7 @@ It has processed 6 groups spread into 2 databases.
 --
 select dist_emaj.dist_emaj_sync_marks_cluster('dummy');
 ERROR:  dist_emaj_sync_marks_cluster: The cluster "dummy" is unknown.
-CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_sync_marks_cluster(text) line 32 at RAISE
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_sync_marks_cluster(text) line 29 at RAISE
 select dist_emaj.dist_emaj_sync_marks_cluster('empty_cluster');
  dist_emaj_sync_marks_cluster 
 ------------------------------

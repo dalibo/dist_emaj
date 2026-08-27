@@ -108,7 +108,7 @@ select dist_emaj.dist_emaj_create_cluster('first_cluster');
 -- already created
 select dist_emaj.dist_emaj_create_cluster('first_cluster');
 ERROR:  dist_emaj_create_cluster: The cluster "first_cluster" already exists.
-CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_create_cluster(text,boolean) line 25 at RAISE
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_create_cluster(text,boolean) line 21 at RAISE
 select dist_emaj.dist_emaj_create_cluster('first_cluster', true);
  dist_emaj_create_cluster 
 --------------------------
@@ -121,7 +121,7 @@ select dist_emaj.dist_emaj_create_cluster('first_cluster', true);
 -- cluster does not exist.
 select dist_emaj.dist_emaj_drop_cluster('dummy_cluster');
 ERROR:  dist_emaj_drop_cluster: The cluster "dummy_cluster" does not exist.
-CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_drop_cluster(text,boolean,boolean) line 22 at RAISE
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_drop_cluster(text,boolean,boolean) line 18 at RAISE
 select dist_emaj.dist_emaj_drop_cluster('dummy_cluster', true);
  dist_emaj_drop_cluster 
 ------------------------
@@ -134,7 +134,7 @@ insert into dist_emaj.dist_emaj_cluster_group values ('first_cluster', 'a_databa
 -- but CASCADE is not allowed
 select dist_emaj.dist_emaj_drop_cluster('first_cluster');
 ERROR:  dist_emaj_drop_cluster: The cluster "first_cluster" has 1 groups assigned to it.
-CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_drop_cluster(text,boolean,boolean) line 37 at RAISE
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_drop_cluster(text,boolean,boolean) line 33 at RAISE
 -- ok, CASCADE is now allowed
 select dist_emaj.dist_emaj_drop_cluster('first_cluster', false, true);
  dist_emaj_drop_cluster 
@@ -151,10 +151,10 @@ insert into dist_emaj.dist_emaj_database (db_name, db_connect_string, db_rlbk_pa
 -- invalid values
 select dist_emaj.dist_emaj_assign_group('dummy_cluster', 'dummy_database', 'dummy_group');
 ERROR:  dist_emaj_assign_group: The cluster "dummy_cluster" does not exist.
-CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_assign_group(text,text,text,boolean) line 20 at RAISE
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_assign_group(text,text,text,boolean) line 15 at RAISE
 select dist_emaj.dist_emaj_assign_group('a_cluster', 'dummy_database', 'dummy_group');
 ERROR:  dist_emaj_assign_group: The database "dummy_database" does not exist.
-CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_assign_group(text,text,text,boolean) line 29 at RAISE
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_assign_group(text,text,text,boolean) line 22 at RAISE
 -- ok
 select dist_emaj.dist_emaj_assign_group('a_cluster', 'a_database', 'a_group');
  dist_emaj_assign_group 
@@ -165,7 +165,7 @@ select dist_emaj.dist_emaj_assign_group('a_cluster', 'a_database', 'a_group');
 -- already assigned
 select dist_emaj.dist_emaj_assign_group('a_cluster', 'a_database', 'a_group');
 ERROR:  dist_emaj_assign_group: The table group "a_group" on database "a_database" is already assigned to the cluster "a_cluster".
-CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_assign_group(text,text,text,boolean) line 41 at RAISE
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_assign_group(text,text,text,boolean) line 34 at RAISE
 select dist_emaj.dist_emaj_assign_group('a_cluster', 'a_database', 'a_group', true);
  dist_emaj_assign_group 
 ------------------------
@@ -178,10 +178,10 @@ select dist_emaj.dist_emaj_assign_group('a_cluster', 'a_database', 'a_group', tr
 -- invalid values
 select dist_emaj.dist_emaj_remove_group('dummy_cluster', 'dummy_database', 'dummy_group');
 ERROR:  dist_emaj_remove_group: The cluster "dummy_cluster" does not exist.
-CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_remove_group(text,text,text,boolean) line 20 at RAISE
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_remove_group(text,text,text,boolean) line 15 at RAISE
 select dist_emaj.dist_emaj_remove_group('a_cluster', 'dummy_database', 'dummy_group');
 ERROR:  dist_emaj_remove_group: The database "dummy_database" does not exist.
-CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_remove_group(text,text,text,boolean) line 29 at RAISE
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_remove_group(text,text,text,boolean) line 22 at RAISE
 -- ok
 select dist_emaj.dist_emaj_remove_group('a_cluster', 'a_database', 'a_group');
  dist_emaj_remove_group 
@@ -192,7 +192,7 @@ select dist_emaj.dist_emaj_remove_group('a_cluster', 'a_database', 'a_group');
 -- not assigned group
 select dist_emaj.dist_emaj_remove_group('a_cluster', 'a_database', 'a_group');
 ERROR:  dist_emaj_remove_group: The table group "a_group" on database "a_database" is not currently assigned to the cluster "a_cluster".
-CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_remove_group(text,text,text,boolean) line 41 at RAISE
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_remove_group(text,text,text,boolean) line 34 at RAISE
 select dist_emaj.dist_emaj_remove_group('a_cluster', 'a_database', 'a_group', true);
  dist_emaj_remove_group 
 ------------------------
@@ -271,7 +271,7 @@ select dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_2', 'myGroup6');
 -- unknown cluster
 select dist_emaj.dist_emaj_verify_cluster('dummy');
 ERROR:  dist_emaj_verify_cluster: The cluster "dummy" is unknown.
-CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 23 at RAISE
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 20 at RAISE
 -- empty cluster
 select dist_emaj.dist_emaj_verify_cluster('empty_cluster');
  dist_emaj_verify_cluster 
@@ -281,7 +281,7 @@ select dist_emaj.dist_emaj_verify_cluster('empty_cluster');
 
 select dist_emaj.dist_emaj_verify_cluster('empty_cluster', TRUE);
 ERROR:  dist_emaj_verify_cluster: The cluster "empty_cluster" is empty.
-CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 31 at RAISE
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 28 at RAISE
 -- emaj is missing in a database
 create database regression_no_emaj;
 select dist_emaj.dist_emaj_create_database('no_emaj', 'host=localhost port=' || pg_catalog.current_setting('port') || ' dbname=regression_no_emaj user=_regress_emaj_adm password=adm', 1);
@@ -316,7 +316,7 @@ SQL statement "SELECT dist_emaj._verify_database(db_name, db_connect_string, gro
           GROUP BY db_name, db_connect_string
           ORDER BY db_name
         ) AS databases"
-PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 41 at PERFORM
+PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 38 at PERFORM
 rollback;
 -- keep the database and the database for dist_emaj_verify_all() tests in misc.sql
 -- should be OK

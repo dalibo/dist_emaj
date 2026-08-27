@@ -94,10 +94,10 @@ The tool first checks the entered parameters and options, then opens a connectio
 
 Then, for each of the three possible actions, the operation is divided into 4 steps:
 
-- **Initialization**: Each *database* is accessed sequentially to verify its ability to execute the requested operation (state of the groups, validity of the new mark name, etc.). If there is an anomaly, the operation is stopped.
-- **Locking**: A lock is placed on the table groups of each *database*. Asynchronous calls allow this action to be parallelized.
-- **Execution**: Once all locks are in place, each *database* is again requested to execute the action itself, also asynchronously.
-- **Validation**: Once all execution steps are completed, the global transaction is committed using a **two-phase COMMIT**.
+1. **Initialization**: Each *database* is accessed sequentially to verify its ability to execute the requested operation (state of the groups, validity of the new mark name, etc.). If there is an anomaly, the operation is stopped.
+2. **Locking**: A lock is placed on the table groups of each *database*. Asynchronous calls allow this action to be parallelized.
+3. **Execution**: Once all locks are in place, each *database* is again requested to execute the action itself, also asynchronously.
+4. **Validation**: Once all execution steps are completed, the global transaction is committed using a **two-phase COMMIT**.
 
 Distributed marks are recorded in the database of the *dist_emaj* extension. The operation is also traced in the ``dist_emaj.dist_emaj_hist`` table.
 

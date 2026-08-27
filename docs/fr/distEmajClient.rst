@@ -94,10 +94,10 @@ L'outil contrôle d'abord les paramètres et options saisis, puis ouvre une conn
 
 Ensuite, pour chacune des trois actions possibles, l'opération est découpée en 4 étapes :
 
-- **initialisation** : chaque *database* est accédée en séquence, pour vérifier sa capacité à exécuter l'opération demandée (état des groupes, validité du nom de la nouvelle marque, etc). En cas d'anomalie, l'opération est arrêtée.
-- **verrouillage** : un verrou est posé sur les groupes de tables de chaque *database*. Des appels asynchrones permettent de paralléliser cette action.
-- **exécution** : une fois tous les verrous posés, chaque *database* est à nouveau sollicitée pour l'exécution de l'action proprement dite, là aussi de manière asynchrone.
-- **validation** : une fois toutes les étapes d'exécution terminées, la transaction globale est validée par un *COMMIT à deux phases*.
+1. **initialisation** : chaque *database* est accédée en séquence, pour vérifier sa capacité à exécuter l'opération demandée (état des groupes, validité du nom de la nouvelle marque, etc). En cas d'anomalie, l'opération est arrêtée.
+2. **verrouillage** : un verrou est posé sur les groupes de tables de chaque *database*. Des appels asynchrones permettent de paralléliser cette action.
+3. **exécution** : une fois tous les verrous posés, chaque *database* est à nouveau sollicitée pour l'exécution de l'action proprement dite, là aussi de manière asynchrone.
+4. **validation** : une fois toutes les étapes d'exécution terminées, la transaction globale est validée par un *COMMIT à deux phases*.
 
 Les marques distribuées sont enregistrées dans la base de l'extension *dist_emaj*. L'opération est également tracée dans la table dist_emaj.dist_emaj_hist.
 
