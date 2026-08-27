@@ -185,6 +185,8 @@ CREATE TABLE dist_emaj.dist_emaj_cluster_group (
 COMMENT ON TABLE dist_emaj.dist_emaj_cluster_group IS
 $$Describes the relationship between clusters and E-Maj table groups.$$;
 
+CREATE INDEX dist_emaj_cluster_group_idx1 ON dist_emaj.dist_emaj_cluster_group(clgrp_database);
+
 -- Table containing the distributed marks.
 CREATE TABLE dist_emaj.dist_emaj_mark (
   mark_cluster                 TEXT NOT NULL,              -- cluster name
@@ -241,6 +243,9 @@ CREATE INDEX dist_emaj_rlbk_idx1 ON dist_emaj.dist_emaj_rlbk(rlbk_cluster);
 CREATE INDEX dist_emaj_rlbk_idx2 ON dist_emaj.dist_emaj_rlbk (rlbk_status)
     WHERE rlbk_status IN ('PLANNING', 'LOCKING', 'EXECUTING', 'COMPLETED');
 
+CREATE INDEX dist_emaj_rlbk_idx3 ON dist_emaj.dist_emaj_rlbk(rlbk_time_id);
+CREATE INDEX dist_emaj_rlbk_idx4 ON dist_emaj.dist_emaj_rlbk(rlbk_mark_time_id);
+
 -- Table containing local rollback data linked to distributed rollback operations.
 CREATE TABLE dist_emaj.dist_emaj_rlbk_database (
   rlbd_rlbk_id                 INT         NOT NULL,       -- distributed rollback id
@@ -252,6 +257,8 @@ CREATE TABLE dist_emaj.dist_emaj_rlbk_database (
   );
 COMMENT ON TABLE dist_emaj.dist_emaj_rlbk_database IS
 $$Contains local rollback data linked to distributed rollback operations.$$;
+
+CREATE INDEX dist_emaj_rlbk_database_idx1 ON dist_emaj.dist_emaj_rlbk_database(rlbd_database);
 
 ----------------------------------------------------------------
 --                                                            --
