@@ -489,7 +489,7 @@ select dist_emaj.dist_emaj_set_param('history_retention', '1 second');
 select dist_emaj.dist_emaj_purge_histories();
                         dist_emaj_purge_histories                        
 -------------------------------------------------------------------------
- 372 dist_emaj_hist rows deleted ; 7 distributed rollback events deleted
+ 406 dist_emaj_hist rows deleted ; 7 distributed rollback events deleted
 (1 row)
 
 select dist_emaj.dist_emaj_set_param('history_retention', NULL);

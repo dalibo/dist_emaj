@@ -8,14 +8,14 @@ select count(*) as all_functions from pg_proc, pg_namespace
   where pg_namespace.oid=pronamespace and nspname = 'dist_emaj' and (proname like E'dist\\_emaj\\_%' or proname like E'\\_%');
  all_functions 
 ---------------
-            31
+            37
 (1 row)
 
 select count(*) as user_callable_functions from pg_proc, pg_namespace 
   where pg_namespace.oid=pronamespace and nspname = 'dist_emaj' and proname like E'dist\\_emaj\\_%';
  user_callable_functions 
 -------------------------
-                      20
+                      22
 (1 row)
 
 -----------------------------
@@ -81,6 +81,7 @@ select funcname, calls from pg_stat_user_functions
                  funcname                  | calls 
 -------------------------------------------+-------
  _check_dist_mark                          |    11
+ _check_json_clusters_conf                 |    29
  _check_json_param_conf                    |    17
  _check_new_dist_mark                      |    28
  _dist_emaj_default_param_before_stmt_fnct |     0
@@ -88,12 +89,15 @@ select funcname, calls from pg_stat_user_functions
  _does_exist_cluster                       |   124
  _export_clusters_conf                     |     6
  _export_param_conf                        |     7
+ _import_clusters_conf                     |     6
+ _import_clusters_conf_exec                |     6
+ _import_clusters_conf_prepare             |    11
  _import_param_conf                        |     8
- _set_time_stamp                           |    62
+ _set_time_stamp                           |    69
  _verify_database                          |   101
  dist_emaj_assign_group                    |    11
  dist_emaj_create_cluster                  |     5
- dist_emaj_create_database                 |     5
+ dist_emaj_create_database                 |     6
  dist_emaj_delete_before_mark_cluster      |     4
  dist_emaj_drop_cluster                    |     2
  dist_emaj_drop_database                   |     3
@@ -102,6 +106,8 @@ select funcname, calls from pg_stat_user_functions
  dist_emaj_export_parameters_configuration |     5
  dist_emaj_export_parameters_configuration |     1
  dist_emaj_get_version                     |    15
+ dist_emaj_import_clusters_configuration   |     5
+ dist_emaj_import_clusters_configuration   |     1
  dist_emaj_import_parameters_configuration |     6
  dist_emaj_import_parameters_configuration |     2
  dist_emaj_purge_histories                 |    18
@@ -110,13 +116,13 @@ select funcname, calls from pg_stat_user_functions
  dist_emaj_sync_marks_cluster              |    24
  dist_emaj_verify_all                      |     2
  dist_emaj_verify_cluster                  |    49
-(30 rows)
+(36 rows)
 
 -- count the total number of user-callable function calls (those who failed are not counted)
 select sum(calls) from pg_stat_user_functions where funcname like E'dist\\_emaj\\_%';
  sum 
 -----
- 169
+ 176
 (1 row)
 
 -----------------------------

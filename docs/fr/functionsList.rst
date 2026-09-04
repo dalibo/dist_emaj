@@ -8,69 +8,85 @@ Toutes ces fonctions sont appelables par les rôles disposant des privilèges *d
 +--------------------------------------------------+-------------------------------+----------------------------------+
 | Fonctions                                        | Paramètres en entrée          | Données restituées               |
 +==================================================+===============================+==================================+
-| :ref:`dist_emaj_assign_group                     | | p_cluster TEXT              | nb.groupe.assigné (0/1) INT      |
+| :ref:`dist_emaj_assign_group                     | | p_cluster TEXT              | nb groupe assigné (0/1) INT      |
 | <dist_emaj_assign_group>`                        | | p_database TEXT             |                                  |
 |                                                  | | p_group TEXT                |                                  |
 |                                                  | | [ p_ifNotExists BOOLEAN ]   |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
-| :ref:`dist_emaj_create_cluster                   | | p_cluster TEXT              | nb.cluster.créé (0/1) INT        |
+| :ref:`dist_emaj_create_cluster                   | | p_cluster TEXT              | nb cluster créé (0/1) INT        |
 | <dist_emaj_create_cluster>`                      | | [ p_ifNotExists BOOLEAN ]   |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
-| :ref:`dist_emaj_create_database                  | | p_database TEXT             | nb.database.créée (0/1) INT      |
+| :ref:`dist_emaj_create_database                  | | p_database TEXT             | nb database créée (0/1) INT      |
 | <dist_emaj_create_database>`                     | | p_connectString TEXT        |                                  |
 |                                                  | | p_rollbackParallelSession   |                                  |
 |                                                  | |                         INT |                                  |
 |                                                  | | [ p_ifNotExists BOOLEAN ]   |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
-| :ref:`dist_emaj_delete_before_mark_cluster       | | p_cluster TEXT              | nb.marques.supprimées INT        |
+| :ref:`dist_emaj_delete_before_mark_cluster       | | p_cluster TEXT              | nb marques supprimées INT        |
 | <dist_emaj_delete_before_mark_cluster>`          | | p_mark TEXT                 |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
-| :ref:`dist_emaj_drop_cluster                     | | p_cluster TEXT              | nb.cluster.supprimé (0/1) INT    |
+| :ref:`dist_emaj_drop_cluster                     | | p_cluster TEXT              | nb cluster supprimé (0/1) INT    |
 | <dist_emaj_drop_cluster>`                        | | [ p_ifExists BOOLEAN ]      |                                  |
 |                                                  | | [ p_cascade BOOLEAN ]       |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
 | :ref:`dist_emaj_drop_extension                   |                               |                                  |
 | <dist_emaj_drop_extension>`                      |                               |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
-| :ref:`dist_emaj_drop_database                    | | p_database TEXT             | nb.database.supprimée (0/1) INT  |
+| :ref:`dist_emaj_drop_database                    | | p_database TEXT             | nb database supprimée (0/1) INT  |
 | <dist_emaj_drop_database>`                       | | [ p_ifExists BOOLEAN ]      |                                  |
 |                                                  | | [ p_cascade BOOLEAN ]       |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
 | :ref:`dist_emaj_export_parameters_configuration  | [ p_includeDefault BOOLEAN ]  | paramètres JSON                  |
 | <export_param_conf>`                             |                               |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
-| :ref:`dist_emaj_export_parameters_configuration  | | p_location TEXT             | nb.paramètres INT                |
+| :ref:`dist_emaj_export_parameters_configuration  | | p_location TEXT             | nb paramètres INT                |
 | <export_param_conf>`                             | | [ p_includeDefault BOOLEAN ]|                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
 | :ref:`dist_emaj_export_clusters_configuration    | [ p_clusters TEXT[] ]         | clusters JSON                    |
 | <export_clusters_conf>`                          |                               |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
-| :ref:`dist_emaj_export_clusters_configuration    | | p_location TEXT             | nb.clusters INT                  |
+| :ref:`dist_emaj_export_clusters_configuration    | | p_location TEXT             | nb clusters INT                  |
 | <export_clusters_conf>`                          | | [ p_clusters TEXT[] ]       |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
 | :ref:`dist_emaj_get_version                      |                               | version TEXT                     |
 | <dist_emaj_get_version>` (V)                     |                               |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
-| :ref:`dist_emaj_import_parameters_configuration  | | p_paramsJson JSON           | nb.paramètres INT                |
+| :ref:`dist_emaj_import_clusters_configuration    | | p_json JSON                 | rapport execution TEXT           |
+| <import_clusters_conf>`                          | | [ p_clusters TEXT[] ]       |                                  |
+|                                                  | | [ p_databases TEXT[] ]      |                                  |
+|                                                  | | [ p_allowObjectsUpdate      |                                  |
+|                                                  | |  BOOLEAN) ]                 |                                  |
+|                                                  | | [ p_resetOtherObjects       |                                  |
+|                                                  | |  BOOLEAN) ]                 |                                  |
++--------------------------------------------------+-------------------------------+----------------------------------+
+| :ref:`dist_emaj_import_clusters_configuration    | | p_location TEXT             | rapport execution TEXT           |
+| <import_clusters_conf>`                          | | [ p_clusters TEXT[] ]       |                                  |
+|                                                  | | [ p_databases TEXT[] ]      |                                  |
+|                                                  | | [ p_allowObjectsUpdate      |                                  |
+|                                                  | |  BOOLEAN) ]                 |                                  |
+|                                                  | | [ p_resetOtherObjects       |                                  |
+|                                                  | |  BOOLEAN) ]                 |                                  |
++--------------------------------------------------+-------------------------------+----------------------------------+
+| :ref:`dist_emaj_import_parameters_configuration  | | p_paramsJson JSON           | nb paramètres INT                |
 | <import_param_conf>`                             | | [ p_resetOtherParameters    |                                  |
 |                                                  | |  BOOLEAN) ]                 |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
-| :ref:`dist_emaj_import_parameters_configuration  | | p_location TEXT             | nb.paramètres INT                |
+| :ref:`dist_emaj_import_parameters_configuration  | | p_location TEXT             | nb paramètres INT                |
 | <import_param_conf>`                             | | [ p_resetOtherParameters    |                                  |
 |                                                  | |  BOOLEAN)]                  |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
-| :ref:`dist_emaj_purge_histories                  | [ p_retentionDelay INTERVAL ] | bilan TEXT                       |
+| :ref:`dist_emaj_purge_histories                  | [ p_retentionDelay INTERVAL ] | rapport execution TEXT           |
 | <dist_emaj_purge_histories>`                     |                               |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
-| :ref:`dist_emaj_remove_group                     | | p_cluster TEXT              | nb.groupe.retiré (0/1) INT       |
+| :ref:`dist_emaj_remove_group                     | | p_cluster TEXT              | nb groupe retiré (0/1) INT       |
 | <dist_emaj_remove_group>`                        | | p_database TEXT             |                                  |
 |                                                  | | p_group TEXT                |                                  |
 |                                                  | | [ p_ifAssigned BOOLEAN ]    |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
-| :ref:`dist_emaj_set_param                        | | p_key TEXT                  | nb.paramètre.modifié (0/1) INT   |
+| :ref:`dist_emaj_set_param                        | | p_key TEXT                  | nb paramètre modifié (0/1) INT   |
 | <dist_emaj_set_param>`                           | | p_value TEXT                |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
-| :ref:`dist_emaj_sync_marks_cluster               | | p_cluster TEXT              | nb.marques.supprimées INT        |
+| :ref:`dist_emaj_sync_marks_cluster               | | p_cluster TEXT              | nb marques supprimées INT        |
 | <dist_emaj_sync_marks_cluster>`                  |                               |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
 | :ref:`dist_emaj_verify_all                       |                               | SETOF message TEXT               |

@@ -18,21 +18,21 @@ La structure de la table **dist_emaj_hist** est la suivante.
 +--------------+-------------+---------------------------------------------------------------------------+
 |Colonne       | Type        | Description                                                               |
 +==============+=============+===========================================================================+
-|hist_id       | BIGSERIAL   | numéro de série identifiant une ligne dans cette table historique         |
+|hist_id       | BIGSERIAL   | Numéro de série identifiant une ligne dans cette table historique         |
 +--------------+-------------+---------------------------------------------------------------------------+
-|hist_datetime | TIMESTAMPTZ | date et heure d'enregistrement de la ligne                                |
+|hist_datetime | TIMESTAMPTZ | Date et heure d'enregistrement de la ligne                                |
 +--------------+-------------+---------------------------------------------------------------------------+
-|hist_function | TEXT        | fonction associée à l'événement                                           |
+|hist_function | TEXT        | Fonction associée à l'événement                                           |
 +--------------+-------------+---------------------------------------------------------------------------+
-|hist_event    | TEXT        | type d'événement                                                          |
+|hist_event    | TEXT        | Type d'événement                                                          |
 +--------------+-------------+---------------------------------------------------------------------------+
-|hist_object   | TEXT        | nom de l'objet sur lequel porte l'événement (groupe, table, séquence,...) |
+|hist_object   | TEXT        | Nom de l'objet sur lequel porte l'événement (groupe, table, séquence,...) |
 +--------------+-------------+---------------------------------------------------------------------------+
-|hist_wording  | TEXT        | commentaires complémentaires                                              |
+|hist_wording  | TEXT        | Commentaires complémentaires                                              |
 +--------------+-------------+---------------------------------------------------------------------------+
-|hist_user     | TEXT        | rôle à l'origine de l'événement                                           |
+|hist_user     | TEXT        | Rôle à l'origine de l'événement                                           |
 +--------------+-------------+---------------------------------------------------------------------------+
-|hist_txid     | BIGINT      | numéro de la transaction à l'origine de l'événement                       |
+|hist_txid     | BIGINT      | Numéro de la transaction à l'origine de l'événement                       |
 +--------------+-------------+---------------------------------------------------------------------------+
 
 La colonne *hist_function*
@@ -43,33 +43,37 @@ La colonne *hist_function* peut prendre les valeurs suivantes.
 +----------------------------------+------------------------------------------------------------------------------------------+
 | Valeur                           | Signification                                                                            |
 +==================================+==========================================================================================+
-| ASSIGN_GROUP                     | affectation d’un groupe à un cluster                                                     |
+| ASSIGN_GROUP                     | Affectation d’un groupe à un cluster                                                     |
 +----------------------------------+------------------------------------------------------------------------------------------+
-| CREATE_CLUSTER                   | création d'un cluster                                                                    |
+| CREATE_CLUSTER                   | Création d'un cluster                                                                    |
 +----------------------------------+------------------------------------------------------------------------------------------+
-| CREATE_DATABASE                  | création d'une database                                                                  |
+| CREATE_DATABASE                  | Création d'une database                                                                  |
 +----------------------------------+------------------------------------------------------------------------------------------+
-| DELETE_BEFORE_MARK_CLUSTER       | suppression des marques distribuées antérieure à une marque pour un cluster              |
+| DELETE_BEFORE_MARK_CLUSTER       | Suppression des marques distribuées antérieure à une marque pour un cluster              |
 +----------------------------------+------------------------------------------------------------------------------------------+
-| DIST_EMAJ                        | exécution d'une fonction distribuée (start, stop, set_mark) pour un cluster              |
+| DIST_EMAJ                        | Exécution d'une fonction distribuée (start, stop, set_mark) pour un cluster              |
 +----------------------------------+------------------------------------------------------------------------------------------+
-| DIST_EMAJ_INSTALL                | installation ou mise à jour de la version de Distributed E-Maj                           |
+| DIST_EMAJ_INSTALL                | Installation ou mise à jour de la version de Distributed E-Maj                           |
 +----------------------------------+------------------------------------------------------------------------------------------+
-| DROP_CLUSTER                     | suppression d'un cluster                                                                 |
+| DROP_CLUSTER                     | Suppression d'un cluster                                                                 |
 +----------------------------------+------------------------------------------------------------------------------------------+
-| DROP_DATABASE                    | suppression d'une database                                                               |
+| DROP_DATABASE                    | Suppression d'une database                                                               |
 +----------------------------------+------------------------------------------------------------------------------------------+
-| PURGE_HISTORIES                  | suppression de la table *dist_emaj_hist* des événements antérieurs au délai de rétention |
+| IMPORT_CLUSTERS                  | Chargement d'une configuration de *clusters* et de *databases*                           |
 +----------------------------------+------------------------------------------------------------------------------------------+
-| REMOVE_GROUP                     | suppression d’un groupe de tables de son cluster                                         |
+| IMPORT_PARAMETERS                | Chargement d'une configuration de paramètres                                             |
 +----------------------------------+------------------------------------------------------------------------------------------+
-| ROLLBACK_GROUPS                  | exécution d'un rollback distribué pour un cluster                                        |
+| PURGE_HISTORIES                  | Suppression de la table *dist_emaj_hist* des événements antérieurs au délai de rétention |
 +----------------------------------+------------------------------------------------------------------------------------------+
-| SET_PARAM                        | changement de valeur d’un paramètre Distributed E-Maj                                    |
+| REMOVE_GROUP                     | Suppression d’un groupe de tables de son cluster                                         |
 +----------------------------------+------------------------------------------------------------------------------------------+
-| SYNC_MARKS_CLUSTER               | synchronisation des marques locales des groupes de tables d'un cluster                   |
+| ROLLBACK_GROUPS                  | Exécution d'un rollback distribué pour un cluster                                        |
 +----------------------------------+------------------------------------------------------------------------------------------+
-| VERIFY_CLUSTER                   | vérification de l'état d'un cluster                                                      |
+| SET_PARAM                        | Changement de valeur d’un paramètre Distributed E-Maj                                    |
++----------------------------------+------------------------------------------------------------------------------------------+
+| SYNC_MARKS_CLUSTER               | Synchronisation des marques locales des groupes de tables d'un cluster                   |
++----------------------------------+------------------------------------------------------------------------------------------+
+| VERIFY_CLUSTER                   | Vérification de l'état d'un cluster                                                      |
 +----------------------------------+------------------------------------------------------------------------------------------+
 
 La colonne *hist_event*
@@ -80,29 +84,43 @@ La colonne *hist_event* peut prendre les valeurs suivantes.
 +------------------------------+------------------------------------------------------------------------+
 | Valeur                       | Signification                                                          |
 +==============================+========================================================================+
-| BEGIN                        | début                                                                  |
+| BEGIN                        | Début                                                                  |
 +------------------------------+------------------------------------------------------------------------+
-| DELETED PARAMETER            | paramètre supprimé dans *dist_emaj_param*                              |
+| CLEANUP_RLBK_STATE           | Nettoyage de l'état des rollbacks                                      |
 +------------------------------+------------------------------------------------------------------------+
-| CLEANUP_RLBK_STATE           | nettoyage de l'état des rollbacks                                      |
+| CLUSTER_CREATED              | *Cluster* créé                                                         |
 +------------------------------+------------------------------------------------------------------------+
-| DELETED MARKS                | marques supprimées                                                     |
+| CLUSTER_DROP                 | *Cluster* supprimé                                                     |
 +------------------------------+------------------------------------------------------------------------+
-| END                          | fin                                                                    |
+| DATABASE_CREATED             | *Database* créée                                                       |
 +------------------------------+------------------------------------------------------------------------+
-| EXEC                         | début de phase d'exécution d'une fonction distribuée                   |
+| DATABASE_DROP                | *Database* supprimée                                                   |
 +------------------------------+------------------------------------------------------------------------+
-| INIT                         | début de phase d'initialisation d'une fonction distribuée              |
+| DATABASE_UPDATED             | *Database* modifiée                                                    |
 +------------------------------+------------------------------------------------------------------------+
-| INSERTED PARAMETER           | paramètre inséré dans *dist_emaj_param*                                |
+| DELETED PARAMETER            | Paramètre supprimé dans *dist_emaj_param*                              |
 +------------------------------+------------------------------------------------------------------------+
-| LOCK                         | début de phase de verrouilage d'une fonction distribuée                |
+| DELETED MARKS                | Marques supprimées                                                     |
 +------------------------------+------------------------------------------------------------------------+
-| RESOLVE_MARK                 | résolution d'un nom de marque distribuée                               |
+| END                          | Fin                                                                    |
 +------------------------------+------------------------------------------------------------------------+
-| TIME STAMP SET               | empreinte temporelle interne enregistrée                               |
+| EXEC                         | Début de phase d'exécution d'une fonction distribuée                   |
 +------------------------------+------------------------------------------------------------------------+
-| UPDATED PARAMETER            | paramètre modifié dans *dist_emaj_param*                               |
+| GROUP_ASSIGNED               | Groupe de tables assigné à un *cluster*                                |
++------------------------------+------------------------------------------------------------------------+
+| GROUP_REMOVED                | Groupe de tables retiré d'un *cluster*                                 |
++------------------------------+------------------------------------------------------------------------+
+| INIT                         | Début de phase d'initialisation d'une fonction distribuée              |
++------------------------------+------------------------------------------------------------------------+
+| INSERTED PARAMETER           | Paramètre inséré dans *dist_emaj_param*                                |
++------------------------------+------------------------------------------------------------------------+
+| LOCK                         | Début de phase de verrouilage d'une fonction distribuée                |
++------------------------------+------------------------------------------------------------------------+
+| RESOLVE_MARK                 | Résolution d'un nom de marque distribuée                               |
++------------------------------+------------------------------------------------------------------------+
+| TIME STAMP SET               | Empreinte temporelle interne enregistrée                               |
++------------------------------+------------------------------------------------------------------------+
+| UPDATED PARAMETER            | Paramètre modifié dans *dist_emaj_param*                               |
 +------------------------------+------------------------------------------------------------------------+
 
 ----

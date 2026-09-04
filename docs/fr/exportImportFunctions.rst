@@ -77,7 +77,7 @@ Exporter une configuration de clusters
 
 La fonction ``emaj_export_clusters_configuration()`` exporte une description d’un ou plusieurs clusters sous forme de structure *JSON*. Elle existe en deux variantes.
 
-On peut écrire une configuration de groupes de clusters dans un **fichier plat** par : ::
+On peut générer une configuration de groupes de clusters dans un **fichier plat** par : ::
 
    SELECT emaj_export_clusters_configuration(p_location, p_clusters);
 
@@ -118,6 +118,90 @@ La structure *JSON* exportée comprent les attributs :ref:`"databases" et "clust
           ...
    	   ]
    }
+
+----
+
+.. _import_clusters_conf:
+
+Importer une configuration de clusters
+--------------------------------------
+
+La fonction ``emaj_import_clusters_configuration()`` importe une configuration de *clusters* et de *databases* décrite dans une structure *JSON*. Elle existe en deux variantes.
+
+On peut configurer un ensemble de *clusters* et de *databases* à partir un **fichier plat** par : ::
+
+   SELECT emaj_import_clusters_configuration(p_location, p_clusters, p_databases,
+                                             p_allowObjectsUpdate, p_dropOtherObjects);
+
+La fonction peut aussi avoir comme premier paramètre la **structure JSON** décrivant les *clusters* et *databases* : ::
+
+   SELECT emaj_import_clusters_configuration(p_json, p_clusters, p_databases,
+                                             p_allowObjectsUpdate, p_dropOtherObjects);
+
+**Paramètres en entrée**
+
+- ``p_location`` (*TEXT*) : Emplacement du **fichier** contenant la configuration des *clusters* et *databases*.
+- ``p_json`` (*JSON*) : **Configuration JSON des clusters et databases**.
+- ``p_clusters`` (*TEXT[]*, optionnel) : Tableau des **clusters** à importer. Si le paramètre est absent ou *NULL*, tous les *clusters* sont importés. Si le tableau est vide, aucun *cluster* n'est importé.
+- ``p_databases`` (*TEXT[]*, optionnel) : Tableau des **databases** à importer. Si le paramètre est absent ou *NULL*, toutes les *databases* sont importées. Si le tableau est vide, aucune database n'est importée.
+- ``p_allowObjectsUpdate`` (*BOOLEAN*, optionnel):
+
+   - **FALSE** (par défaut) : Si une *database* existe déjà mais avec des attributs différents de ceux de la configuration à charger, ou si un *cluster* existe déjà mais avec une composition de groupes de tables différente, la fonction génère une erreur.
+   - **TRUE** : Des *clusters* ou *databases* existants peuvent être modifiés.
+
+- ``p_dropOtherObjects`` (*BOOLEAN*, optionnel):
+
+   - **FALSE** (par défaut) : Les *clusters* et *databases* absents de la configuration sont conservés en l'état (chargement en **mode différentiel**).
+   - **TRUE** : Les *clusters* et *databases* absents de la configuration sont supprimés (chargement en **mode complet**).
+
+**Données retournées**
+
+La fonction retourne un message indiquant les nombres de *clusters* et *databases* créés, modifiés, supprimés.
+
+**Notes**
+
+Si le paramètre ``p_location`` est fourni, le chemin du fichier de sortie doit être accessible en lecture par l’instance PostgreSQL.
+
+La configuration *JSON* importée doit au moins contenir une des deux structures ``"databases"`` ou ``"clusters"``, telles que :ref:`décrites ci-dessus<clusters_json>`.
+
+La fonction peut directement charger des fichiers générés par la fonction :ref:`dist_emaj_export_clusters_configuration()<export_clusters_conf>`.
+
+Si le paramètre ``p_clusters`` est valorisé, seuls les *clusters* listés sont chargés.
+
+Si le paramètre ``p_databases`` est valorisé, seuls les *databases* listées sont chargées.
+
+La seconde variante permet d'importer une configuration de *clusters* et *databases* à partir d'une colonne de table relationnelle. Par exemple : ::
+
+   SELECT dist_emaj.dist_emaj_import_clusters_configuration (mes_clusters_json)
+       FROM ma_table;
+
+La combinaison des paramètres ``p_clusters``, ``p_databases``, ``p_allowObjectsUpdate`` et ``p_dropOtherObjects`` couvre différents cas d'usage.
+
+- Chargement d'une **configuration complète** dans un environnement *dist_emaj* **vide** : ::
+
+   SELECT dist_emaj.dist_emaj_import_clusters_configuration ('conf_globale.json');
+
+- Chargement **en deux étapes** des structures décrivant les *clusters* et les *databases* : ::
+
+   SELECT dist_emaj.dist_emaj_import_clusters_configuration ('conf_databases.json');
+   SELECT dist_emaj.dist_emaj_import_clusters_configuration ('conf_clusters.json');
+
+- Rechargement d'une **configuration complète** dans un environnement *dist_emaj* comprenant déjà des *clusters* et *databases*, avec **suppression des objets obsolètes** : ::
+
+   SELECT dist_emaj.dist_emaj_import_clusters_configuration ('conf_globale.json',
+                    NULL, NULL, TRUE, TRUE);
+
+- **Modification** d'attributs d'une *database* ou de composition d'un *cluster* : ::
+
+   SELECT dist_emaj.dist_emaj_import_clusters_configuration ('conf_globale.json',
+                    NULL, ARRAY['ma_db1'], TRUE, FALSE);
+   SELECT dist_emaj.dist_emaj_import_clusters_configuration ('conf_globale.json',
+                    ARRAY['mon_clst1'], NULL, TRUE, FALSE);
+
+- **Vidage** de la configuration existante : ::
+
+   SELECT dist_emaj.dist_emaj_import_clusters_configuration ('conf_globale.json',
+                    ARRAY[]::TEXT[], ARRAY[]::TEXT[], FALSE, TRUE);
 
 ----
 

@@ -51,6 +51,22 @@ All these functions can be called by roles with *dist_emaj_adm* privileges. The 
 | :ref:`dist_emaj_get_version                      |                               | version TEXT                     |
 | <dist_emaj_get_version>` (V)                     |                               |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
+| :ref:`dist_emaj_import_clusters_configuration    | | p_json JSON                 | execution report TEXT            |
+| <import_clusters_conf>`                          | | [ p_clusters TEXT[] ]       |                                  |
+|                                                  | | [ p_databases TEXT[] ]      |                                  |
+|                                                  | | [ p_allowObjectsUpdate      |                                  |
+|                                                  | |  BOOLEAN) ]                 |                                  |
+|                                                  | | [ p_resetOtherObjects       |                                  |
+|                                                  | |  BOOLEAN) ]                 |                                  |
++--------------------------------------------------+-------------------------------+----------------------------------+
+| :ref:`dist_emaj_import_clusters_configuration    | | p_location TEXT             | execution report TEXT            |
+| <import_clusters_conf>`                          | | [ p_clusters TEXT[] ]       |                                  |
+|                                                  | | [ p_databases TEXT[] ]      |                                  |
+|                                                  | | [ p_allowObjectsUpdate      |                                  |
+|                                                  | |  BOOLEAN) ]                 |                                  |
+|                                                  | | [ p_resetOtherObjects       |                                  |
+|                                                  | |  BOOLEAN) ]                 |                                  |
++--------------------------------------------------+-------------------------------+----------------------------------+
 | :ref:`dist_emaj_import_parameters_configuration  | | p_paramsJson JSON           | # parameters INT                 |
 | <import_param_conf>`                             | | [ p_resetOtherParameters    |                                  |
 |                                                  | |  BOOLEAN) ]                 |                                  |

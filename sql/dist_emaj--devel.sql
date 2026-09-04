@@ -296,15 +296,13 @@ $$View on databases characteristics.$$;
 
 CREATE TYPE dist_emaj._report_message_type AS (
   rpt_msg_type                 INT,                        -- message number
-                                                           -- range 1 - 99 used by _import_groups_conf_check
                                                            -- range 101 - 199 used by _check_json_param_conf
-                                                           -- range 201 - 249 used by _check_json_groups_conf
-                                                           -- range 250 - 299 used by _import_groups_conf_prepare
+                                                           -- range 201 - 249 used by _check_json_clusters_conf
+                                                           -- range 250 - 299 used by _import_clusters_conf_prepare
   rpt_severity                 INT,                        -- severity level
                                                            -- 0 : notice
                                                            -- 1 : blocking error
-                                                           -- 2 : error not blocking an audit_only group creation
-                                                           -- 3 : warning
+                                                           -- 2 : warning
   rpt_text_var_1               TEXT,                       -- textual variable #1
   rpt_text_var_2               TEXT,                       -- textual variable #2
   rpt_text_var_3               TEXT,                       -- textual variable #3
@@ -579,6 +577,185 @@ $_check_json_param_conf$
     RETURN;
   END;
 $_check_json_param_conf$;
+
+CREATE OR REPLACE FUNCTION dist_emaj._check_json_clusters_conf(p_clustersJson JSON)
+RETURNS SETOF dist_emaj._report_message_type LANGUAGE plpgsql AS
+$_check_json_clusters_conf$
+-- This function verifies that the JSON structure that contains a clusters and databases configuration is correct.
+-- Any detected issue is reported as a message row. The caller defines what to do with them.
+-- It is called by the _import_clusters_conf() function.
+-- The function is also directly called by Emaj_web.
+-- This function checks that:
+--   - the "clusters" and "databases" attributes exist
+--   - "cluster", "database", "group" attributes are defined
+--   - no unknow attribute are listed in the cluster and database levels
+--   - the "rollback_parallel_sessions" attributes are numeric
+--   - clusters, databases and groups are not described several times
+-- Input: the JSON structure to check
+-- Output: _report_message_type records representing diagnostic messages
+  DECLARE
+    v_databasesJson          JSON;
+    v_clustersJson           JSON;
+    v_databaseNumber         INT;
+    v_database               TEXT;
+    v_clusterNumber          INT;
+    v_cluster                TEXT;
+    v_groupNumber            INT;
+    v_group                  TEXT;
+    r_database               RECORD;
+    r_cluster                RECORD;
+    r_group                  RECORD;
+  BEGIN
+-- Extract the "databases" and "clusters" json path and check that at least one attribute exists.
+    v_databasesJson = p_clustersJson #> '{"databases"}';
+    v_clustersJson = p_clustersJson #> '{"clusters"}';
+    IF v_databasesJson IS NULL AND v_clustersJson IS NULL THEN
+      RETURN QUERY
+        VALUES (201, 1, NULL::TEXT, NULL::TEXT, NULL::TEXT, NULL::TEXT, NULL::INT,
+                'The JSON structure does not contain any "databases" or "clusters" array.');
+    END IF;
+-- Check the databases structure.
+    IF v_databasesJson IS NOT NULL THEN
+-- Check that all keywords of the JSON structure are valid.
+-- Process databases attributes.
+      v_databaseNumber = 0;
+      FOR r_database IN
+        SELECT value AS databaseJson
+          FROM json_array_elements(v_databasesJson)
+      LOOP
+--   The database name must be defined.
+        v_databaseNumber = v_databaseNumber + 1;
+        v_database = r_database.databaseJson ->> 'database';
+        IF v_database IS NULL OR v_database = '' THEN
+          RETURN QUERY
+            VALUES (210, 1, NULL::TEXT, NULL::TEXT, NULL::TEXT, NULL::TEXT, v_databaseNumber,
+                    format('The database #%s has no valid "database" attribute.',
+                           v_databaseNumber::TEXT));
+        ELSE
+--   Other attributes of the database level must be known.
+          RETURN QUERY
+            SELECT 211, 1, v_database, NULL::TEXT, NULL::TEXT, key, NULL::INT,
+                 format('For the database "%s", the keyword "%s" is unknown.',
+                        v_database, key)
+              FROM (
+                SELECT key
+                  FROM json_object_keys(r_database.databaseJson) AS x(key)
+                  WHERE key NOT IN ('database', 'connect_string', 'rollback_parallel_sessions')
+                ) AS t;
+--   The "connect_string" attribute must exist.
+          IF r_database.databaseJson -> 'connect_string' IS NULL OR
+             json_typeof(r_database.databaseJson -> 'connect_string') <> 'string' THEN
+            RETURN QUERY
+              VALUES (212, 1, v_database, NULL::TEXT, NULL::TEXT, NULL::TEXT, NULL::INT,
+                      format('For the database "%s", the "connect_string" attribute must exist and be of type string.',
+                             v_database));
+          END IF;
+--   The "rollback_parallel_sessions" attribute must exist.
+          IF r_database.databaseJson -> 'rollback_parallel_sessions' IS NULL OR
+             json_typeof(r_database.databaseJson -> 'rollback_parallel_sessions') <> 'number' THEN
+            RETURN QUERY
+              VALUES (213, 1, v_database, NULL::TEXT, NULL::TEXT, NULL::TEXT, NULL::INT,
+                      format('For the database "%s", the "rollback_parallel_sessions" attribute must exist and be of type number.',
+                             v_database));
+          END IF;
+        END IF;
+      END LOOP;
+-- Check that databases are not configured more than once in the JSON structure.
+      RETURN QUERY
+        SELECT 202, 1, "database", NULL::TEXT, NULL::TEXT, NULL::TEXT, NULL::INT,
+             format('The JSON structure references several times the database "%s".',
+                    "database")
+          FROM (
+            SELECT "database", count(*)
+              FROM json_to_recordset(v_databasesJson) AS x("database" TEXT)
+              GROUP BY "database" HAVING count(*) > 1
+            ) AS t;
+    END IF;
+    IF v_clustersJson IS NOT NULL THEN
+-- Check that all keywords of the JSON structure are valid.
+-- Process databases attributes.
+      v_clusterNumber = 0;
+      FOR r_cluster IN
+        SELECT value AS clusterJson
+          FROM json_array_elements(v_clustersJson)
+      LOOP
+--   The cluster name must be defined.
+        v_clusterNumber = v_clusterNumber + 1;
+        v_cluster = r_cluster.clusterJson ->> 'cluster';
+        IF v_cluster IS NULL OR v_cluster = '' THEN
+          RETURN QUERY
+            VALUES (220, 1, NULL::TEXT, NULL::TEXT, NULL::TEXT, NULL::TEXT, v_clusterNumber,
+                    format('The cluster #%s has no valid "cluster" attribute.',
+                           v_clusterNumber::TEXT));
+        ELSE
+--   Other attributes of the cluster level must be known.
+          RETURN QUERY
+            SELECT 221, 1, v_cluster, NULL::TEXT, NULL::TEXT, key, NULL::INT,
+                 format('For the cluster "%s", the keyword "%s" is unknown.',
+                        v_cluster, key)
+              FROM (
+                SELECT key
+                  FROM json_object_keys(r_cluster.clusterJson) AS x(key)
+                  WHERE key NOT IN ('cluster', 'groups')
+                ) AS t;
+--   The "group" attribute must exist and be an array.
+          IF r_cluster.clusterJson -> 'groups' IS NULL OR json_typeof(r_cluster.clusterJson -> 'groups') <> 'array' THEN
+            RETURN QUERY
+              VALUES (222, 1, v_database, NULL::TEXT, NULL::TEXT, NULL::TEXT, NULL::INT,
+                      format('For the cluster "%s", the "groups" attribute must exist and be of type array.',
+                             v_cluster));
+          ELSE
+-- Process tables groups attributes.
+            v_groupNumber = 0;
+            FOR r_group IN
+              SELECT value AS groupJson
+                FROM json_array_elements(r_cluster.clusterJson -> 'groups')
+            LOOP
+              v_groupNumber = v_groupNumber + 1;
+              v_database = r_group.groupJson ->> 'database';
+              v_group = r_group.groupJson ->> 'group';
+--   The database and group attributes must exist.
+              IF v_database IS NULL OR v_database = '' THEN
+                RETURN QUERY
+                  VALUES (230, 1, v_cluster, NULL::TEXT, NULL::TEXT, NULL::TEXT, v_groupNumber,
+                          format('In the cluster "%s", the group #%s has no "database" attribute.',
+                                 v_cluster, v_groupNumber::TEXT));
+              END IF;
+              IF v_group IS NULL OR v_group = '' THEN
+                RETURN QUERY
+                  VALUES (231, 1, v_cluster, NULL::TEXT, NULL::TEXT, NULL::TEXT, v_groupNumber,
+                          format('In the cluster "%s", the group #%s has no "group" attribute.',
+                                 v_cluster, v_groupNumber::TEXT));
+              END IF;
+--   Attributes of the groups level must exist.
+              RETURN QUERY
+                SELECT 232, 1, v_cluster, v_database, v_group, key, NULL::INT,
+                     format('In the cluster "%s" and for the group %s on database %s, the keyword "%s" is unknown.',
+                            v_group, v_group, v_database, key)
+                  FROM (
+                    SELECT key
+                      FROM json_object_keys(r_group.groupJson) AS x(key)
+                      WHERE key NOT IN ('database', 'group')
+                    ) AS t;
+            END LOOP;
+          END IF;
+        END IF;
+      END LOOP;
+-- Check that clusters are not configured more than once in the JSON structure.
+      RETURN QUERY
+        SELECT 203, 1, "cluster", NULL::TEXT, NULL::TEXT, NULL::TEXT, NULL::INT,
+             format('The JSON structure references several times the cluster "%s".',
+                    "cluster")
+          FROM (
+            SELECT "cluster", count(*)
+              FROM json_to_recordset(v_clustersJson) AS x("cluster" TEXT)
+              GROUP BY "cluster" HAVING count(*) > 1
+            ) AS t;
+    END IF;
+--
+    RETURN;
+  END;
+$_check_json_clusters_conf$;
 
 ----------------------------------------------------------------
 --                                                            --
@@ -1118,6 +1295,584 @@ $_export_clusters_conf$
     RETURN v_clustersJson;
   END;
 $_export_clusters_conf$;
+
+CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_import_clusters_configuration(p_json JSON, p_clusters TEXT[] DEFAULT NULL,
+                                                                             p_databases TEXT[] DEFAULT NULL,
+                                                                             p_allowObjectsUpdate BOOLEAN DEFAULT FALSE,
+                                                                             p_dropOtherObjects BOOLEAN DEFAULT FALSE)
+RETURNS TEXT LANGUAGE plpgsql AS
+$dist_emaj_import_clusters_configuration$
+-- This function import a supplied JSON formatted structure representing clusters and databases to create or update.
+-- This structure can have been generated by the dist_emaj_export_clusters_configuration() functions and adapted by the user.
+-- It calls the _import_clusters_conf() function to process the clusters.
+-- Input: - the clusters configuration structure in JSON format,
+--        - an optional array of cluster names to process (a NULL (=default) value means all clusters described in the JSON structure,
+--            an empty array means no cluster to import),
+--        - an optional array of database names to process (a NULL value (=default) means all databases described in the JSON structure,
+--            an empty array means no database to import),
+--        - an optional boolean indicating whether clusters and databases to import may already exist (FALSE by default),
+--        - an optional boolean to ask for the drop of all existing clusters and databases that are not in the imported configuration
+--            (FALSE by default).
+-- Output: import summary report.
+  BEGIN
+-- Just process the configuration.
+    RETURN dist_emaj._import_clusters_conf(p_json, p_clusters, p_databases, p_allowObjectsUpdate, p_dropOtherObjects, NULL::TEXT);
+  END;
+$dist_emaj_import_clusters_configuration$;
+COMMENT ON FUNCTION dist_emaj.dist_emaj_import_clusters_configuration(JSON, TEXT[], TEXT[], BOOLEAN, BOOLEAN) IS
+$$Import a json structure describing clusters and databases to create or alter.$$;
+
+CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_import_clusters_configuration(p_location TEXT, p_clusters TEXT[] DEFAULT NULL,
+                                                                             p_databases TEXT[] DEFAULT NULL,
+                                                                             p_allowObjectsUpdate BOOLEAN DEFAULT FALSE,
+                                                                             p_dropOtherObjects BOOLEAN DEFAULT FALSE)
+RETURNS TEXT LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS
+$dist_emaj_import_clusters_configuration$
+-- This function imports a file containing a JSON formatted structure representing clusters and databases to create or update.
+-- This structure can have been generated by the dist_emaj_export_clusters_configuration() functions and adapted by the user.
+-- It calls the _import_clusters_conf() function to process the clusters and databases.
+-- Input: - input file location,
+--        - an optional array of cluster names to process (a NULL (=default) value means all clusters described in the JSON structure,
+--            an empty array means no cluster to import),
+--        - an optional array of database names to process (a NULL value (=default) means all databases described in the JSON structure,
+--            an empty array means no database to import),
+--        - an optional boolean indicating whether clusters and databases to import may already exist (FALSE by default),
+--        - an optional boolean to ask for the drop of all existing clusters and databases that are not in the imported configuration
+--            (FALSE by default).
+-- Output: import summary report.
+-- The function is defined as SECURITY DEFINER so that dist_emaj roles can perform the COPY statement.
+  DECLARE
+    v_clustersText           TEXT;
+    v_json                   JSON;
+  BEGIN
+-- Read the input file and put its content into a temporary table.
+    CREATE TEMP TABLE t (clusters TEXT);
+    EXECUTE format ('COPY t FROM %L',
+                    p_location);
+-- Aggregate the lines into a single text variable.
+    SELECT string_agg(clusters, E'\n') INTO v_clustersText
+      FROM t;
+    DROP TABLE t;
+-- Verify that the file content is a valid json structure.
+    BEGIN
+      v_json = v_clustersText::JSON;
+    EXCEPTION WHEN OTHERS THEN
+      RAISE EXCEPTION 'emaj_import_clusters_configuration: The file content is not a valid JSON content.';
+    END;
+-- Proccess the clusters and return the result.
+    RETURN dist_emaj._import_clusters_conf(v_json, p_clusters, p_databases, p_allowObjectsUpdate, p_dropOtherObjects, p_location);
+  END;
+$dist_emaj_import_clusters_configuration$;
+COMMENT ON FUNCTION dist_emaj.dist_emaj_import_clusters_configuration(TEXT, TEXT[], TEXT[], BOOLEAN, BOOLEAN) IS
+$$Create or alter table groups configuration from a JSON formatted file.$$;
+
+CREATE OR REPLACE FUNCTION dist_emaj._import_clusters_conf(p_json JSON, p_clusters TEXT[], p_databases TEXT[],
+                                                           p_allowObjectsUpdate BOOLEAN, p_dropOtherObjects BOOLEAN,
+                                                           p_location TEXT)
+RETURNS TEXT LANGUAGE plpgsql AS
+$_import_clusters_conf$
+-- This function processes a JSON formatted structure representing the clusters and databases to create or update.
+-- This structure can have been generated by the dist_emaj_export_clusters_configuration() functions and adapted by the user.
+-- The expected JSON structure must contain two arrays like:
+-- {
+--   "databases": [
+--     {
+--       "database": "sss",
+--       "connect_string": "ccc",
+--       "rollback_parallel_sessions": n
+--     },
+--     {
+--     ...
+--     }
+--   ],
+--   "clusters": [
+--     {
+--       "cluster": "cccc",
+--       "groups": [
+--          {
+--          "database": "sss",
+--          "group": "ggg"
+--          },
+--          {
+--          ...
+--          }
+--       ],
+--     },
+--     {
+--     ...
+--     }
+--   ]
+-- }
+-- Both clusters and databases arrays may be empty.
+-- Input: - the clusters and databases configuration structure in JSON format,
+--        - the array of cluster names to process,
+--        - the array of database names to process,
+--        - the boolean indicating whether clusters and databases to import may already exist,
+--        - the boolean to ask for the drop of all existing clusters and databases that are not in the imported configuration,
+--        - the input file name, if any, to record in the dist_emaj_hist table (NULL if direct import).
+-- Output: import summary report.
+  DECLARE
+    v_clustersJson           JSON;
+    v_databasesJson          JSON;
+    r_msg                    RECORD;
+  BEGIN
+-- Performs various checks on the clusters and databases content described in the supplied JSON structure.
+    FOR r_msg IN
+      SELECT rpt_message
+        FROM dist_emaj._check_json_clusters_conf(p_json)
+        ORDER BY rpt_msg_type, rpt_text_var_1, rpt_text_var_2, rpt_text_var_3, rpt_int_var_1
+    LOOP
+      RAISE WARNING '_import_clusters_conf (1): %', r_msg.rpt_message;
+    END LOOP;
+    IF FOUND THEN
+      RAISE EXCEPTION '_import_clusters_conf: One or several errors have been detected in the supplied JSON structure.';
+    END IF;
+-- Extract the "clusters" and "databases" json paths.
+    v_clustersJson = p_json #> '{"clusters"}';
+    v_databasesJson = p_json #> '{"databases"}';
+-- If not supplied by the caller, materialize the clusters array, by aggregating all clusters of the JSON structure.
+    IF p_clusters IS NULL THEN
+      SELECT array_agg(cluster) INTO p_clusters
+        FROM json_to_recordset(v_clustersJson) AS x(cluster TEXT);
+    END IF;
+-- If not supplied by the caller, materialize the databases array, by aggregating all databases of the JSON structure.
+    IF p_databases IS NULL THEN
+      SELECT array_agg(database) INTO p_databases
+        FROM json_to_recordset(v_databasesJson) AS x(database TEXT);
+    END IF;
+-- Prepare the clusters configuration import. This may report some other issues with the clusters content.
+    FOR r_msg IN
+      SELECT rpt_message
+        FROM dist_emaj._import_clusters_conf_prepare(p_json, p_clusters, p_databases, p_allowObjectsUpdate, p_dropOtherObjects, p_location)
+        ORDER BY rpt_msg_type, rpt_text_var_1, rpt_text_var_2, rpt_text_var_3
+    LOOP
+      RAISE WARNING '_import_clusters_conf (2): %', r_msg.rpt_message;
+    END LOOP;
+    IF FOUND THEN
+      RAISE EXCEPTION '_import_clusters_conf: One or several errors have been detected in the JSON groups configuration.';
+    END IF;
+-- OK, execute the import step.
+    RETURN dist_emaj._import_clusters_conf_exec(p_dropOtherObjects);
+  END;
+$_import_clusters_conf$;
+
+CREATE OR REPLACE FUNCTION dist_emaj._import_clusters_conf_prepare(p_clustersJson JSON, p_clusters TEXT[], p_databases TEXT[],
+                                                    p_allowObjectsUpdate BOOLEAN, p_dropOtherObjects BOOLEAN, p_location TEXT)
+RETURNS SETOF dist_emaj._report_message_type LANGUAGE plpgsql AS
+$_import_clusters_conf_prepare$
+-- This function prepares the effective clusters configuration import.
+-- It is called by _import_clusters_conf() and by Emaj_web.
+-- At the end of the function, temporary tables contain the new clusters configuration.
+-- Input: - the clusters configuration structure in JSON format,
+--        - the array of cluster names to process,
+--        - the array of database names to process,
+--        - the boolean indicating whether clusters and databases to import may already exist,
+--        - the boolean to ask for the drop of all existing clusters and databases that are not in the imported configuration,
+--        - the input file name, if any, to record in the dist_emaj_hist table (NULL if direct import).
+-- Output: diagnostic records.
+  DECLARE
+    v_prevCMM                TEXT = pg_catalog.current_setting('client_min_messages');
+    v_clustersJson           JSON;
+    v_databasesJson          JSON;
+    r_cluster                RECORD;
+    r_group                  RECORD;
+    r_database               RECORD;
+  BEGIN
+-- Insert a BEGIN event into the history.
+    INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_wording)
+      VALUES ('IMPORT_CLUSTERS', 'BEGIN', 'Input file: ' || quote_literal(p_location));
+-- Extract the "clusters" and "databases" json paths.
+    v_clustersJson = p_clustersJson #> '{"clusters"}';
+    v_databasesJson = p_clustersJson #> '{"databases"}';
+-- Check that all databases listed in the p_databases array exist in the JSON structure.
+    RETURN QUERY
+      SELECT 250, 1, database_name, NULL::TEXT, NULL::TEXT, NULL::TEXT, NULL::INT,
+                   format('The database "%s" to import is not referenced in the JSON structure.',
+                          database_name)
+        FROM
+          (  SELECT database_name
+               FROM unnest(p_databases) AS c(database_name)
+           EXCEPT
+             SELECT database
+               FROM json_to_recordset(v_databasesJson) AS x(database TEXT)
+          ) AS t;
+    IF FOUND THEN
+      RETURN;
+    END IF;
+-- If the p_allowObjectsUpdate flag is FALSE, check that no selected database already exists.
+    IF NOT p_allowObjectsUpdate THEN
+      RETURN QUERY
+        SELECT 251, 1, database_name, NULL::TEXT, NULL::TEXT, NULL::TEXT, NULL::INT,
+                     format('The database "%s" already exists.',
+                            database_name)
+          FROM
+            (SELECT database AS database_name
+               FROM json_to_recordset(v_databasesJson) AS x(database TEXT), dist_emaj.dist_emaj_database
+               WHERE db_name = database
+                 AND database = ANY (p_databases)
+            ) AS t;
+      IF FOUND THEN
+        RETURN;
+      END IF;
+    END IF;
+-- Check that all clusters listed in the p_clusters array exist in the JSON structure.
+    RETURN QUERY
+      SELECT 252, 1, cluster_name, NULL::TEXT, NULL::TEXT, NULL::TEXT, NULL::INT,
+                   format('The cluster "%s" to import is not referenced in the JSON structure.',
+                          cluster_name)
+        FROM
+          (  SELECT cluster_name
+               FROM unnest(p_clusters) AS c(cluster_name)
+           EXCEPT
+             SELECT cluster
+               FROM json_to_recordset(v_clustersJson) AS x(cluster TEXT)
+          ) AS t;
+    IF FOUND THEN
+      RETURN;
+    END IF;
+-- If the p_allowObjectsUpdate flag is FALSE, check that no selected cluster already exists.
+    IF NOT p_allowObjectsUpdate THEN
+      RETURN QUERY
+        SELECT 253, 1, cluster_name, NULL::TEXT, NULL::TEXT, NULL::TEXT, NULL::INT,
+                     format('The cluster "%s" already exists.',
+                            cluster_name)
+          FROM
+            (SELECT cluster AS cluster_name
+               FROM json_to_recordset(v_clustersJson) AS x(cluster TEXT), dist_emaj.dist_emaj_cluster
+               WHERE clst_name = cluster
+                 AND cluster = ANY (p_clusters)
+            ) AS t;
+      IF FOUND THEN
+        RETURN;
+      END IF;
+    END IF;
+-- Drop temporary tables in case of...
+    SET client_min_messages TO WARNING;
+    DROP TABLE IF EXISTS tmp_cluster, tmp_cluster_group, tmp_database;
+    PERFORM pg_catalog.set_config ('client_min_messages', v_prevCMM, FALSE);
+-- Create the temporary table that will hold the imported clusters.
+    CREATE TEMP TABLE tmp_cluster (
+      tmp_cluster          TEXT NOT NULL
+      );
+-- Create the temporary table that will hold the table groups configured in imported clusters.
+    CREATE TEMP TABLE tmp_cluster_group (
+      tmp_cluster          TEXT NOT NULL,
+      tmp_database         TEXT NOT NULL,
+      tmp_group            TEXT NOT NULL
+      );
+-- Create the temporary table that will hold the imported databases
+    CREATE TEMP TABLE tmp_database (
+      tmp_database         TEXT NOT NULL,
+      tmp_connect_string   TEXT NOT NULL,
+      tmp_rlbk_session     SMALLINT NOT NULL
+      );
+-- Insert clusters into the tmp_cluster temporary table.
+    INSERT INTO tmp_cluster (tmp_cluster)
+      SELECT cluster
+        FROM unnest(p_clusters) AS cluster;
+-- In an extra pass over the JSON structure, populate the tmp_cluster_group temporary table.
+    FOR r_cluster IN
+      SELECT value AS clusterJson
+        FROM json_array_elements(v_clustersJson)
+        WHERE value ->> 'cluster' = ANY (p_clusters)
+    LOOP
+-- Insert groups into tmp_cluster_group.
+      FOR r_group IN
+        SELECT value AS groupJson
+          FROM json_array_elements(r_cluster.clusterJson -> 'groups')
+      LOOP
+        INSERT INTO tmp_cluster_group(tmp_cluster, tmp_database, tmp_group)
+          VALUES (r_cluster.clusterJson ->> 'cluster', r_group.groupJson ->> 'database', r_group.groupJson ->> 'group');
+      END LOOP;
+    END LOOP;
+-- In an extra pass over the JSON structure, populate the tmp_database temporary table.
+    FOR r_database IN
+      SELECT value AS databaseJson
+        FROM json_array_elements(v_databasesJson)
+        WHERE value ->> 'database' = ANY (p_databases)
+    LOOP
+      INSERT INTO tmp_database(tmp_database, tmp_connect_string, tmp_rlbk_session)
+        VALUES (r_database.databaseJson ->> 'database', r_database.databaseJson ->> 'connect_string',
+                (r_database.databaseJson ->> 'rollback_parallel_sessions')::SMALLINT);
+    END LOOP;
+-- Add an index on each temporary table.
+    CREATE INDEX ON tmp_cluster (tmp_cluster);
+    CREATE INDEX ON tmp_cluster_group (tmp_cluster);
+    CREATE INDEX ON tmp_database (tmp_database);
+-- Check that all databases referenced by the clusters to import either already exist or are to be imported.
+    RETURN QUERY
+      SELECT 254, 1, database_name, NULL::TEXT, NULL::TEXT, NULL::TEXT, NULL::INT,
+                   format('The database "%s" is referenced by at least a cluster. But it does not exist yet and is not to be imported.',
+                          database_name)
+        FROM
+          (  SELECT DISTINCT tmp_database AS database_name
+               FROM tmp_cluster_group
+           EXCEPT
+             SELECT database_name
+               FROM unnest(p_databases) AS c(database_name)
+           EXCEPT
+             SELECT db_name
+               FROM dist_emaj.dist_emaj_database
+          ) AS t;
+    IF FOUND THEN
+      RETURN;
+    END IF;
+--
+    RETURN;
+  END;
+$_import_clusters_conf_prepare$;
+
+CREATE OR REPLACE FUNCTION dist_emaj._import_clusters_conf_exec(p_dropOtherObjects BOOLEAN)
+RETURNS TEXT LANGUAGE plpgsql AS
+$_import_clusters_conf_exec$
+-- This function completes a clusters configuration import.
+-- It is called by _import_clusters_conf() and by Emaj_web.
+-- It uses the temporary tables built during the previous prepare step.
+-- Input: - boolean to ask for the drop of all existing clusters and databases that are not in the imported configuration.
+-- Output: import summary report.
+  DECLARE
+    v_timeId                 BIGINT;
+    v_clusterToCreate        TEXT[];
+    v_clusterToUpdate        TEXT[];
+    v_clusterToDrop          TEXT[];
+    v_databaseToCreate       TEXT[];
+    v_databaseToUpdate       TEXT[];
+    v_databaseToDrop         TEXT[];
+    v_nbCreatedCluster       INT = 0;
+    v_nbUpdatedCluster       INT = 0;
+    v_nbDroppedCluster       INT = 0;
+    v_nbCreatedDatabase      INT = 0;
+    v_nbUpdatedDatabase      INT = 0;
+    v_nbDroppedDatabase      INT = 0;
+    v_clusterCountersMsg     TEXT;
+    v_databaseCountersMsg    TEXT;
+    v_reportMsg              TEXT;
+  BEGIN
+-- Get a time stamp id of type 'I' for the operation.
+    SELECT dist_emaj._set_time_stamp('IMPORT_CLUSTERS', 'I') INTO v_timeId;
+-- Build the 6 lists of objects to process, before executing any change.
+    SELECT array_agg(tmp_database)
+      FROM (
+          SELECT tmp_database
+            FROM tmp_database
+        EXCEPT
+          SELECT db_name
+            FROM dist_emaj.dist_emaj_database
+           ) AS t
+      INTO v_databaseToCreate;
+--
+    SELECT array_agg(db_name)
+      FROM (
+        SELECT db_name
+          FROM dist_emaj.dist_emaj_database
+               JOIN tmp_database ON (db_name = tmp_database)
+          WHERE tmp_connect_string <> db_connect_string
+             OR tmp_rlbk_session <> db_rlbk_parallel_session
+           ) AS t
+      INTO v_databaseToUpdate;
+--
+    IF p_dropOtherObjects THEN
+      SELECT array_agg(db_name)
+        FROM (
+            SELECT db_name
+              FROM dist_emaj.dist_emaj_database
+          EXCEPT
+            SELECT tmp_database
+              FROM tmp_database) AS t
+        INTO v_databaseToDrop;
+    END IF;
+--
+    SELECT array_agg(tmp_cluster)
+      FROM (
+          SELECT tmp_cluster
+            FROM tmp_cluster
+        EXCEPT
+          SELECT clst_name
+            FROM dist_emaj.dist_emaj_cluster
+           ) AS t
+      INTO v_clusterToCreate;
+--
+    SELECT array_agg(clst_name)
+      FROM (
+        SELECT clst_name
+          FROM dist_emaj.dist_emaj_cluster
+               JOIN tmp_cluster ON (clst_name = tmp_cluster)
+           ) AS t
+      INTO v_clusterToUpdate;
+--
+    IF p_dropOtherObjects THEN
+      SELECT array_agg(clst_name)
+        FROM (
+            SELECT clst_name
+              FROM dist_emaj.dist_emaj_cluster
+          EXCEPT
+            SELECT tmp_cluster
+              FROM tmp_cluster
+             ) AS t
+        INTO v_clusterToDrop;
+    END IF;
+--
+-- OK, let's apply changes.
+--
+-- Create missing databases.
+    IF v_databaseToCreate IS NOT NULL THEN
+      WITH created_database AS (
+        INSERT INTO dist_emaj.dist_emaj_database (db_name, db_connect_string, db_rlbk_parallel_session, db_creation_time_id)
+          SELECT tmp_database, tmp_connect_string, tmp_rlbk_session, v_timeId
+            FROM tmp_database
+            WHERE tmp_database = ANY(v_databaseToCreate)
+          RETURNING db_name
+        )
+      INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object)
+        SELECT 'IMPORT_CLUSTERS', 'DATABASE_CREATED', db_name
+        FROM created_database;
+      v_nbCreatedDatabase = array_length(v_databaseToCreate, 1);
+    END IF;
+-- Update existing databases with changed attributes.
+    IF v_databaseToUpdate IS NOT NULL THEN
+      WITH updated_database AS (
+        UPDATE dist_emaj.dist_emaj_database
+          SET db_connect_string = tmp_connect_string,
+              db_rlbk_parallel_session = tmp_rlbk_session,
+              db_last_alter_time_id = v_timeId
+          FROM tmp_database
+          WHERE tmp_database = db_name
+            AND db_name = ANY(v_databaseToUpdate)
+          RETURNING db_name
+        )
+      INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object)
+        SELECT 'IMPORT_CLUSTERS', 'DATABASE_UPDATED', db_name
+        FROM updated_database;
+      v_nbUpdatedDatabase = array_length(v_databaseToUpdate, 1);
+    END IF;
+-- Create missing_clusters and their assigned groups.
+    IF v_clusterToCreate IS NOT NULL THEN
+      WITH created_cluster AS (
+        INSERT INTO dist_emaj.dist_emaj_cluster (clst_name, clst_creation_time_id)
+          SELECT tmp_cluster, v_timeId
+            FROM tmp_cluster
+            WHERE tmp_cluster = ANY(v_clusterToCreate)
+          RETURNING clst_name
+        )
+      INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object)
+        SELECT 'IMPORT_CLUSTERS', 'CLUSTER_CREATED', clst_name
+        FROM created_cluster;
+      WITH assigned_group AS (
+        INSERT INTO dist_emaj.dist_emaj_cluster_group (clgrp_cluster, clgrp_database, clgrp_group, clgrp_last_assign_time_id)
+          SELECT tmp_cluster, tmp_database, tmp_group, v_timeId
+            FROM tmp_cluster_group
+            WHERE tmp_cluster = ANY(v_clusterToCreate)
+            ORDER BY tmp_cluster, tmp_database, tmp_group
+          RETURNING clgrp_cluster, clgrp_database, clgrp_group
+        )
+      INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object, hist_wording)
+        SELECT 'IMPORT_CLUSTERS', 'GROUP_ASSIGNED', clgrp_database || '.' || clgrp_group, 'To cluster ' || clgrp_cluster
+        FROM assigned_group;
+      v_nbCreatedCluster = array_length(v_clusterToCreate, 1);
+    END IF;
+-- Update existing clusters with groups to assign or remove.
+    IF v_clusterToUpdate IS NOT NULL THEN
+      WITH group_to_remove AS (
+          SELECT clgrp_cluster, clgrp_database, clgrp_group
+            FROM dist_emaj.dist_emaj_cluster_group
+            WHERE clgrp_cluster = ANY(v_clusterToUpdate)
+        EXCEPT
+          SELECT tmp_cluster, tmp_database, tmp_group
+            FROM tmp_cluster_group
+        ), group_to_assign AS (
+          SELECT tmp_cluster, tmp_database, tmp_group
+            FROM tmp_cluster_group
+            WHERE tmp_cluster = ANY(v_clusterToUpdate)
+        EXCEPT
+          SELECT clgrp_cluster, clgrp_database, clgrp_group
+            FROM dist_emaj.dist_emaj_cluster_group
+        ), removed_group AS (
+        DELETE FROM dist_emaj.dist_emaj_cluster_group c
+          USING group_to_remove l
+          WHERE c.clgrp_cluster = l.clgrp_cluster
+            AND c.clgrp_database = l.clgrp_database
+            AND c.clgrp_group = l.clgrp_group
+          RETURNING c.clgrp_cluster, c.clgrp_database, c.clgrp_group
+        ), removed_grp_hist AS (
+        INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object, hist_wording)
+          SELECT 'IMPORT_CLUSTERS', 'GROUP_REMOVED', clgrp_database || '.' || clgrp_group, 'From cluster ' || clgrp_cluster
+          FROM removed_group
+        ), assigned_group AS (
+        INSERT INTO dist_emaj.dist_emaj_cluster_group (clgrp_cluster, clgrp_database, clgrp_group, clgrp_last_assign_time_id)
+          SELECT tmp_cluster, tmp_database, tmp_group, v_timeId
+            FROM group_to_assign
+          RETURNING clgrp_cluster, clgrp_database, clgrp_group
+        ), assigned_grp_hist AS (
+        INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object, hist_wording)
+          SELECT 'IMPORT_CLUSTERS', 'GROUP_ASSIGNED', clgrp_database || '.' || clgrp_group, 'To cluster ' || clgrp_cluster
+          FROM assigned_group
+        )
+      SELECT count(*)
+        FROM (  SELECT DISTINCT clgrp_cluster
+                  FROM removed_group
+              UNION
+                SELECT DISTINCT clgrp_cluster
+                  FROM assigned_group
+             ) AS t
+        INTO v_nbUpdatedCluster;
+    END IF;
+-- Delete clusters that are not in the imported configuration.
+    IF v_clusterToDrop IS NOT NULL THEN
+-- Also delete groups, marks and rollbacks that are linked to the cluster.
+      DELETE FROM dist_emaj.dist_emaj_mark
+        WHERE mark_cluster = ANY(v_clusterToDrop);
+      DELETE FROM dist_emaj.dist_emaj_rlbk
+        WHERE rlbk_cluster = ANY(v_clusterToDrop);
+      DELETE FROM dist_emaj.dist_emaj_cluster_group
+        WHERE clgrp_cluster = ANY(v_clusterToDrop);
+      WITH deleted_cluster AS (
+        DELETE FROM dist_emaj.dist_emaj_cluster
+          WHERE clst_name = ANY(v_clusterToDrop)
+          RETURNING clst_name
+        )
+      INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object)
+        SELECT 'IMPORT_CLUSTERS', 'CLUSTER_DROP', clst_name
+        FROM deleted_cluster;
+      v_nbDroppedCluster = array_length(v_clusterToDrop, 1);
+    END IF;
+-- Delete databases that are not in the imported configuration.
+    IF v_databaseToDrop IS NOT NULL THEN
+      WITH deleted_database AS (
+        DELETE FROM dist_emaj.dist_emaj_database
+          WHERE db_name = ANY(v_databaseToDrop)
+          RETURNING db_name
+        )
+      INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object)
+        SELECT 'IMPORT_CLUSTERS', 'DATABASE_DROP', db_name
+        FROM deleted_database;
+      v_nbDroppedDatabase = array_length(v_databaseToDrop, 1);
+    END IF;
+-- Drop the now useless temporary tables.
+    DROP TABLE tmp_cluster, tmp_cluster_group, tmp_database;
+-- Build the final report.
+    v_clusterCountersMsg = CASE WHEN v_nbCreatedCluster > 0 THEN v_nbCreatedCluster || ' created, ' ELSE '' END ||
+                           CASE WHEN v_nbUpdatedCluster > 0 THEN v_nbUpdatedCluster || ' updated, ' ELSE '' END ||
+                           CASE WHEN v_nbDroppedCluster > 0 THEN v_nbDroppedCluster || ' dropped, ' ELSE '' END;
+    v_databaseCountersMsg = CASE WHEN v_nbCreatedDatabase > 0 THEN v_nbCreatedDatabase || ' created, ' ELSE '' END ||
+                            CASE WHEN v_nbUpdatedDatabase > 0 THEN v_nbUpdatedDatabase || ' updated, ' ELSE '' END ||
+                            CASE WHEN v_nbDroppedDatabase > 0 THEN v_nbDroppedDatabase || ' dropped, ' ELSE '' END;
+    v_reportMsg = CASE WHEN v_clusterCountersMsg = '' THEN ''
+                       ELSE 'Clusters: ' || rtrim(v_clusterCountersMsg, ', ') || ' / ' END ||
+                  CASE WHEN v_databaseCountersMsg = '' THEN ''
+                       ELSE 'Databases: ' || rtrim(v_databaseCountersMsg, ', ') END;
+    IF v_reportMsg = '' THEN
+      v_reportMsg = 'No change';
+    ELSE
+      v_reportMsg = rtrim(v_reportMsg, '/ ');
+    END IF;
+-- Insert a END event into the history.
+    INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_wording)
+      VALUES ('IMPORT_CLUSTERS', 'END', v_reportMsg);
+--
+    RETURN v_reportMsg;
+  END;
+$_import_clusters_conf_exec$;
 
 CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_delete_before_mark_cluster(p_cluster TEXT, p_mark TEXT)
 RETURNS INT LANGUAGE plpgsql

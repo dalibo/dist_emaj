@@ -533,5 +533,402 @@ SELECT dist_emaj.dist_emaj_export_clusters_configuration(:'EMAJTESTTMPDIR' || '/
   ]
 }
 
+--
+-- Direct import.
+--
+--   Bad content.
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "dummy_json": null }'::JSON);
+WARNING:  _import_clusters_conf (1): The JSON structure does not contain any "databases" or "clusters" array.
+ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
+CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+-- databases checks.
+--   Missing or null "database" attribute.
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "unknown_attr1": null } ] }'::JSON);
+WARNING:  _import_clusters_conf (1): The database #1 has no valid "database" attribute.
+ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
+CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": null } ] }'::JSON);
+WARNING:  _import_clusters_conf (1): The database #1 has no valid "database" attribute.
+ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
+CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+--   Unknown and missing attributes.
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": "db1", "unknown1": 1, "unknown2": 2 } ] }'::JSON);
+WARNING:  _import_clusters_conf (1): For the database "db1", the keyword "unknown1" is unknown.
+WARNING:  _import_clusters_conf (1): For the database "db1", the keyword "unknown2" is unknown.
+WARNING:  _import_clusters_conf (1): For the database "db1", the "connect_string" attribute must exist and be of type string.
+WARNING:  _import_clusters_conf (1): For the database "db1", the "rollback_parallel_sessions" attribute must exist and be of type number.
+ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
+CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+--   Null "connect_string" attribute.
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": "db1", "connect_string": null, "rollback_parallel_sessions": 1 } ] }'::JSON);
+WARNING:  _import_clusters_conf (1): For the database "db1", the "connect_string" attribute must exist and be of type string.
+ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
+CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+--   Null or not numeric "rollback_parallel_sessions" attribute.
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": "db1", "connect_string": "cnx1", "rollback_parallel_sessions": null} ] }'::JSON);
+WARNING:  _import_clusters_conf (1): For the database "db1", the "rollback_parallel_sessions" attribute must exist and be of type number.
+ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
+CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": "db1", "connect_string": "cnx1", "rollback_parallel_sessions": "?"} ] }'::JSON);
+WARNING:  _import_clusters_conf (1): For the database "db1", the "rollback_parallel_sessions" attribute must exist and be of type number.
+ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
+CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+-- Clusters checks.
+--   Missing or null "cluster" attribute.
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ {  } ]}'::JSON);
+WARNING:  _import_clusters_conf (1): The cluster #1 has no valid "cluster" attribute.
+ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
+CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": null } ]}'::JSON);
+WARNING:  _import_clusters_conf (1): The cluster #1 has no valid "cluster" attribute.
+ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
+CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+--   Unknown attributes.
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": "clst1", "unknown1": 1, "unknown2": 2 } ]}'::JSON);
+WARNING:  _import_clusters_conf (1): For the cluster "clst1", the keyword "unknown1" is unknown.
+WARNING:  _import_clusters_conf (1): For the cluster "clst1", the keyword "unknown2" is unknown.
+WARNING:  _import_clusters_conf (1): For the cluster "clst1", the "groups" attribute must exist and be of type array.
+ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
+CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+--   Missing or invalid "group" attribute.
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": "clst1" } ]}'::JSON);
+WARNING:  _import_clusters_conf (1): For the cluster "clst1", the "groups" attribute must exist and be of type array.
+ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
+CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": "clst1", "groups": "???" } ]}'::JSON);
+WARNING:  _import_clusters_conf (1): For the cluster "clst1", the "groups" attribute must exist and be of type array.
+ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
+CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+--   In group, missing "database" or "group" attributes or invalid attributes.
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": "clst1", "groups": [ { } ] } ]}'::JSON);
+WARNING:  _import_clusters_conf (1): In the cluster "clst1", the group #1 has no "database" attribute.
+WARNING:  _import_clusters_conf (1): In the cluster "clst1", the group #1 has no "group" attribute.
+ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
+CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": "clst1", "groups": [ { "database": "ssss"} ] } ]}'::JSON);
+WARNING:  _import_clusters_conf (1): In the cluster "clst1", the group #1 has no "group" attribute.
+ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
+CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": "clst1", "groups": [ { "group": "gggg"} ] } ]}'::JSON);
+WARNING:  _import_clusters_conf (1): In the cluster "clst1", the group #1 has no "database" attribute.
+ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
+CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": "clst1", "groups": [ { "database": "", "group": null, "unknown_attr1": null} ] } ]}'::JSON);
+WARNING:  _import_clusters_conf (1): In the cluster "clst1", the group #1 has no "database" attribute.
+WARNING:  _import_clusters_conf (1): In the cluster "clst1", the group #1 has no "group" attribute.
+WARNING:  _import_clusters_conf (1): In the cluster "" and for the group  on database , the keyword "unknown_attr1" is unknown.
+ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
+CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+-- Databases or clusters referenced several times.
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": "db1", "connect_string": "c1", "rollback_parallel_sessions": 1},
+                                                                         { "database": "db2", "connect_string": "c2", "rollback_parallel_sessions": 1},
+                                                                         { "database": "db1", "connect_string": "c1", "rollback_parallel_sessions": 1} ] }'::JSON);
+WARNING:  _import_clusters_conf (1): The JSON structure references several times the database "db1".
+ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
+CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": "clst1", "groups": [ ] },
+                                                                          { "cluster": "clst2", "groups": [ ] },
+                                                                          { "cluster": "clst1", "groups": [ ] } ]}'::JSON);
+WARNING:  _import_clusters_conf (1): The JSON structure references several times the cluster "clst1".
+ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
+CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+-- Selected clusters not in the JSON structure.
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": "clst1", "groups": [ ] } ]}'::JSON, array['unknown_1', 'unknown_2']);
+WARNING:  _import_clusters_conf (2): The cluster "unknown_1" to import is not referenced in the JSON structure.
+WARNING:  _import_clusters_conf (2): The cluster "unknown_2" to import is not referenced in the JSON structure.
+ERROR:  _import_clusters_conf: One or several errors have been detected in the JSON groups configuration.
+CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 80 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+-- Selected clusters already exist.
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": "my_cluster", "groups": [ ] } ]}'::JSON, array['my_cluster'], NULL, FALSE);
+WARNING:  _import_clusters_conf (2): The cluster "my_cluster" already exists.
+ERROR:  _import_clusters_conf: One or several errors have been detected in the JSON groups configuration.
+CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 80 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+-- Selected databases not in the JSON structure.
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": "db1", "connect_string": "c1", "rollback_parallel_sessions": 1} ] }'::JSON,
+                                                         NULL, array['unknown_1', 'unknown_2']);
+WARNING:  _import_clusters_conf (2): The database "unknown_1" to import is not referenced in the JSON structure.
+WARNING:  _import_clusters_conf (2): The database "unknown_2" to import is not referenced in the JSON structure.
+ERROR:  _import_clusters_conf: One or several errors have been detected in the JSON groups configuration.
+CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 80 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+-- Selected databases already exist.
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": "emaj_1", "connect_string": "c1", "rollback_parallel_sessions": 1} ] }'::JSON,
+                                                         NULL, array['emaj_1'], FALSE);
+WARNING:  _import_clusters_conf (2): The database "emaj_1" already exists.
+ERROR:  _import_clusters_conf: One or several errors have been detected in the JSON groups configuration.
+CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 80 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+-- Database referenced by a cluster but does not exist and is no in the JSON configuration.
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ 
+          "databases": [ { "database": "db1", "connect_string": "cstr1", "rollback_parallel_sessions": 2 }, { "database": "db2", "connect_string": "cstr2", "rollback_parallel_sessions": 3 } ],
+          "clusters": [ { "cluster": "clst1", "groups": [ {"database": "db1", "group": "g1"}, {"database": "db3", "group": "g2"} ] } ]
+                                                          }'::JSON);
+WARNING:  _import_clusters_conf (2): The database "db3" is referenced by at least a cluster. But it does not exist yet and is not to be imported.
+ERROR:  _import_clusters_conf: One or several errors have been detected in the JSON groups configuration.
+CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 80 at RAISE
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+-- OK.
+-- Nothing imported because of empty selected clusters and databases arrays.
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ 
+          "databases": [ { "database": "db1", "connect_string": "cstr1", "rollback_parallel_sessions": 2 } ],
+          "clusters": [ { "cluster": "clst1", "groups": [ {"database": "db1", "group": "g1"}, {"database": "db1", "group": "g2"} ] } ]
+                                                          }'::JSON, ARRAY[]::TEXT[], ARRAY[]::TEXT[]);
+ dist_emaj_import_clusters_configuration 
+-----------------------------------------
+ No change
+(1 row)
+
+-- Create 2 new databases.
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ 
+          "databases": [ { "database": "new_db1", "connect_string": "cstr1", "rollback_parallel_sessions": 1 },
+                         { "database": "new_db2", "connect_string": "cstr2", "rollback_parallel_sessions": 2 } ]
+                                                          }'::JSON);
+ dist_emaj_import_clusters_configuration 
+-----------------------------------------
+ Databases: 2 created
+(1 row)
+
+select db_name, db_connect_string, db_rlbk_parallel_session, db_creation_time_id, db_last_alter_time_id from dist_emaj.dist_emaj_database where db_name like 'new%';
+ db_name | db_connect_string | db_rlbk_parallel_session | db_creation_time_id | db_last_alter_time_id 
+---------+-------------------+--------------------------+---------------------+-----------------------
+ new_db1 | cstr1             |                        1 |                1023 |                      
+ new_db2 | cstr2             |                        2 |                1023 |                      
+(2 rows)
+
+-- Update both databases (one wit a modified connect string and the other with a modified rollback_parallel_sessions).
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{
+          "databases": [ { "database": "new_db1", "connect_string": "modified_cstr1", "rollback_parallel_sessions": 2 },
+                         { "database": "new_db2", "connect_string": "cstr2", "rollback_parallel_sessions": 5 } ] }'::JSON, NULL, NULL, TRUE);
+ dist_emaj_import_clusters_configuration 
+-----------------------------------------
+ Databases: 2 updated
+(1 row)
+
+select db_name, db_connect_string, db_rlbk_parallel_session, db_creation_time_id, db_last_alter_time_id from dist_emaj.dist_emaj_database where db_name like 'new%';
+ db_name | db_connect_string | db_rlbk_parallel_session | db_creation_time_id | db_last_alter_time_id 
+---------+-------------------+--------------------------+---------------------+-----------------------
+ new_db1 | modified_cstr1    |                        2 |                1023 |                  1024
+ new_db2 | cstr2             |                        5 |                1023 |                  1024
+(2 rows)
+
+-- Create a cluster with a few groups.
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{
+          "clusters": [ { "cluster": "new_cluster", "groups": [ {"database": "new_db1", "group": "g1"}, {"database": "new_db2", "group": "g2"} ] } ]
+                                                          }'::JSON);
+ dist_emaj_import_clusters_configuration 
+-----------------------------------------
+ Clusters: 1 created
+(1 row)
+
+select * from dist_emaj.dist_emaj_cluster where clst_name = 'new_cluster';
+  clst_name  | clst_creation_time_id | clst_last_alter_time_id 
+-------------+-----------------------+-------------------------
+ new_cluster |                  1025 |                        
+(1 row)
+
+select * from dist_emaj.dist_emaj_cluster_group where clgrp_cluster = 'new_cluster' order by 1, 2, 3;
+ clgrp_cluster | clgrp_database | clgrp_group | clgrp_last_assign_time_id 
+---------------+----------------+-------------+---------------------------
+ new_cluster   | new_db1        | g1          |                      1025
+ new_cluster   | new_db2        | g2          |                      1025
+(2 rows)
+
+-- Update the cluster with 1 new group and 1 group removed.
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{
+          "clusters": [ { "cluster": "new_cluster", "groups": [ {"database": "new_db1", "group": "g1"}, {"database": "new_db2", "group": "g3"} ] } ]
+                                                          }'::JSON, NULL, NULL, TRUE);
+ dist_emaj_import_clusters_configuration 
+-----------------------------------------
+ Clusters: 1 updated
+(1 row)
+
+select * from dist_emaj.dist_emaj_cluster_group where clgrp_cluster = 'new_cluster' order by 1, 2, 3;
+ clgrp_cluster | clgrp_database | clgrp_group | clgrp_last_assign_time_id 
+---------------+----------------+-------------+---------------------------
+ new_cluster   | new_db1        | g1          |                      1025
+ new_cluster   | new_db2        | g3          |                      1026
+(2 rows)
+
+--
+-- Import from file.
+--
+-- File does not exist.
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('/tmp/dummy/location/file');
+ERROR:  could not open file "/tmp/dummy/location/file" for reading: No such file or directory
+HINT:  COPY FROM instructs the PostgreSQL server process to read a file. You may want a client-side facility such as psql's \copy.
+CONTEXT:  SQL statement "COPY t FROM '/tmp/dummy/location/file'"
+PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(text,text[],text[],boolean,boolean) line 21 at EXECUTE
+-- Not a JSON format.
+\! echo 'not a JSON format' > $EMAJTESTTMPDIR/not_json
+SELECT dist_emaj.dist_emaj_import_clusters_configuration(:'EMAJTESTTMPDIR' || '/not_json');
+ERROR:  emaj_import_clusters_configuration: The file content is not a valid JSON content.
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(text,text[],text[],boolean,boolean) line 31 at RAISE
+-- Import the original configuration. This drops the new_cluster, new_db1 and new_db2 objects.
+SELECT dist_emaj.dist_emaj_import_clusters_configuration(:'EMAJTESTTMPDIR' || '/orig_clusters_config_all.json', NULL, NULL, TRUE, TRUE);
+  dist_emaj_import_clusters_configuration   
+--------------------------------------------
+ Clusters: 1 dropped / Databases: 3 dropped
+(1 row)
+
+-----------------------------
+-- Test end: global check.
+-----------------------------
+SELECT hist_function, hist_event, hist_object, hist_wording, hist_user
+  FROM dist_emaj.dist_emaj_hist WHERE hist_id >= 1000 ORDER BY hist_id;
+  hist_function  |    hist_event    |       hist_object       |                             hist_wording                             | hist_user 
+-----------------+------------------+-------------------------+----------------------------------------------------------------------+-----------
+ CREATE_DATABASE | BEGIN            | first_database          |                                                                      | postgres
+ CREATE_DATABASE | TIME STAMP SET   | 1000                    |                                                                      | postgres
+ CREATE_DATABASE | END              | first_database          | Database created                                                     | postgres
+ CREATE_DATABASE | BEGIN            | first_database          |                                                                      | postgres
+ CREATE_DATABASE | TIME STAMP SET   | 1001                    |                                                                      | postgres
+ CREATE_DATABASE | END              | first_database          | Database modified                                                    | postgres
+ DROP_DATABASE   | BEGIN            | dummy_database          |                                                                      | postgres
+ DROP_DATABASE   | END              | dummy_database          | The database did not exist                                           | postgres
+ DROP_DATABASE   | BEGIN            | first_database          |                                                                      | postgres
+ DROP_DATABASE   | TIME STAMP SET   | 1003                    |                                                                      | postgres
+ DROP_DATABASE   | END              | first_database          | Database dropped, 1 group assignments deleted                        | postgres
+ CREATE_CLUSTER  | BEGIN            | first_cluster           |                                                                      | postgres
+ CREATE_CLUSTER  | TIME STAMP SET   | 1004                    |                                                                      | postgres
+ CREATE_CLUSTER  | END              | first_cluster           | Cluster created                                                      | postgres
+ CREATE_CLUSTER  | BEGIN            | first_cluster           |                                                                      | postgres
+ CREATE_CLUSTER  | END              | first_cluster           | The cluster already existed                                          | postgres
+ DROP_CLUSTER    | BEGIN            | dummy_cluster           |                                                                      | postgres
+ DROP_CLUSTER    | END              | dummy_cluster           | The cluster did not exist                                            | postgres
+ DROP_CLUSTER    | BEGIN            | first_cluster           |                                                                      | postgres
+ DROP_CLUSTER    | TIME STAMP SET   | 1006                    |                                                                      | postgres
+ DROP_CLUSTER    | END              | first_cluster           | Cluster dropped, 1 group assignments deleted                         | postgres
+ ASSIGN_GROUP    | BEGIN            | a_database.a_group      | To cluster a_cluster                                                 | postgres
+ ASSIGN_GROUP    | TIME STAMP SET   | 1007                    |                                                                      | postgres
+ ASSIGN_GROUP    | END              | a_database.a_group      | Group assigned to the cluster                                        | postgres
+ ASSIGN_GROUP    | BEGIN            | a_database.a_group      | To cluster a_cluster                                                 | postgres
+ ASSIGN_GROUP    | END              | a_database.a_group      | The group was already assigned to the cluster                        | postgres
+ REMOVE_GROUP    | BEGIN            | a_database.a_group      | From cluster a_cluster                                               | postgres
+ REMOVE_GROUP    | TIME STAMP SET   | 1008                    |                                                                      | postgres
+ REMOVE_GROUP    | END              | a_database.a_group      | Group removed from the cluster                                       | postgres
+ REMOVE_GROUP    | BEGIN            | a_database.a_group      | From cluster a_cluster                                               | postgres
+ REMOVE_GROUP    | END              | a_database.a_group      | The group was not assigned to the cluster                            | postgres
+ CREATE_DATABASE | BEGIN            | emaj_1                  |                                                                      | postgres
+ CREATE_DATABASE | TIME STAMP SET   | 1009                    |                                                                      | postgres
+ CREATE_DATABASE | END              | emaj_1                  | Database created                                                     | postgres
+ CREATE_DATABASE | BEGIN            | emaj_2                  |                                                                      | postgres
+ CREATE_DATABASE | TIME STAMP SET   | 1010                    |                                                                      | postgres
+ CREATE_DATABASE | END              | emaj_2                  | Database created                                                     | postgres
+ CREATE_CLUSTER  | BEGIN            | my_cluster              |                                                                      | postgres
+ CREATE_CLUSTER  | TIME STAMP SET   | 1011                    |                                                                      | postgres
+ CREATE_CLUSTER  | END              | my_cluster              | Cluster created                                                      | postgres
+ CREATE_CLUSTER  | BEGIN            | empty_cluster           |                                                                      | postgres
+ CREATE_CLUSTER  | TIME STAMP SET   | 1012                    |                                                                      | postgres
+ CREATE_CLUSTER  | END              | empty_cluster           | Cluster created                                                      | postgres
+ ASSIGN_GROUP    | BEGIN            | emaj_1.myGroup1         | To cluster my_cluster                                                | postgres
+ ASSIGN_GROUP    | TIME STAMP SET   | 1013                    |                                                                      | postgres
+ ASSIGN_GROUP    | END              | emaj_1.myGroup1         | Group assigned to the cluster                                        | postgres
+ ASSIGN_GROUP    | BEGIN            | emaj_1.myGroup2         | To cluster my_cluster                                                | postgres
+ ASSIGN_GROUP    | TIME STAMP SET   | 1014                    |                                                                      | postgres
+ ASSIGN_GROUP    | END              | emaj_1.myGroup2         | Group assigned to the cluster                                        | postgres
+ ASSIGN_GROUP    | BEGIN            | emaj_2.phil's group#3", | To cluster my_cluster                                                | postgres
+ ASSIGN_GROUP    | TIME STAMP SET   | 1015                    |                                                                      | postgres
+ ASSIGN_GROUP    | END              | emaj_2.phil's group#3", | Group assigned to the cluster                                        | postgres
+ ASSIGN_GROUP    | BEGIN            | emaj_2.myGroup4         | To cluster my_cluster                                                | postgres
+ ASSIGN_GROUP    | TIME STAMP SET   | 1016                    |                                                                      | postgres
+ ASSIGN_GROUP    | END              | emaj_2.myGroup4         | Group assigned to the cluster                                        | postgres
+ ASSIGN_GROUP    | BEGIN            | emaj_2.myGroup5         | To cluster my_cluster                                                | postgres
+ ASSIGN_GROUP    | TIME STAMP SET   | 1017                    |                                                                      | postgres
+ ASSIGN_GROUP    | END              | emaj_2.myGroup5         | Group assigned to the cluster                                        | postgres
+ ASSIGN_GROUP    | BEGIN            | emaj_2.myGroup6         | To cluster my_cluster                                                | postgres
+ ASSIGN_GROUP    | TIME STAMP SET   | 1018                    |                                                                      | postgres
+ ASSIGN_GROUP    | END              | emaj_2.myGroup6         | Group assigned to the cluster                                        | postgres
+ CREATE_DATABASE | BEGIN            | no_emaj                 |                                                                      | postgres
+ CREATE_DATABASE | TIME STAMP SET   | 1019                    |                                                                      | postgres
+ CREATE_DATABASE | END              | no_emaj                 | Database created                                                     | postgres
+ IMPORT_CLUSTERS | BEGIN            |                         |                                                                      | postgres
+ IMPORT_CLUSTERS | TIME STAMP SET   | 1022                    |                                                                      | postgres
+ IMPORT_CLUSTERS | END              |                         | No change                                                            | postgres
+ IMPORT_CLUSTERS | BEGIN            |                         |                                                                      | postgres
+ IMPORT_CLUSTERS | TIME STAMP SET   | 1023                    |                                                                      | postgres
+ IMPORT_CLUSTERS | DATABASE_CREATED | new_db1                 |                                                                      | postgres
+ IMPORT_CLUSTERS | DATABASE_CREATED | new_db2                 |                                                                      | postgres
+ IMPORT_CLUSTERS | END              |                         | Databases: 2 created                                                 | postgres
+ IMPORT_CLUSTERS | BEGIN            |                         |                                                                      | postgres
+ IMPORT_CLUSTERS | TIME STAMP SET   | 1024                    |                                                                      | postgres
+ IMPORT_CLUSTERS | DATABASE_UPDATED | new_db1                 |                                                                      | postgres
+ IMPORT_CLUSTERS | DATABASE_UPDATED | new_db2                 |                                                                      | postgres
+ IMPORT_CLUSTERS | END              |                         | Databases: 2 updated                                                 | postgres
+ IMPORT_CLUSTERS | BEGIN            |                         |                                                                      | postgres
+ IMPORT_CLUSTERS | TIME STAMP SET   | 1025                    |                                                                      | postgres
+ IMPORT_CLUSTERS | CLUSTER_CREATED  | new_cluster             |                                                                      | postgres
+ IMPORT_CLUSTERS | GROUP_ASSIGNED   | new_db1.g1              | To cluster new_cluster                                               | postgres
+ IMPORT_CLUSTERS | GROUP_ASSIGNED   | new_db2.g2              | To cluster new_cluster                                               | postgres
+ IMPORT_CLUSTERS | END              |                         | Clusters: 1 created                                                  | postgres
+ IMPORT_CLUSTERS | BEGIN            |                         |                                                                      | postgres
+ IMPORT_CLUSTERS | TIME STAMP SET   | 1026                    |                                                                      | postgres
+ IMPORT_CLUSTERS | GROUP_ASSIGNED   | new_db2.g3              | To cluster new_cluster                                               | postgres
+ IMPORT_CLUSTERS | GROUP_REMOVED    | new_db2.g2              | From cluster new_cluster                                             | postgres
+ IMPORT_CLUSTERS | END              |                         | Clusters: 1 updated                                                  | postgres
+ IMPORT_CLUSTERS | BEGIN            |                         | Input file: '/tmp/emaj_19/create_drop/orig_clusters_config_all.json' | postgres
+ IMPORT_CLUSTERS | TIME STAMP SET   | 1027                    |                                                                      | postgres
+ IMPORT_CLUSTERS | CLUSTER_DROP     | new_cluster             |                                                                      | postgres
+ IMPORT_CLUSTERS | DATABASE_DROP    | no_emaj                 |                                                                      | postgres
+ IMPORT_CLUSTERS | DATABASE_DROP    | new_db1                 |                                                                      | postgres
+ IMPORT_CLUSTERS | DATABASE_DROP    | new_db2                 |                                                                      | postgres
+ IMPORT_CLUSTERS | END              |                         | Clusters: 1 dropped / Databases: 3 dropped                           | postgres
+(95 rows)
+
+SELECT time_id, time_event FROM dist_emaj.dist_emaj_time_stamp ORDER BY time_id;
+ time_id | time_event 
+---------+------------
+    1000 | C
+    1001 | A
+    1003 | D
+    1004 | C
+    1006 | D
+    1007 | A
+    1008 | A
+    1009 | C
+    1010 | C
+    1011 | C
+    1012 | C
+    1013 | A
+    1014 | A
+    1015 | A
+    1016 | A
+    1017 | A
+    1018 | A
+    1019 | C
+    1022 | I
+    1023 | I
+    1024 | I
+    1025 | I
+    1026 | I
+    1027 | I
+(24 rows)
+
 -- Remove the temp directory.
 \! rm -R $EMAJTESTTMPDIR
+-- temporarily added waiting for a fix in the dist_emaj_export_clusters_configuration() function.
+select dist_emaj.dist_emaj_create_database('no_emaj', 'host=localhost port=' || pg_catalog.current_setting('port') || ' dbname=regression_no_emaj user=_regress_emaj_adm password=adm', 1);
+ dist_emaj_create_database 
+---------------------------
+                         1
+(1 row)
+
