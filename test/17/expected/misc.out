@@ -240,7 +240,7 @@ select hist_id, hist_function, hist_event, hist_object, hist_wording
     4060 | DELETE_BEFORE_MARK_CLUSTER | END           | my_cluster  | 0 distributed marks deleted ; 0 local marks deleted
     4065 | DELETE_BEFORE_MARK_CLUSTER | BEGIN         | my_cluster  | DM3
     4066 | SYNC_MARKS_CLUSTER         | BEGIN         | my_cluster  | 
-    4067 | SYNC_MARKS_CLUSTER         | DELETED MARKS | emaj_1      | Some deleted local marks => 1 distributed marks deleted
+    4067 | SYNC_MARKS_CLUSTER         | MARKS DELETED | emaj_1      | Some deleted local marks => 1 distributed marks deleted
     4068 | SYNC_MARKS_CLUSTER         | END           | my_cluster  | 1 distributed marks deleted
     4069 | DELETE_BEFORE_MARK_CLUSTER | END           | my_cluster  | 1 distributed marks deleted ; 11 local marks deleted
 (23 rows)
@@ -432,34 +432,34 @@ SELECT dist_emaj.dist_emaj_import_parameters_configuration(:'EMAJTESTTMPDIR' || 
                                          1
 (1 row)
 
-select hist_id, hist_function, hist_wording from dist_emaj.dist_emaj_hist where hist_id >= 4000 and hist_function like '%PARAM%' order by hist_id;
- hist_id |   hist_function   |                   hist_wording                    
----------+-------------------+---------------------------------------------------
-    4000 | SET_PARAM         | From: 1 year to: 1 MONTH
-    4001 | SET_PARAM         | From: 1 MONTH to: 2 MONTHS
-    4002 | SET_PARAM         | From: 2 MONTHS to: 1 year
-    4070 | SET_PARAM         | From: 1 year to: 2 days
-    4078 | IMPORT_PARAMETERS | 
-    4079 | IMPORT_PARAMETERS | From: 2 days to: 1 day
-    4080 | IMPORT_PARAMETERS | 1 imported parameters, 1 modified parameters
-    4081 | IMPORT_PARAMETERS | 
-    4082 | IMPORT_PARAMETERS | From: 1 day to: 2 days
-    4083 | IMPORT_PARAMETERS | 1 imported parameters, 1 modified parameters
-    4084 | IMPORT_PARAMETERS | 
-    4085 | IMPORT_PARAMETERS | 1 imported parameters, 0 modified parameters
-    4086 | IMPORT_PARAMETERS | 
-    4087 | IMPORT_PARAMETERS | 1 imported parameters, 0 modified parameters
-    4088 | SET_PARAM         | From: 2 days to: 1 day
-    4089 | IMPORT_PARAMETERS | 
-    4090 | IMPORT_PARAMETERS | 0 imported parameters, 0 modified parameters
-    4091 | IMPORT_PARAMETERS | 
-    4092 | IMPORT_PARAMETERS | From: 1 day to: 1 year
-    4093 | IMPORT_PARAMETERS | 0 imported parameters, 1 modified parameters
-    4098 | IMPORT_PARAMETERS | Input file: '/tmp/emaj_17/misc/orig_param_config'
-    4099 | IMPORT_PARAMETERS | From: 1 year to: 2 days
-    4100 | IMPORT_PARAMETERS | 1 imported parameters, 1 modified parameters
-    4101 | IMPORT_PARAMETERS | Input file: '/tmp/emaj_17/misc/orig_param_config'
-    4102 | IMPORT_PARAMETERS | 1 imported parameters, 0 modified parameters
+select hist_id, hist_function, hist_event, hist_wording from dist_emaj.dist_emaj_hist where hist_id >= 4000 and hist_function like '%PARAM%' order by hist_id;
+ hist_id |   hist_function   |     hist_event     |                   hist_wording                    
+---------+-------------------+--------------------+---------------------------------------------------
+    4000 | SET_PARAM         | INSERTED PARAMETER | From: 1 year to: 1 MONTH
+    4001 | SET_PARAM         | UPDATED PARAMETER  | From: 1 MONTH to: 2 MONTHS
+    4002 | SET_PARAM         | DELETED PARAMETER  | From: 2 MONTHS to: 1 year
+    4070 | SET_PARAM         | INSERTED PARAMETER | From: 1 year to: 2 days
+    4078 | IMPORT_PARAMETERS | BEGIN              | 
+    4079 | IMPORT_PARAMETERS | PARAMETER UPDATED  | From: 2 days to: 1 day
+    4080 | IMPORT_PARAMETERS | END                | 1 imported parameters, 1 modified parameters
+    4081 | IMPORT_PARAMETERS | BEGIN              | 
+    4082 | IMPORT_PARAMETERS | PARAMETER UPDATED  | From: 1 day to: 2 days
+    4083 | IMPORT_PARAMETERS | END                | 1 imported parameters, 1 modified parameters
+    4084 | IMPORT_PARAMETERS | BEGIN              | 
+    4085 | IMPORT_PARAMETERS | END                | 1 imported parameters, 0 modified parameters
+    4086 | IMPORT_PARAMETERS | BEGIN              | 
+    4087 | IMPORT_PARAMETERS | END                | 1 imported parameters, 0 modified parameters
+    4088 | SET_PARAM         | UPDATED PARAMETER  | From: 2 days to: 1 day
+    4089 | IMPORT_PARAMETERS | BEGIN              | 
+    4090 | IMPORT_PARAMETERS | END                | 0 imported parameters, 0 modified parameters
+    4091 | IMPORT_PARAMETERS | BEGIN              | 
+    4092 | IMPORT_PARAMETERS | PARAMETER DELETED  | From: 1 day to: 1 year
+    4093 | IMPORT_PARAMETERS | END                | 0 imported parameters, 1 modified parameters
+    4098 | IMPORT_PARAMETERS | BEGIN              | Input file: '/tmp/emaj_17/misc/orig_param_config'
+    4099 | IMPORT_PARAMETERS | PARAMETER INSERTED | From: 1 year to: 2 days
+    4100 | IMPORT_PARAMETERS | END                | 1 imported parameters, 1 modified parameters
+    4101 | IMPORT_PARAMETERS | BEGIN              | Input file: '/tmp/emaj_17/misc/orig_param_config'
+    4102 | IMPORT_PARAMETERS | END                | 1 imported parameters, 0 modified parameters
 (25 rows)
 
 -----------------------------

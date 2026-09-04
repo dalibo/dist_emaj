@@ -583,11 +583,11 @@ select hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_word
     2138 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 18                      | postgres
     2139 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
     2140 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
-    2141 | SYNC_MARKS_CLUSTER   | DELETED MARKS  | emaj_1        | Some deleted local marks => 2 distributed marks deleted | postgres
-    2142 | SYNC_MARKS_CLUSTER   | DELETED MARKS  | emaj_2        | Some deleted local marks => 5 distributed marks deleted | postgres
+    2141 | SYNC_MARKS_CLUSTER   | MARKS DELETED  | emaj_1        | Some deleted local marks => 2 distributed marks deleted | postgres
+    2142 | SYNC_MARKS_CLUSTER   | MARKS DELETED  | emaj_2        | Some deleted local marks => 5 distributed marks deleted | postgres
     2143 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 7 distributed marks deleted                             | postgres
     2144 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
-    2145 | SYNC_MARKS_CLUSTER   | DELETED MARKS  | emaj_1        | 1 stopped groups => all distributed marks deleted       | postgres
+    2145 | SYNC_MARKS_CLUSTER   | MARKS DELETED  | emaj_1        | 1 stopped groups => all distributed marks deleted       | postgres
     2146 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 2 distributed marks deleted                             | postgres
     2150 | DIST_EMAJ            | BEGIN          | my_cluster    | stop with mark                                          | postgres
     2151 | DIST_EMAJ            | RESOLVE_MARK   |               | MARK_%                                                  | postgres

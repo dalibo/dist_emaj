@@ -2290,7 +2290,7 @@ $dist_emaj_sync_marks_cluster$
         v_nbDeletedMark = v_nbDeletedMark + v_nbMark;
         v_databaseHistMsg = (r_database.nb_groups_in_cluster - v_nbGroup)::text || ' stopped groups => all distributed marks deleted';
         INSERT INTO dist_emaj.dist_emaj_hist(hist_function, hist_event, hist_object, hist_wording)
-          VALUES ('SYNC_MARKS_CLUSTER', 'DELETED MARKS', r_database.db_name, v_databaseHistMsg);
+          VALUES ('SYNC_MARKS_CLUSTER', 'MARKS DELETED', r_database.db_name, v_databaseHistMsg);
         EXIT;
       END IF;
 -- Otherwise, delete all distributed marks of the cluster whose time id is older than the most recent group start.
@@ -2351,7 +2351,7 @@ $dist_emaj_sync_marks_cluster$
       END IF;
       IF v_databaseHistMsg <> '' THEN
         INSERT INTO dist_emaj.dist_emaj_hist(hist_function, hist_event, hist_object, hist_wording)
-          VALUES ('SYNC_MARKS_CLUSTER', 'DELETED MARKS', r_database.db_name, v_databaseHistMsg);
+          VALUES ('SYNC_MARKS_CLUSTER', 'MARKS DELETED', r_database.db_name, v_databaseHistMsg);
       END IF;
     END LOOP;
 -- Disconnect from the latest database, if any.
@@ -2912,18 +2912,18 @@ $_import_param_conf$
 -- The new parameter value equals the default value, so DELETE the existing row from emaj_param.
             DELETE FROM dist_emaj.dist_emaj_param
               WHERE param_key = r_param.param_key;
-            v_event = 'DELETED PARAMETER';
+            v_event = 'PARAMETER DELETED';
           ELSIF r_param.param_value = r_param.param_default THEN
 -- The parameter has currently its default value, so INSERT a row into emaj_param.
             INSERT INTO dist_emaj.dist_emaj_param (param_key, param_value)
               VALUES (r_param.param_key, v_newValue);
-            v_event = 'INSERTED PARAMETER';
+            v_event = 'PARAMETER INSERTED';
           ELSE
 -- Otherwise UPDATE it.
             UPDATE dist_emaj.dist_emaj_param
               SET param_value = v_newValue
               WHERE param_key = r_param.param_key;
-            v_event = 'UPDATED PARAMETER';
+            v_event = 'PARAMETER UPDATED';
           END IF;
           INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object, hist_wording)
             VALUES ('IMPORT_PARAMETERS', v_event, r_param.param_key, 'From: ' || r_param.param_value || ' to: ' || v_newValue);

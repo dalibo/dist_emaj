@@ -172,7 +172,7 @@ SELECT json_array_length(dist_emaj.dist_emaj_export_parameters_configuration()->
 
 SELECT dist_emaj.dist_emaj_import_parameters_configuration(:'EMAJTESTTMPDIR' || '/orig_param_config', FALSE);
 
-select hist_id, hist_function, hist_wording from dist_emaj.dist_emaj_hist where hist_id >= 4000 and hist_function like '%PARAM%' order by hist_id;
+select hist_id, hist_function, hist_event, hist_wording from dist_emaj.dist_emaj_hist where hist_id >= 4000 and hist_function like '%PARAM%' order by hist_id;
 
 -----------------------------
 -- dist_emaj_purge_histories() tests
