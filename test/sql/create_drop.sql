@@ -299,6 +299,3 @@ SELECT time_id, time_event FROM dist_emaj.dist_emaj_time_stamp ORDER BY time_id;
 
 -- Remove the temp directory.
 \! rm -R $EMAJTESTTMPDIR
-
--- temporarily added waiting for a fix in the dist_emaj_export_clusters_configuration() function.
-select dist_emaj.dist_emaj_create_database('no_emaj', 'host=localhost port=' || pg_catalog.current_setting('port') || ' dbname=regression_no_emaj user=_regress_emaj_adm password=adm', 1);

@@ -88,7 +88,7 @@ If the **file path is omitted** or set to *NULL*, the function directly returns 
 **Input Parameters**
 
 - ``p_location`` (*TEXT*, optional): **Output file** location.
-- ``p_clusters`` (*TEXT[]*, optional): Array of **clusters** to export. If omitted or set to *NULL*, the configuration of **all** *clusters* is exported.
+- ``p_clusters`` (*TEXT[]*, optional): Array of **clusters** to export. If omitted or set to *NULL*, **all** *clusters* and *databases* are exported.
 
 **Returned data**
 

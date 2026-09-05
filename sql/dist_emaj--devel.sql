@@ -1231,9 +1231,14 @@ $_export_clusters_conf$
                 || E'  "databases": [\n';
     FOR r_database IN
       SELECT DISTINCT db_name, db_connect_string, db_rlbk_parallel_session
-        FROM dist_emaj.dist_emaj_database_aggregates
-        WHERE (p_clusters IS NULL OR clst_name = ANY(p_clusters))
+        FROM dist_emaj.dist_emaj_database
+             LEFT OUTER JOIN dist_emaj.dist_emaj_cluster_group ON (dist_emaj_database.db_name = dist_emaj_cluster_group.clgrp_database)
+        WHERE (p_clusters IS NULL OR clgrp_cluster = ANY(p_clusters))
         ORDER BY db_name
+----      SELECT DISTINCT db_name, db_connect_string, db_rlbk_parallel_session
+----        FROM dist_emaj.dist_emaj_database_aggregates
+----        WHERE (p_clusters IS NULL OR clst_name = ANY(p_clusters))
+----        ORDER BY db_name
     LOOP
       v_clustersText = v_clustersText
                   || E'    {\n'

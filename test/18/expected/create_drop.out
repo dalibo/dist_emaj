@@ -446,7 +446,7 @@ SELECT json_array_length(dist_emaj.dist_emaj_export_clusters_configuration()->'c
 SELECT json_array_length(dist_emaj.dist_emaj_export_clusters_configuration()->'databases');
  json_array_length 
 -------------------
-                 2
+                 3
 (1 row)
 
 SELECT json_array_length(dist_emaj.dist_emaj_export_clusters_configuration(ARRAY['my_cluster', 'empty_cluster'])->'clusters');
@@ -478,9 +478,9 @@ SELECT dist_emaj.dist_emaj_export_clusters_configuration(:'EMAJTESTTMPDIR' || '/
 (1 row)
 
 \! wc -l $EMAJTESTTMPDIR/*.json
-  52 /tmp/emaj_18/create_drop/orig_clusters_config_all.json
+  57 /tmp/emaj_18/create_drop/orig_clusters_config_all.json
   47 /tmp/emaj_18/create_drop/orig_clusters_config_partial.json
-  99 total
+ 104 total
 \! grep -v ', at ' $EMAJTESTTMPDIR/orig_clusters_config_all.json
 {
   "databases": [
@@ -493,6 +493,11 @@ SELECT dist_emaj.dist_emaj_export_clusters_configuration(:'EMAJTESTTMPDIR' || '/
       "database": "emaj_2",
       "connect_string": "postgresql://_regress_emaj_adm:adm@localhost:5418/regression_2",
       "rollback_parallel_sessions": 2
+    },
+    {
+      "database": "no_emaj",
+      "connect_string": "host=localhost port=5418 dbname=regression_no_emaj user=_regress_emaj_adm password=adm",
+      "rollback_parallel_sessions": 1
     }
   ],
   "clusters": [
@@ -787,7 +792,7 @@ CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(te
 SELECT dist_emaj.dist_emaj_import_clusters_configuration(:'EMAJTESTTMPDIR' || '/orig_clusters_config_all.json', NULL, NULL, TRUE, TRUE);
   dist_emaj_import_clusters_configuration   
 --------------------------------------------
- Clusters: 1 dropped / Databases: 3 dropped
+ Clusters: 1 dropped / Databases: 2 dropped
 (1 row)
 
 -----------------------------
@@ -888,11 +893,10 @@ SELECT hist_function, hist_event, hist_object, hist_wording, hist_user
  IMPORT_CLUSTERS | BEGIN            |                         | Input file: '/tmp/emaj_18/create_drop/orig_clusters_config_all.json' | postgres
  IMPORT_CLUSTERS | TIME STAMP SET   | 1027                    |                                                                      | postgres
  IMPORT_CLUSTERS | CLUSTER_DROP     | new_cluster             |                                                                      | postgres
- IMPORT_CLUSTERS | DATABASE_DROP    | no_emaj                 |                                                                      | postgres
  IMPORT_CLUSTERS | DATABASE_DROP    | new_db1                 |                                                                      | postgres
  IMPORT_CLUSTERS | DATABASE_DROP    | new_db2                 |                                                                      | postgres
- IMPORT_CLUSTERS | END              |                         | Clusters: 1 dropped / Databases: 3 dropped                           | postgres
-(95 rows)
+ IMPORT_CLUSTERS | END              |                         | Clusters: 1 dropped / Databases: 2 dropped                           | postgres
+(94 rows)
 
 SELECT time_id, time_event FROM dist_emaj.dist_emaj_time_stamp ORDER BY time_id;
  time_id | time_event 
@@ -925,10 +929,3 @@ SELECT time_id, time_event FROM dist_emaj.dist_emaj_time_stamp ORDER BY time_id;
 
 -- Remove the temp directory.
 \! rm -R $EMAJTESTTMPDIR
--- temporarily added waiting for a fix in the dist_emaj_export_clusters_configuration() function.
-select dist_emaj.dist_emaj_create_database('no_emaj', 'host=localhost port=' || pg_catalog.current_setting('port') || ' dbname=regression_no_emaj user=_regress_emaj_adm password=adm', 1);
- dist_emaj_create_database 
----------------------------
-                         1
-(1 row)
-

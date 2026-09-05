@@ -88,7 +88,7 @@ Si le nom du **fichier de sortie est omis** ou est *NULL*, la fonction retourne 
 **Paramètres en entrée**
 
 - ``p_location`` (*TEXT*, optionnel) : Emplacement du **fichier de sortie**.
-- ``p_clusters`` (*TEXT[]*, optionnel) : Tableau des **clusters** à exporter. Si le paramètre est absent ou *NULL*, tous les clusters sont exportés.
+- ``p_clusters`` (*TEXT[]*, optionnel) : Tableau des **clusters** à exporter. Si le paramètre est absent ou *NULL*, tous les clusters et toutes les *databases* sont exportés.
 
 **Données retournées**
 
