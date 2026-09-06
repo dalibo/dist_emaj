@@ -43,7 +43,7 @@ $do$
          ) THEN
       CREATE ROLE dist_emaj_viewer;
       COMMENT ON ROLE dist_emaj_viewer IS
-        $$This role may be granted to other roles allowed to view Distributed E-Maj objects content.$$;
+        $$This role may be granted to other roles allowed to look at Distributed E-Maj objects content.$$;
     END IF;
 --
     RETURN;
@@ -211,7 +211,7 @@ CREATE TABLE dist_emaj.dist_emaj_mark_database (
   FOREIGN KEY (mkdb_time_id) REFERENCES dist_emaj.dist_emaj_mark (mark_time_id) ON DELETE CASCADE
   );
 COMMENT ON TABLE dist_emaj.dist_emaj_database IS
-$$Contains the local time ids corresponding to distributed marks time ids on databases.$$;
+$$Contains database local mark data corresponding to distributed marks.$$;
 
 CREATE INDEX dist_emaj_mark_database_idx1 ON dist_emaj.dist_emaj_mark_database(mkdb_database);
 
@@ -235,7 +235,7 @@ CREATE TABLE dist_emaj.dist_emaj_rlbk (
   FOREIGN KEY (rlbk_cluster) REFERENCES dist_emaj.dist_emaj_cluster (clst_name)
   );
 COMMENT ON TABLE dist_emaj.dist_emaj_rlbk IS
-$$Contains description of distributed rollback operations.$$;
+$$Contains the description of distributed rollback operations.$$;
 
 CREATE INDEX dist_emaj_rlbk_idx1 ON dist_emaj.dist_emaj_rlbk(rlbk_cluster);
 
@@ -256,7 +256,7 @@ CREATE TABLE dist_emaj.dist_emaj_rlbk_database (
   FOREIGN KEY (rlbd_database) REFERENCES dist_emaj.dist_emaj_database (db_name)
   );
 COMMENT ON TABLE dist_emaj.dist_emaj_rlbk_database IS
-$$Contains local rollback data linked to distributed rollback operations.$$;
+$$Contains database local rollback data corresponding to distributed rollback operations.$$;
 
 CREATE INDEX dist_emaj_rlbk_database_idx1 ON dist_emaj.dist_emaj_rlbk_database(rlbd_database);
 
@@ -301,7 +301,7 @@ CREATE TYPE dist_emaj._report_message_type AS (
                                                            -- range 250 - 299 used by _import_clusters_conf_prepare
   rpt_severity                 INT,                        -- severity level
                                                            -- 0 : notice
-                                                           -- 1 : blocking error
+                                                           -- 1 : error
                                                            -- 2 : warning
   rpt_text_var_1               TEXT,                       -- textual variable #1
   rpt_text_var_2               TEXT,                       -- textual variable #2
@@ -1076,7 +1076,7 @@ $dist_emaj_assign_group$
   END;
 $dist_emaj_assign_group$;
 COMMENT ON FUNCTION dist_emaj.dist_emaj_assign_group(TEXT, TEXT, TEXT, BOOLEAN) IS
-$$Assigns a table group to a Distributed E-Maj cluster.$$;
+$$Assigns an E-Maj table group to a Distributed E-Maj cluster.$$;
 
 CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_remove_group(p_cluster TEXT, p_database TEXT, p_group TEXT,
                                                             p_ifAssigned BOOLEAN DEFAULT FALSE)
@@ -1144,7 +1144,7 @@ $dist_emaj_remove_group$
   END;
 $dist_emaj_remove_group$;
 COMMENT ON FUNCTION dist_emaj.dist_emaj_remove_group(TEXT, TEXT, TEXT, BOOLEAN) IS
-$$Removes a table group from a Distributed E-Maj cluster.$$;
+$$Removes an E-Maj table group from a Distributed E-Maj cluster.$$;
 
 CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_export_clusters_configuration(p_clusters TEXT[] DEFAULT NULL)
 RETURNS JSON LANGUAGE plpgsql AS
@@ -1159,7 +1159,7 @@ $dist_emaj_export_clusters_configuration$
   END;
 $dist_emaj_export_clusters_configuration$;
 COMMENT ON FUNCTION dist_emaj.dist_emaj_export_clusters_configuration(TEXT[]) IS
-$$Generates a json structure describing configured clusters.$$;
+$$Generates a JSON structure describing configured clusters and databases.$$;
 
 CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_export_clusters_configuration(p_location TEXT, p_clusters TEXT[] DEFAULT NULL)
 RETURNS INT LANGUAGE plpgsql
@@ -1188,7 +1188,7 @@ $dist_emaj_export_clusters_configuration$
   END;
 $dist_emaj_export_clusters_configuration$;
 COMMENT ON FUNCTION dist_emaj.dist_emaj_export_clusters_configuration(TEXT, TEXT[]) IS
-$$Generates and stores in a file a json structure describing configured clusters.$$;
+$$Stores in a file a JSON structure describing configured clusters annd databases.$$;
 
 CREATE OR REPLACE FUNCTION dist_emaj._export_clusters_conf(p_clusters TEXT[] DEFAULT NULL)
 RETURNS JSON LANGUAGE plpgsql AS
@@ -1235,10 +1235,6 @@ $_export_clusters_conf$
              LEFT OUTER JOIN dist_emaj.dist_emaj_cluster_group ON (dist_emaj_database.db_name = dist_emaj_cluster_group.clgrp_database)
         WHERE (p_clusters IS NULL OR clgrp_cluster = ANY(p_clusters))
         ORDER BY db_name
-----      SELECT DISTINCT db_name, db_connect_string, db_rlbk_parallel_session
-----        FROM dist_emaj.dist_emaj_database_aggregates
-----        WHERE (p_clusters IS NULL OR clst_name = ANY(p_clusters))
-----        ORDER BY db_name
     LOOP
       v_clustersText = v_clustersText
                   || E'    {\n'
@@ -1325,7 +1321,7 @@ $dist_emaj_import_clusters_configuration$
   END;
 $dist_emaj_import_clusters_configuration$;
 COMMENT ON FUNCTION dist_emaj.dist_emaj_import_clusters_configuration(JSON, TEXT[], TEXT[], BOOLEAN, BOOLEAN) IS
-$$Import a json structure describing clusters and databases to create or alter.$$;
+$$Imports a JSON structure describing clusters and databases to create or alter.$$;
 
 CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_import_clusters_configuration(p_location TEXT, p_clusters TEXT[] DEFAULT NULL,
                                                                              p_databases TEXT[] DEFAULT NULL,
@@ -1370,7 +1366,7 @@ $dist_emaj_import_clusters_configuration$
   END;
 $dist_emaj_import_clusters_configuration$;
 COMMENT ON FUNCTION dist_emaj.dist_emaj_import_clusters_configuration(TEXT, TEXT[], TEXT[], BOOLEAN, BOOLEAN) IS
-$$Create or alter table groups configuration from a JSON formatted file.$$;
+$$Imports from a file a JSON structure describing clusters and databases to create or alter.$$;
 
 CREATE OR REPLACE FUNCTION dist_emaj._import_clusters_conf(p_json JSON, p_clusters TEXT[], p_databases TEXT[],
                                                            p_allowObjectsUpdate BOOLEAN, p_dropOtherObjects BOOLEAN,
@@ -2221,7 +2217,7 @@ $dist_emaj_verify_cluster$
   END;
 $dist_emaj_verify_cluster$;
 COMMENT ON FUNCTION dist_emaj.dist_emaj_verify_cluster(TEXT, BOOLEAN) IS
-$$Performs a health check for a cluster.$$;
+$$Performs a health check of a cluster.$$;
 
 CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_sync_marks_cluster(p_cluster TEXT)
 RETURNS INT LANGUAGE plpgsql
@@ -2464,7 +2460,7 @@ $dist_emaj_set_param$
   END;
 $dist_emaj_set_param$;
 COMMENT ON FUNCTION dist_emaj.dist_emaj_set_param(TEXT, TEXT) IS
-$$Updates a parameter recorded into the dist_emaj_param table.$$;
+$$Sets or resets a Distributed E-Maj parameter.$$;
 
 CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_purge_histories(p_retentionDelay INTERVAL DEFAULT NULL)
 RETURNS TEXT LANGUAGE plpgsql AS
@@ -2551,7 +2547,7 @@ $dist_emaj_purge_histories$
   END;
 $dist_emaj_purge_histories$;
 COMMENT ON FUNCTION dist_emaj.dist_emaj_purge_histories(INTERVAL) IS
-$$Purges histories from dist_emaj tables.$$;
+$$Purges histories from internal Distributed E-Maj tables.$$;
 
 CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_verify_all()
 RETURNS SETOF TEXT LANGUAGE plpgsql
@@ -2659,7 +2655,7 @@ $dist_emaj_verify_all$
   END;
 $dist_emaj_verify_all$;
 COMMENT ON FUNCTION dist_emaj.dist_emaj_verify_all() IS
-$$Performs a health check of the entire dist_emaj configuration.$$;
+$$Performs a health check of the entire Distributed E-Maj environnment.$$;
 
 CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_export_parameters_configuration(p_includeDefault BOOLEAN DEFAULT FALSE)
 RETURNS JSON LANGUAGE plpgsql AS
@@ -2674,7 +2670,7 @@ $dist_emaj_export_parameters_configuration$
   END;
 $dist_emaj_export_parameters_configuration$;
 COMMENT ON FUNCTION dist_emaj.dist_emaj_export_parameters_configuration(BOOLEAN) IS
-$$Generates a json structure describing the Distributed E-Maj parameters.$$;
+$$Generates a JSON structure describing the Distributed E-Maj parameters.$$;
 
 CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_export_parameters_configuration(p_location TEXT, p_includeDefault BOOLEAN DEFAULT FALSE)
 RETURNS INT LANGUAGE plpgsql
@@ -2704,7 +2700,7 @@ $dist_emaj_export_parameters_configuration$
   END;
 $dist_emaj_export_parameters_configuration$;
 COMMENT ON FUNCTION dist_emaj.dist_emaj_export_parameters_configuration(TEXT, BOOLEAN) IS
-$$Generates and stores in a file a json structure describing the Distributed E-Maj parameters.$$;
+$$GStores in a file a JSON structure describing the Distributed E-Maj parameters.$$;
 
 CREATE OR REPLACE FUNCTION dist_emaj._export_param_conf(p_includeDefault BOOLEAN)
 RETURNS JSON LANGUAGE plpgsql AS
@@ -2795,7 +2791,7 @@ $dist_emaj_import_parameters_configuration$
   END;
 $dist_emaj_import_parameters_configuration$;
 COMMENT ON FUNCTION dist_emaj.dist_emaj_import_parameters_configuration(JSON, BOOLEAN) IS
-$$Import a json structure describing Distributed E-Maj parameters to load.$$;
+$$Imports a JSON structure describing Distributed E-Maj parameters to load.$$;
 
 CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_import_parameters_configuration(p_location TEXT,
                                                                                p_resetOtherParameters BOOLEAN DEFAULT FALSE)
@@ -2846,7 +2842,7 @@ $dist_emaj_import_parameters_configuration$
   END;
 $dist_emaj_import_parameters_configuration$;
 COMMENT ON FUNCTION dist_emaj.dist_emaj_import_parameters_configuration(TEXT, BOOLEAN) IS
-$$Import Distributed E-Maj parameters from a JSON formatted file.$$;
+$$Imports Distributed E-Maj parameters from a JSON formatted file.$$;
 
 CREATE OR REPLACE FUNCTION dist_emaj._import_param_conf(p_json JSON, p_resetOtherParameters BOOLEAN,
                                                         OUT p_nbParamInJson INT, OUT p_nbModifiedParam INT)
@@ -3047,7 +3043,7 @@ CREATE EVENT TRIGGER dist_emaj_protection_trg
   WHEN TAG IN ('DROP EXTENSION', 'DROP SCHEMA')
   EXECUTE PROCEDURE public._dist_emaj_protection_event_trigger_fnct();
 COMMENT ON EVENT TRIGGER dist_emaj_protection_trg IS
-$$Blocks the removal of the dist_emaj extension or schema.$$;
+$$Blocks any attempt to drop the dist_emaj extension or schema.$$;
 
 -- remove both event trigger components from the extension, so that they can fire the "DROP EXTENSION emaj".
 ALTER EXTENSION dist_emaj DROP FUNCTION public._dist_emaj_protection_event_trigger_fnct();
