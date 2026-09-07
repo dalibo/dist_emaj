@@ -1,61 +1,61 @@
--- viewer.sql : test dist_emaj data access and functions calls by a dist_emaj_viewer role
+-- viewer.sql : test dist_emaj data access and functions calls by a dist_emaj_viewer role.
 --
 
--- do not display DETAIL and CONTEXT outputs when an error is raised (\errverbose can be used to debug a statement)
+-- Do not display DETAIL and CONTEXT outputs when an error is raised (\errverbose can be used to debug a statement).
 \set VERBOSITY terse
 
 --
--- Prepare the test context
+-- Prepare the test context.
 --
 
--- set sequence restart value
-select public.handle_dist_emaj_sequences(5000);
+-- Set sequence restart value.
+SELECT public.handle_dist_emaj_sequences(5000);
 
-set session_authorization to _regress_dist_emaj_viewer;
-
------------------------------
--- authorized table or view accesses
------------------------------
-select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_hist) as t;
-select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_all_param) as t;
-select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_hist) as t;
-select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_time_stamp) as t;
-select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_cluster) as t;
-select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_cluster_group) as t;
-select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_mark) as t;
-select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_mark_database) as t;
-select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_rlbk) as t;
-select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_rlbk_database) as t;
+SET session_authorization TO _regress_dist_emaj_viewer;
 
 -----------------------------
--- forbiden table accesses (just test 1 delete)
+-- Authorized table or view accesses.
 -----------------------------
-delete from dist_emaj.dist_emaj_hist;
+SELECT 'SELECT ok' AS result FROM (SELECT count(*) FROM dist_emaj.dist_emaj_hist) AS t;
+SELECT 'SELECT ok' AS result FROM (SELECT count(*) FROM dist_emaj.dist_emaj_all_param) AS t;
+SELECT 'SELECT ok' AS result FROM (SELECT count(*) FROM dist_emaj.dist_emaj_hist) AS t;
+SELECT 'SELECT ok' AS result FROM (SELECT count(*) FROM dist_emaj.dist_emaj_time_stamp) AS t;
+SELECT 'SELECT ok' AS result FROM (SELECT count(*) FROM dist_emaj.dist_emaj_cluster) AS t;
+SELECT 'SELECT ok' AS result FROM (SELECT count(*) FROM dist_emaj.dist_emaj_cluster_group) AS t;
+SELECT 'SELECT ok' AS result FROM (SELECT count(*) FROM dist_emaj.dist_emaj_mark) AS t;
+SELECT 'SELECT ok' AS result FROM (SELECT count(*) FROM dist_emaj.dist_emaj_mark_database) AS t;
+SELECT 'SELECT ok' AS result FROM (SELECT count(*) FROM dist_emaj.dist_emaj_rlbk) AS t;
+SELECT 'SELECT ok' AS result FROM (SELECT count(*) FROM dist_emaj.dist_emaj_rlbk_database) AS t;
 
 -----------------------------
--- dist_emaj_database specific case
+-- Forbiden table accesses (just test 1 delete).
 -----------------------------
-
--- authorized
-select 'select ok' as result from (select count(*) from dist_emaj.dist_emaj_database) as t;
-select db_name, db_rlbk_parallel_session from dist_emaj.dist_emaj_database order by 1;
-select clst_name, db_name, db_rlbk_parallel_session, db_groups_array from dist_emaj.dist_emaj_database_aggregates order by 1, 2;
-
--- forbidden
-select * from dist_emaj.dist_emaj_database;
-delete from dist_emaj.dist_emaj_database;
-select * from dist_emaj.dist_emaj_database_aggregates;
+DELETE FROM dist_emaj.dist_emaj_hist;
 
 -----------------------------
--- authorized functions
+-- Dist_emaj_database specific case.
 -----------------------------
 
-select dist_emaj.dist_emaj_get_version();
+-- Authorized.
+SELECT 'SELECT ok' AS result FROM (SELECT count(*) FROM dist_emaj.dist_emaj_database) AS t;
+SELECT db_name, db_rlbk_parallel_session FROM dist_emaj.dist_emaj_database ORDER BY 1;
+SELECT clst_name, db_name, db_rlbk_parallel_session, db_groups_array FROM dist_emaj.dist_emaj_database_aggregates ORDER BY 1, 2;
+
+-- Forbidden.
+SELECT * FROM dist_emaj.dist_emaj_database;
+DELETE FROM dist_emaj.dist_emaj_database;
+SELECT * FROM dist_emaj.dist_emaj_database_aggregates;
 
 -----------------------------
--- forbiden functions (just test 1)
+-- Authorized functions.
 -----------------------------
-select dist_emaj.dist_emaj_verify_cluster('my_cluster');
+
+SELECT dist_emaj.dist_emaj_get_version();
+
+-----------------------------
+-- Forbiden functions (just test 1).
+-----------------------------
+SELECT dist_emaj.dist_emaj_verify_cluster('my_cluster');
 
 --
-reset session_authorization;
+RESET session_authorization;

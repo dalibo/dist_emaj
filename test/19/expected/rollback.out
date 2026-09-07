@@ -1,17 +1,17 @@
--- rollback.sql : non regression tests for Distributed E-Maj distributed groups rollbacks
+-- rollback.sql : non regression tests for Distributed E-Maj distributed groups rollbacks.
 -- It mainly tests the distEmajRollback.pl client.
 --
 --
--- Prepare the test context
+-- Prepare the test context.
 --
--- set sequence restart value
-select public.handle_dist_emaj_sequences(3000);
+-- Set sequence restart value.
+SELECT public.handle_dist_emaj_sequences(3000);
  handle_dist_emaj_sequences 
 ----------------------------
  
 (1 row)
 
--- Restart the cluster (it has been stopped at the end of start_stop.sql)
+-- Restart the cluster (it has been stopped at the end of start_stop.sql).
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action start --cluster my_cluster --mark 'START'
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
@@ -24,49 +24,49 @@ WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "mys
 WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp2" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
 The 'start' action on cluster 'my_cluster' is completed.
 It has processed 6 groups spread into 2 databases.
--- Save a few identifiers
-select set_config('dist_emaj.regress_start_mark_time_id', mark_time_id::text, false)
-  from dist_emaj.dist_emaj_mark where mark_cluster = 'my_cluster' and mark_name = 'START';
+-- Save a few identifiers.
+SELECT set_config('dist_emaj.regress_start_mark_time_id', mark_time_id::TEXT, FALSE)
+  FROM dist_emaj.dist_emaj_mark WHERE mark_cluster = 'my_cluster' AND mark_name = 'START';
  set_config 
 ------------
  3000
 (1 row)
 
-select set_config('dist_emaj.regress_start_mark_local_time_id', mkdb_local_time_id::text, false)
-  from dist_emaj.dist_emaj_mark_database
-  where mkdb_time_id = (select max(mark_time_id) from dist_emaj.dist_emaj_mark)
-    and mkdb_database = 'emaj_1';
+SELECT set_config('dist_emaj.regress_start_mark_local_time_id', mkdb_local_time_id::TEXT, FALSE)
+  FROM dist_emaj.dist_emaj_mark_database
+  WHERE mkdb_time_id = (SELECT max(mark_time_id) FROM dist_emaj.dist_emaj_mark)
+    AND mkdb_database = 'emaj_1';
  set_config 
 ------------
  29
 (1 row)
 
--- Set a mark
+-- Set a mark.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark 'A_Mark_Name';
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
 It has processed 6 groups spread into 2 databases.
 --
--- Test the distEmajRollback.pl client
+-- Test the distEmajRollback.pl client.
 --
--- A few detected errors in options
---   missing cluster
+-- A few detected errors in options.
+--   Missing cluster.
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
 Error: A cluster name must be supplied with the --cluster option !
---   missing mark
+--   Missing mark.
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
 Error: A rollback target mark must be supplied with the --mark option !
---   unauthorized user
+--   Unauthorized user.
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U _regress_dist_emaj_anonym -W anonym --cluster dummy --mark dummy
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
 Error: the user is not allowed to access the dist_emaj database.
--- Empty cluster
+-- Empty cluster.
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster empty_cluster --mark dummy
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
@@ -74,8 +74,8 @@ Error while checking the cluster.
 ERROR:  dist_emaj_verify_cluster: The cluster "empty_cluster" is empty.
 CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 28 at RAISE
 
--- Errors in rollback target mark
---   unknown mark
+-- Errors in rollback target mark.
+--   Unknown mark.
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark dummy
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
@@ -83,9 +83,9 @@ Error while checking the distributed rollback target mark name.
 ERROR:  _check_dist_mark: The mark "dummy" is unknown within the cluster "my_cluster".
 CONTEXT:  PL/pgSQL function dist_emaj._check_dist_mark(text,text) line 28 at RAISE
 
--- Errors on a database
---   missing groups (simulated from dist_emaj)
-insert into dist_emaj.dist_emaj_cluster_group values
+-- Errors on a database.
+--   Missing groups (simulated from dist_emaj).
+INSERT INTO dist_emaj.dist_emaj_cluster_group VALUES
   ('my_cluster', 'emaj_1', 'extraGroup_1'),
   ('my_cluster', 'emaj_1', 'extraGroup_2');
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark START
@@ -106,10 +106,10 @@ SQL statement "SELECT dist_emaj._verify_database(db_name, db_connect_string, gro
         ) AS databases"
 PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 38 at PERFORM
 
-delete from dist_emaj.dist_emaj_cluster_group where clgrp_group like 'extraGroup%';
+DELETE FROM dist_emaj.dist_emaj_cluster_group WHERE clgrp_group LIKE 'extraGroup%';
 \c regression_1
---   renamed mark on emaj side
-select emaj.emaj_rename_mark_group('myGroup1', 'A_Mark_Name', 'Renamed_mark');
+--   Renamed mark on emaj side.
+SELECT emaj.emaj_rename_mark_group('myGroup1', 'A_Mark_Name', 'Renamed_mark');
  emaj_rename_mark_group 
 ------------------------
  
@@ -119,14 +119,14 @@ select emaj.emaj_rename_mark_group('myGroup1', 'A_Mark_Name', 'Renamed_mark');
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
 Error: the target mark is known with 2 different names (A_Mark_Name, Renamed_mark) on database emaj_1.
-select emaj.emaj_rename_mark_group('myGroup1', 'Renamed_mark', 'A_Mark_Name');
+SELECT emaj.emaj_rename_mark_group('myGroup1', 'Renamed_mark', 'A_Mark_Name');
  emaj_rename_mark_group 
 ------------------------
  
 (1 row)
 
---   mark not found on emaj side
-select emaj.emaj_delete_mark_group('myGroup1', 'A_Mark_Name');
+--   Mark not found on emaj side.
+SELECT emaj.emaj_delete_mark_group('myGroup1', 'A_Mark_Name');
  emaj_delete_mark_group 
 ------------------------
                       1
@@ -136,8 +136,8 @@ select emaj.emaj_delete_mark_group('myGroup1', 'A_Mark_Name');
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
 Error: the target mark is missing (or has not the expected time_id) for 1 tables groups on database emaj_1 (time_id 30).
---   mark found but not with the same time_id
-select emaj.emaj_set_mark_group('myGroup1', 'A_Mark_Name');
+--   Mark found but not with the same time_id.
+SELECT emaj.emaj_set_mark_group('myGroup1', 'A_Mark_Name');
  emaj_set_mark_group 
 ---------------------
                    7
@@ -147,7 +147,7 @@ select emaj.emaj_set_mark_group('myGroup1', 'A_Mark_Name');
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
 Error: the target mark is missing (or has not the expected time_id) for 1 tables groups on database emaj_1 (time_id 30).
--- Should be OK
+-- Should be OK.
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark START --logged --verbose --rt
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
@@ -224,14 +224,14 @@ It has processed 6 groups spread into 2 databases.
     Notice: Rollback id = 2.
     Notice: 0 / 14 tables effectively processed.
     Notice: 0 / 4 sequences effectively processed.
--- Rollback with a tables group structure change
-select emaj.emaj_modify_table('myschema1', 'mytbl1', '{"priority":1}'::jsonb, 'Priority_changed');
+-- Rollback with a tables group structure change.
+SELECT emaj.emaj_modify_table('myschema1', 'mytbl1', '{"priority":1}'::JSONB, 'Priority_changed');
  emaj_modify_table 
 -------------------
                  1
 (1 row)
 
---   --alter-groups-allowed option is missing
+--   --alter-groups-allowed option is missing.
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark START
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
@@ -241,7 +241,7 @@ CONTEXT:  PL/pgSQL function emaj._rlbk_check(text[],text,boolean,boolean) line 5
 SQL statement "SELECT emaj._rlbk_check(p_groups, p_mark, p_isAlterGroupAllowed, FALSE)"
 PL/pgSQL function emaj._rlbk_init(text[],text,boolean,integer,boolean,boolean,text) line 25 at SQL statement
 
---   should be OK
+--   Should be OK.
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark START --alter-groups-allowed
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
@@ -259,37 +259,37 @@ It has processed 6 groups spread into 2 databases.
     Notice: 0 / 14 tables effectively processed.
     Notice: 0 / 4 sequences effectively processed.
 --
--- Test the rollback states cleanup
+-- Test the rollback states cleanup.
 --
 \c regression
--- simulate 2 distributed rollback operations: an aborted (an unknown pid) and an in-progress (our psql session)
-insert into dist_emaj.dist_emaj_rlbk
+-- Simulate 2 distributed rollback operations: an aborted (an unknown pid) and an in-progress (our psql session).
+INSERT INTO dist_emaj.dist_emaj_rlbk
          (rlbk_id, rlbk_cluster, rlbk_mark, rlbk_mark_time_id, rlbk_time_id, rlbk_is_logged, rlbk_is_alter_group_allowed, rlbk_backend_pid, rlbk_status)
-  values (-2, 'my_cluster', 'dummy_mark', 3001, 3002, FALSE, FALSE, 1, 'EXECUTING'),
+  VALUES (-2, 'my_cluster', 'dummy_mark', 3001, 3002, FALSE, FALSE, 1, 'EXECUTING'),
          (-1, 'my_cluster', 'dummy_mark', 3001, 3002, FALSE, FALSE, pg_backend_pid(), 'LOCKING');
-set application_name = 'distEmajRollback';
-select dist_emaj.dist_emaj_verify_cluster('my_cluster');
+SET application_name = 'distEmajRollback';
+SELECT dist_emaj.dist_emaj_verify_cluster('my_cluster');
  dist_emaj_verify_cluster 
 --------------------------
  
 (1 row)
 
-reset application_name;
-select rlbk_id, rlbk_status from dist_emaj.dist_emaj_rlbk where rlbk_id < 0 order by rlbk_id;
+RESET application_name;
+SELECT rlbk_id, rlbk_status FROM dist_emaj.dist_emaj_rlbk WHERE rlbk_id < 0 ORDER BY rlbk_id;
  rlbk_id | rlbk_status 
 ---------+-------------
       -2 | ABORTED
       -1 | LOCKING
 (2 rows)
 
-delete from dist_emaj.dist_emaj_rlbk where rlbk_id < 0;
+DELETE FROM dist_emaj.dist_emaj_rlbk WHERE rlbk_id < 0;
 --
--- Final checks
+-- Final checks.
 --
 \c regression
--- Check dist_emaj tables content
-select hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_wording, E'\\d\\d\.\\d\\d\\.\\d\\d\\.\\d\\d\\d\\d', '%', 'g'), hist_user
-  from dist_emaj.dist_emaj_hist where hist_id >= 3000 order by 1;
+-- Check dist_emaj tables content.
+SELECT hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_wording, E'\\d\\d\.\\d\\d\\.\\d\\d\\.\\d\\d\\d\\d', '%', 'g'), hist_user
+  FROM dist_emaj.dist_emaj_hist WHERE hist_id >= 3000 ORDER BY 1;
  hist_id |    hist_function     |     hist_event     |  hist_object   |                                                                           regexp_replace                                                                           | hist_user 
 ---------+----------------------+--------------------+----------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------+-----------
     3000 | DIST_EMAJ            | BEGIN              | my_cluster     | start with mark START                                                                                                                                              | postgres
@@ -383,23 +383,23 @@ select hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_word
     3084 | VERIFY_CLUSTER       | CLEANUP_RLBK_STATE | Rollback id -2 | set to ABORTED                                                                                                                                                     | postgres
 (85 rows)
 
-select mark_cluster, regexp_replace(mark_name, E'\\d\\d\.\\d\\d\\.\\d\\d\\.\\d\\d\\d\\d', '%', 'g'), mark_time_id
-  from dist_emaj.dist_emaj_mark order by 1, 3;
+SELECT mark_cluster, regexp_replace(mark_name, E'\\d\\d\.\\d\\d\\.\\d\\d\\.\\d\\d\\d\\d', '%', 'g'), mark_time_id
+  FROM dist_emaj.dist_emaj_mark ORDER BY 1, 3;
  mark_cluster | regexp_replace | mark_time_id 
 --------------+----------------+--------------
  my_cluster   | START          |         3000
 (1 row)
 
-select mkdb_time_id, mkdb_database, mkdb_local_time_id
-  from dist_emaj.dist_emaj_mark_database order by 1, 2, 3;
+SELECT mkdb_time_id, mkdb_database, mkdb_local_time_id
+  FROM dist_emaj.dist_emaj_mark_database ORDER BY 1, 2, 3;
  mkdb_time_id | mkdb_database | mkdb_local_time_id 
 --------------+---------------+--------------------
          3000 | emaj_1        |                 29
          3000 | emaj_2        |                 28
 (2 rows)
 
-select rlbk_id, rlbk_cluster, rlbk_mark, rlbk_mark_time_id, rlbk_time_id, rlbk_is_logged, rlbk_is_alter_group_allowed, rlbk_comment, rlbk_status
-  from dist_emaj.dist_emaj_rlbk order by 1;
+SELECT rlbk_id, rlbk_cluster, rlbk_mark, rlbk_mark_time_id, rlbk_time_id, rlbk_is_logged, rlbk_is_alter_group_allowed, rlbk_comment, rlbk_status
+  FROM dist_emaj.dist_emaj_rlbk ORDER BY 1;
  rlbk_id | rlbk_cluster |  rlbk_mark  | rlbk_mark_time_id | rlbk_time_id | rlbk_is_logged | rlbk_is_alter_group_allowed | rlbk_comment | rlbk_status 
 ---------+--------------+-------------+-------------------+--------------+----------------+-----------------------------+--------------+-------------
     3000 | my_cluster   | A_Mark_Name |              3001 |         3002 | f              | f                           |              | ABORTED
@@ -411,7 +411,7 @@ select rlbk_id, rlbk_cluster, rlbk_mark, rlbk_mark_time_id, rlbk_time_id, rlbk_i
     3006 | my_cluster   | START       |              3000 |         3009 | f              | t                           |              | COMMITTED
 (7 rows)
 
-select rlbd_rlbk_id, rlbd_database, rlbd_local_rlbk_id from dist_emaj.dist_emaj_rlbk_database order by 1,2;
+SELECT rlbd_rlbk_id, rlbd_database, rlbd_local_rlbk_id FROM dist_emaj.dist_emaj_rlbk_database ORDER BY 1,2;
  rlbd_rlbk_id | rlbd_database | rlbd_local_rlbk_id 
 --------------+---------------+--------------------
          3003 | emaj_1        |                  1

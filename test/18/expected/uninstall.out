@@ -1,16 +1,16 @@
--- uninstall.sql : test of the emaj EXTENSION drop
+-- uninstall.sql : test of the emaj EXTENSION drop.
 --
--- Try to DROP the dist_emaj schema
-drop schema dist_emaj cascade;
+-- Try to DROP the dist_emaj schema.
+DROP SCHEMA dist_emaj CASCADE;
 NOTICE:  drop cascades to extension dist_emaj
 ERROR:  Distributed E-Maj event trigger: Attempting to drop the schema "emaj". Please execute the dist_emaj.dist_emaj_drop_extension() function if you really want to remove all Distributed E-Maj components.
 CONTEXT:  PL/pgSQL function _dist_emaj_protection_event_trigger_fnct() line 16 at RAISE
--- Try to DROP EXTENSION
-drop extension dist_emaj;
+-- Try to DROP EXTENSION.
+DROP EXTENSION dist_emaj;
 ERROR:  Distributed E-Maj event trigger: Attempting to drop the emaj extension. Please execute the dist_emaj.dist_emaj_drop_extension() function if you really want to remove all Distributed E-Maj components.
 CONTEXT:  PL/pgSQL function _dist_emaj_protection_event_trigger_fnct() line 22 at RAISE
--- Call the dist_emaj_drop_extension function
-select dist_emaj.dist_emaj_drop_extension();
+-- Call the dist_emaj_drop_extension function.
+SELECT dist_emaj.dist_emaj_drop_extension();
 NOTICE:  drop cascades to event trigger dist_emaj_protection_trg
 NOTICE:  dist_emaj_drop_extension: The dist_emaj_adm role has been dropped.
 NOTICE:  dist_emaj_drop_extension: The dist_emaj_viewer role has been dropped.
@@ -19,7 +19,7 @@ NOTICE:  dist_emaj_drop_extension: The dist_emaj_viewer role has been dropped.
  
 (1 row)
 
--- Check that the extension and the dist_emaj schema are not known anymore
+-- Check that the extension and the dist_emaj schema are not known anymore.
 \dx dist_emaj
               List of installed extensions
  Name | Version | Default version | Schema | Description 
@@ -32,5 +32,5 @@ List of schemas
 ------+-------
 (0 rows)
 
--- Drop the extra extensions to get a stable re-install test
-drop extension dblink;
+-- Drop the extra extensions to get a stable re-install test.
+DROP EXTENSION dblink;

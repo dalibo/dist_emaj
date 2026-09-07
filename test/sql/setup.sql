@@ -1,82 +1,82 @@
--- setup.sql: Create and setup all application objects that will be needed for regression tests
---            Also perform some checks about emaj functions rights and commments
+-- setup.sql: Create and setup all application objects that will be needed for regression tests.
+--            Also perform some checks about emaj functions rights and commments.
 --
 
 SET client_min_messages TO WARNING;
 
 ------------------------------------------------------------
--- create roles and grant privileges from regression
+-- Create roles and grant privileges from regression.
 ------------------------------------------------------------
 
 -----------------------------
--- create roles and give rights
+-- Create roles and give rights.
 -----------------------------
--- Roles for dist_emaj accesses
-create role _regress_dist_emaj_adm login password 'adm';
-create role _regress_dist_emaj_viewer login password 'viewer';
-create role _regress_dist_emaj_anonym login password 'anonym';
+-- Roles for dist_emaj accesses.
+CREATE role _regress_dist_emaj_adm login password 'adm';
+CREATE role _regress_dist_emaj_viewer login password 'viewer';
+CREATE role _regress_dist_emaj_anonym login password 'anonym';
 --
-grant dist_emaj_adm to _regress_dist_emaj_adm;
-grant dist_emaj_viewer to _regress_dist_emaj_viewer;
+GRANT dist_emaj_adm TO _regress_dist_emaj_adm;
+GRANT dist_emaj_viewer TO _regress_dist_emaj_viewer;
 
--- Role for emaj accesses on databases
-create role _regress_emaj_adm login password 'adm';
-grant emaj_adm to _regress_emaj_adm;
+-- Role for emaj accesses on databases.
+CREATE role _regress_emaj_adm login password 'adm';
+GRANT emaj_adm TO _regress_emaj_adm;
 
 -----------------------------
--- create the function that will check and set the last_value of dist_emaj technical sequences
+-- Create the function that will check and set the last_value of dist_emaj technical sequences.
 -----------------------------
 CREATE OR REPLACE FUNCTION public.handle_dist_emaj_sequences(v_restart INT) RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS
 $handle_dist_emaj_sequences$
 DECLARE
   v_lastval     INT;
 BEGIN
--- checks current last_value to be sure there will not be any sequence values overlay
---   dist_emaj_hist_hist_id_seq
+-- Checks current last_value to be sure there will not be any sequence values overlay.
+--   Dist_emaj_hist_hist_id_seq.
   SELECT last_value INTO v_lastval
     FROM dist_emaj.dist_emaj_hist_hist_id_seq;
 --  RAISE WARNING 'handle_emaj_sequences: the current dist_emaj_hist_hist_id_seq last_value = %',v_lastval;
   IF v_lastval > v_restart THEN
-    RAISE EXCEPTION 'handle_emaj_sequences: the current dist_emaj_hist_hist_id_seq last_value (%) is too high to be set to %',
+    RAISE EXCEPTION 'handle_emaj_sequences: the current dist_emaj_hist_hist_id_seq last_value (%) is too high TO be set TO %',
       v_lastval, v_restart;
   END IF;
---   dist_emaj_time_stamp_time_id_seq
+--   Dist_emaj_time_stamp_time_id_seq.
   SELECT last_value INTO v_lastval
     FROM dist_emaj.dist_emaj_time_stamp_time_id_seq;
 --  RAISE WARNING 'handle_emaj_sequences: the current dist_emaj_time_stamp_time_id_seq last_value = %',v_lastval;
   IF v_lastval > v_restart THEN
-    RAISE EXCEPTION 'handle_emaj_sequences: the current dist_emaj_time_stamp_time_id_seq last_value (%) is too high to be set to %',
+    RAISE EXCEPTION 'handle_emaj_sequences: the current dist_emaj_time_stamp_time_id_seq last_value (%) is too high TO be set TO %',
       v_lastval, v_restart;
   END IF;
---   dist_emaj_rlbk_rlbk_id_seq
+--   Dist_emaj_rlbk_rlbk_id_seq.
   SELECT last_value INTO v_lastval
     FROM dist_emaj.dist_emaj_rlbk_rlbk_id_seq;
 --  RAISE WARNING 'handle_emaj_sequences: the current dist_emaj_rlbk_rlbk_id_seq last_value = %',v_lastval;
   IF v_lastval > v_restart THEN
-    RAISE EXCEPTION 'handle_emaj_sequences: the current dist_emaj_rlbk_rlbk_id_seq last_value (%) is too high to be set to %',
+    RAISE EXCEPTION 'handle_emaj_sequences: the current dist_emaj_rlbk_rlbk_id_seq last_value (%) is too high TO be set TO %',
       v_lastval, v_restart;
   END IF;
--- OK, let's set the sequences values
-  PERFORM setval('dist_emaj.dist_emaj_hist_hist_id_seq', v_restart - 1, true);
-  PERFORM setval('dist_emaj.dist_emaj_time_stamp_time_id_seq', v_restart - 1, true);
-  PERFORM setval('dist_emaj.dist_emaj_rlbk_rlbk_id_seq', v_restart - 1, true);
+-- OK, let's set the sequences values.
+  PERFORM setval('dist_emaj.dist_emaj_hist_hist_id_seq', v_restart - 1, TRUE);
+  PERFORM setval('dist_emaj.dist_emaj_time_stamp_time_id_seq', v_restart - 1, TRUE);
+  PERFORM setval('dist_emaj.dist_emaj_rlbk_rlbk_id_seq', v_restart - 1, TRUE);
 END;
 $handle_dist_emaj_sequences$;
 
--- register _regress_emaj_adm as role used for dblink connections
+-- Register _regress_emaj_adm as role used for dblink connections.
 \c regression_1
-select emaj.emaj_set_param('dblink_user_password', 'user=_regress_emaj_adm password=adm');
+SELECT emaj.emaj_set_param('dblink_user_password', 'user=_regress_emaj_adm password=adm');
 
 \c regression_2
-select emaj.emaj_set_param('dblink_user_password', 'user=_regress_emaj_adm password=adm');
+SELECT emaj.emaj_set_param('dblink_user_password', 'user=_regress_emaj_adm password=adm');
 
 ------------------------------------------------------------
--- create application schemas with tables, sequences, triggers into regression_1
+-- Create application schemas with tables, sequences, triggers into regression_1.
 ------------------------------------------------------------
 \c regression_1
 
 --
--- First schema
+-- First schema.
 --
 DROP SCHEMA IF EXISTS mySchema1 CASCADE;
 CREATE SCHEMA mySchema1;
@@ -146,7 +146,7 @@ BEGIN
 END;
 $$;
 
-CREATE or REPLACE FUNCTION myTbl2trgfct1 () RETURNS trigger AS $$
+CREATE OR REPLACE FUNCTION myTbl2trgfct1 () RETURNS trigger AS $$
 BEGIN
   IF (TG_OP = 'DELETE') THEN
     INSERT INTO mySchema1.myTbl2b (col21) SELECT OLD.col21;
@@ -165,7 +165,7 @@ CREATE TRIGGER myTbl2trg1
   AFTER INSERT OR UPDATE OR DELETE ON myTbl2
   FOR EACH ROW EXECUTE PROCEDURE myTbl2trgfct1();
 
-CREATE or REPLACE FUNCTION myTbl2trgfct2 () RETURNS trigger AS $$
+CREATE OR REPLACE FUNCTION myTbl2trgfct2 () RETURNS trigger AS $$
 BEGIN
   RETURN NEW;
 END;
@@ -177,7 +177,7 @@ CREATE TRIGGER myTbl2trg2
 ALTER TABLE mySchema1.myTbl2 DISABLE TRIGGER myTbl2trg2;
 
 --
--- Second schema
+-- Second schema.
 --
 
 DROP SCHEMA IF EXISTS mySchema2 CASCADE;
@@ -260,14 +260,14 @@ CREATE TABLE myTbl6 (
   EXCLUDE USING gist (col63 WITH &&)
 );
 
--- This table will remain outside table groups
+-- This table will remain outside table groups.
 DROP TABLE IF EXISTS myTbl7 ;
 CREATE TABLE myTbl7 (
   col71       INT              NOT NULL,
   PRIMARY KEY (col71)
 );
 
--- This table will remain outside table groups
+-- This table will remain outside table groups.
 DROP TABLE IF EXISTS myTbl8 ;
 CREATE TABLE myTbl8 (
   col81       INT              NOT NULL,
@@ -281,23 +281,23 @@ CREATE SEQUENCE mySeq1 MINVALUE 1000 MAXVALUE 2000 CYCLE;
 CREATE SEQUENCE mySeq2;
 
 ------------------------------------------------------------
--- create tables groups into regression_1
+-- Create tables groups into regression_1.
 ------------------------------------------------------------
 
-select emaj.emaj_create_group('myGroup1');
-select emaj.emaj_assign_tables('myschema1', '.*', null, 'myGroup1');
-select emaj.emaj_assign_sequences('myschema1', '.*', null, 'myGroup1');
+SELECT emaj.emaj_create_group('myGroup1');
+SELECT emaj.emaj_assign_tables('myschema1', '.*', NULL, 'myGroup1');
+SELECT emaj.emaj_assign_sequences('myschema1', '.*', NULL, 'myGroup1');
 
-select emaj.emaj_create_group('myGroup2');
-select emaj.emaj_assign_tables('myschema2', '.*', 'mytbl[7,8]', 'myGroup2');
-select emaj.emaj_assign_sequences('myschema2', '.*', null, 'myGroup2');
+SELECT emaj.emaj_create_group('myGroup2');
+SELECT emaj.emaj_assign_tables('myschema2', '.*', 'mytbl[7,8]', 'myGroup2');
+SELECT emaj.emaj_assign_sequences('myschema2', '.*', NULL, 'myGroup2');
 
 ------------------------------------------------------------
--- create application schemas with tables, sequences, triggers into regression_2
+-- Create application schemas with tables, sequences, triggers into regression_2.
 ------------------------------------------------------------
 \c regression_2
 --
--- Third schema (for an audit_only group)
+-- Third schema (for an audit_only group).
 --
 
 DROP SCHEMA IF EXISTS "phil's schema""3" CASCADE;
@@ -338,7 +338,7 @@ ALTER TABLE "myTbl2\" ADD CONSTRAINT mytbl2_col21_fkey_ne FOREIGN KEY (col21) RE
 CREATE SEQUENCE "phil's""seq\1" MINVALUE 1000 MAXVALUE 2000 CYCLE;
 
 --
--- Fourth schema (for partitioning)
+-- Fourth schema (for partitioning).
 --
 
 DROP SCHEMA IF EXISTS mySchema4 CASCADE;
@@ -346,7 +346,7 @@ CREATE SCHEMA mySchema4;
 
 SET search_path=mySchema4;
 
--- Old partitionning style
+-- Old partitionning style.
 
 DROP TABLE IF EXISTS myTblM ;
 CREATE TABLE myTblM (
@@ -362,9 +362,9 @@ CREATE TABLE myTblC1 (CHECK (col1 BETWEEN '2000-01-01' AND '2009-12-31'), PRIMAR
 DROP TABLE IF EXISTS myTblC2 ;
 CREATE TABLE myTblC2 (CHECK (col1 BETWEEN '2010-01-01' AND '2019-12-31'), PRIMARY KEY (col1, col2)) INHERITS (myTblM);
 
-DROP TRIGGER IF EXISTS myTblM_insert_trigger ON myTblM; 
-CREATE OR REPLACE FUNCTION myTblM_insert_trigger() RETURNS TRIGGER AS $trigger$ 
-BEGIN 
+DROP TRIGGER IF EXISTS myTblM_insert_trigger ON myTblM;
+CREATE OR REPLACE FUNCTION myTblM_insert_trigger() RETURNS TRIGGER AS $trigger$
+BEGIN
   IF NEW.col1 BETWEEN '2000-01-01' AND '2009-12-31' THEN
     INSERT INTO myschema4.myTblC1 VALUES (NEW.*);
     RETURN NULL;
@@ -377,7 +377,7 @@ END;
 $trigger$ LANGUAGE PLPGSQL;
 CREATE TRIGGER myTblM_insert_trigger BEFORE INSERT ON myTblM FOR EACH ROW EXECUTE PROCEDURE mySchema4.myTblM_insert_trigger();
 
--- Declarative partitionning (with subpartitions, FK and triggers on partitionned table)
+-- Declarative partitionning (with subpartitions, FK and triggers on partitionned table).
 
 DROP TABLE IF EXISTS myTblP;
 CREATE TABLE myTblP (
@@ -427,7 +427,7 @@ CREATE TRIGGER z_min_update
   FOR EACH ROW EXECUTE FUNCTION suppress_redundant_updates_trigger();
 
 --
--- fifth schema (for tables unsupported in rollbackable tables groups)
+-- Fifth schema (for tables unsupported in rollbackable tables groups).
 --
 
 DROP SCHEMA IF EXISTS mySchema5 CASCADE;
@@ -435,7 +435,7 @@ CREATE SCHEMA mySchema5;
 
 SET search_path=mySchema5;
 
--- myTempTbl will be created in the test script that needs is
+-- MyTempTbl will be created in the test script that needs is.
 
 DROP TABLE IF EXISTS myUnloggedTbl;
 CREATE UNLOGGED TABLE myUnloggedTbl (
@@ -444,7 +444,7 @@ CREATE UNLOGGED TABLE myUnloggedTbl (
 );
 
 --
--- sixth schema (for tables with very long names)
+-- Sixth schema (for tables with very long names).
 --
 
 DROP SCHEMA IF EXISTS mySchema6 CASCADE;
@@ -476,19 +476,19 @@ CREATE TABLE table_with_55_characters_long_name_____0_________0fghij (
 );
 
 ------------------------------------------------------------
--- create tables groups into regression_2
+-- Create tables groups into regression_2.
 ------------------------------------------------------------
 
-select emaj.emaj_create_group('phil''s group#3",');
-select emaj.emaj_assign_tables('phil''s schema"3', '.*', null, 'phil''s group#3",');
-select emaj.emaj_assign_sequences('phil''s schema"3', '.*', null, 'phil''s group#3",');
+SELECT emaj.emaj_create_group('phil''s group#3",');
+SELECT emaj.emaj_assign_tables('phil''s schema"3', '.*', NULL, 'phil''s group#3",');
+SELECT emaj.emaj_assign_sequences('phil''s schema"3', '.*', NULL, 'phil''s group#3",');
 
-select emaj.emaj_create_group('myGroup4');
-select emaj.emaj_assign_tables('myschema4', '.*', null, 'myGroup4');
-select emaj.emaj_assign_sequences('myschema4', '.*', null, 'myGroup4');
+SELECT emaj.emaj_create_group('myGroup4');
+SELECT emaj.emaj_assign_tables('myschema4', '.*', NULL, 'myGroup4');
+SELECT emaj.emaj_assign_sequences('myschema4', '.*', NULL, 'myGroup4');
 
-select emaj.emaj_create_group('myGroup5', true);
-select emaj.emaj_assign_tables('myschema5', '.*', null, 'myGroup6');
+SELECT emaj.emaj_create_group('myGroup5', TRUE);
+SELECT emaj.emaj_assign_tables('myschema5', '.*', NULL, 'myGroup6');
 
-select emaj.emaj_create_group('myGroup6', true);
-select emaj.emaj_assign_tables('myschema6', '.*', null, 'myGroup6');
+SELECT emaj.emaj_create_group('myGroup6', TRUE);
+SELECT emaj.emaj_assign_tables('myschema6', '.*', NULL, 'myGroup6');

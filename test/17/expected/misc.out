@@ -1,17 +1,17 @@
--- misc.sql : test miscellaneous functions
---   dist_emaj_set_param(),
---   dist_emaj_verify_all(),
---   dist_emaj_delete_before_mark_cluster(),
---   dist_emaj_import_parameters_configuration() and dist_emaj_export_parameters_configuration(),
---   dist_emaj_purge_histories().
+-- misc.sql : test miscellaneous functions.
+--   Dist_emaj_set_param(),
+--   Dist_emaj_verify_all(),
+--   Dist_emaj_delete_before_mark_cluster(),
+--   Dist_emaj_import_parameters_configuration() and dist_emaj_export_parameters_configuration(),
+--   Dist_emaj_purge_histories().
 --
--- do not display DETAIL and CONTEXT outputs when an error is raised (\errverbose can be used to debug a statement)
+-- Do not display DETAIL and CONTEXT outputs when an error is raised (\errverbose can be used to debug a statement).
 \set VERBOSITY terse
 --
--- Prepare the test context
+-- Prepare the test context.
 --
--- set sequence restart value
-select public.handle_dist_emaj_sequences(4000);
+-- Set sequence restart value.
+SELECT public.handle_dist_emaj_sequences(4000);
  handle_dist_emaj_sequences 
 ----------------------------
  
@@ -22,56 +22,56 @@ select public.handle_dist_emaj_sequences(4000);
 \set EMAJTESTTMPDIR `echo $EMAJTESTTMPDIR`
 \! mkdir -p $EMAJTESTTMPDIR
 -----------------------------
--- Test dist_emaj_set_param()
+-- Test dist_emaj_set_param().
 -----------------------------
--- invalid key
-select dist_emaj.dist_emaj_set_param('a key', 'a value');
+-- Invalid key.
+SELECT dist_emaj.dist_emaj_set_param('a key', 'a value');
 ERROR:  dist_emaj_set_param: The "a key" key is unknown.
--- invalid interval format
-select dist_emaj.dist_emaj_set_param('history_retention', 'not an interval value');
-ERROR:  dist_emaj_set_param: The "history_retention" value ("not an interval value") is not a valid time interval.
--- update a key with a real value change resulting in an INSERT into dist_emaj_param
-select dist_emaj.dist_emaj_set_param('history_retention', '1 MONTH');
+-- Invalid interval format.
+SELECT dist_emaj.dist_emaj_set_param('history_retention', 'NOT an interval value');
+ERROR:  dist_emaj_set_param: The "history_retention" value ("NOT an interval value") is not a valid time interval.
+-- Update a key with a real value change resulting in an INSERT into dist_emaj_param.
+SELECT dist_emaj.dist_emaj_set_param('history_retention', '1 MONTH');
  dist_emaj_set_param 
 ---------------------
                    1
 (1 row)
 
--- update a key with the same value
-select dist_emaj.dist_emaj_set_param('history_retention', '1 MONTH');
+-- Update a key with the same value.
+SELECT dist_emaj.dist_emaj_set_param('history_retention', '1 MONTH');
  dist_emaj_set_param 
 ---------------------
                    0
 (1 row)
 
--- update a key with a real value change resulting in an UPDATE in dist_emaj_param
-select dist_emaj.dist_emaj_set_param('history_retention', '2 MONTHS');
+-- Update a key with a real value change resulting in an UPDATE in dist_emaj_param.
+SELECT dist_emaj.dist_emaj_set_param('history_retention', '2 MONTHS');
  dist_emaj_set_param 
 ---------------------
                    1
 (1 row)
 
--- reset a key (here in upper case) to its default value
-select dist_emaj.dist_emaj_set_param('HISTORY_RETENTION', NULL);
+-- Reset a key (here in upper case) to its default value.
+SELECT dist_emaj.dist_emaj_set_param('HISTORY_RETENTION', NULL);
  dist_emaj_set_param 
 ---------------------
                    1
 (1 row)
 
--- reset a key with no change
-select dist_emaj.dist_emaj_set_param('history_retention', NULL);
+-- Reset a key with no change.
+SELECT dist_emaj.dist_emaj_set_param('history_retention', NULL);
  dist_emaj_set_param 
 ---------------------
                    0
 (1 row)
 
-select * from dist_emaj.dist_emaj_all_param order by param_rank;
+SELECT * FROM dist_emaj.dist_emaj_all_param ORDER BY param_rank;
      param_key     | param_value | param_default | param_cast | param_rank 
 -------------------+-------------+---------------+------------+------------
  history_retention | 1 year      | 1 year        | INTERVAL   |          1
 (1 row)
 
-select hist_id, hist_function, hist_event, hist_object, hist_wording from dist_emaj.dist_emaj_hist where hist_id >= 4000 order by 1;
+SELECT hist_id, hist_function, hist_event, hist_object, hist_wording FROM dist_emaj.dist_emaj_hist WHERE hist_id >= 4000 ORDER BY 1;
  hist_id | hist_function |     hist_event     |    hist_object    |        hist_wording        
 ---------+---------------+--------------------+-------------------+----------------------------
     4000 | SET_PARAM     | INSERTED PARAMETER | history_retention | From: 1 year to: 1 MONTH
@@ -80,34 +80,34 @@ select hist_id, hist_function, hist_event, hist_object, hist_wording from dist_e
 (3 rows)
 
 -----------------------------
--- try forbiden actions on parameters tables
+-- Try forbiden actions on parameters tables.
 -----------------------------
-truncate dist_emaj.dist_emaj_param;
+TRUNCATE dist_emaj.dist_emaj_param;
 ERROR:  dist_emaj_param_before_stmt_trg: Modifying the dist_emaj_param table is not allowed. Use the dist_emaj_set_param() function instead.
-truncate dist_emaj.dist_emaj_default_param;
+TRUNCATE dist_emaj.dist_emaj_default_param;
 ERROR:  dist_emaj_default_param_before_stmt_trg: Modifying the dist_emaj_default_param table is not allowed.
 -----------------------------
--- Test dist_emaj_verify_all()
+-- Test dist_emaj_verify_all().
 -----------------------------
--- add missing groups
-begin;
-  select dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_1', 'extraGroup_1');
+-- Add missing groups.
+BEGIN;
+  SELECT dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_1', 'extraGroup_1');
  dist_emaj_assign_group 
 ------------------------
                       1
 (1 row)
 
-  select dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_1', 'extraGroup_2');
+  SELECT dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_1', 'extraGroup_2');
  dist_emaj_assign_group 
 ------------------------
                       1
 (1 row)
 
--- add non emaj adm user
-  update dist_emaj.dist_emaj_database
-    set db_connect_string = replace(db_connect_string, '_regress_emaj_adm:adm', '_regress_dist_emaj_anonym:anonym')
-    where db_name = 'emaj_2';
-  select * from dist_emaj.dist_emaj_verify_all();
+-- Add non emaj adm user.
+  UPDATE dist_emaj.dist_emaj_database
+    SET db_connect_string = replace(db_connect_string, '_regress_emaj_adm:adm', '_regress_dist_emaj_anonym:anonym')
+    WHERE db_name = 'emaj_2';
+  SELECT * FROM dist_emaj.dist_emaj_verify_all();
                                   dist_emaj_verify_all                                   
 -----------------------------------------------------------------------------------------
  Warning: the cluster "empty_cluster" has no assigned table group.
@@ -117,16 +117,16 @@ begin;
  Error on database "no_emaj", the emaj extension is not installed in the database.
 (5 rows)
 
-rollback;
--- clean up errors and recheck
-select dist_emaj.dist_emaj_drop_database('no_emaj');
+ROLLBACK;
+-- Clean up errors and recheck.
+SELECT dist_emaj.dist_emaj_drop_database('no_emaj');
  dist_emaj_drop_database 
 -------------------------
                        1
 (1 row)
 
-drop database regression_no_emaj;
-select * from dist_emaj.dist_emaj_verify_all();
+DROP DATABASE regression_no_emaj;
+SELECT * FROM dist_emaj.dist_emaj_verify_all();
                        dist_emaj_verify_all                        
 -------------------------------------------------------------------
  Warning: the cluster "empty_cluster" has no assigned table group.
@@ -134,14 +134,14 @@ select * from dist_emaj.dist_emaj_verify_all();
 (2 rows)
 
 -----------------------------
--- dist_emaj_delete_before_mark_cluster() tests
+-- Dist_emaj_delete_before_mark_cluster() tests.
 -----------------------------
--- errors in input parameters
-select dist_emaj.dist_emaj_delete_before_mark_cluster('dummy_cluster', 'dummy_mark');
+-- Errors in input parameters.
+SELECT dist_emaj.dist_emaj_delete_before_mark_cluster('dummy_cluster', 'dummy_mark');
 ERROR:  dist_emaj_verify_cluster: The cluster "dummy_cluster" is unknown.
-select dist_emaj.dist_emaj_delete_before_mark_cluster('my_cluster', 'dummy_mark');
+SELECT dist_emaj.dist_emaj_delete_before_mark_cluster('my_cluster', 'dummy_mark');
 ERROR:  _check_dist_mark: The mark "dummy_mark" is unknown within the cluster "my_cluster".
--- should be OK
+-- Should be OK.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark DM1
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
@@ -157,25 +157,25 @@ It has processed 6 groups spread into 2 databases.
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
 It has processed 6 groups spread into 2 databases.
-select dist_emaj.dist_emaj_delete_before_mark_cluster('my_cluster', 'START');
+SELECT dist_emaj.dist_emaj_delete_before_mark_cluster('my_cluster', 'START');
  dist_emaj_delete_before_mark_cluster 
 --------------------------------------
                                     0
 (1 row)
 
-select dist_emaj.dist_emaj_delete_before_mark_cluster('my_cluster', 'DM1');
+SELECT dist_emaj.dist_emaj_delete_before_mark_cluster('my_cluster', 'DM1');
  dist_emaj_delete_before_mark_cluster 
 --------------------------------------
                                     1
 (1 row)
 
-select dist_emaj.dist_emaj_delete_before_mark_cluster('my_cluster', 'DM1');
+SELECT dist_emaj.dist_emaj_delete_before_mark_cluster('my_cluster', 'DM1');
  dist_emaj_delete_before_mark_cluster 
 --------------------------------------
                                     0
 (1 row)
 
-select * from dist_emaj.dist_emaj_mark order by mark_time_id;
+SELECT * FROM dist_emaj.dist_emaj_mark ORDER BY mark_time_id;
  mark_cluster | mark_name | mark_time_id 
 --------------+-----------+--------------
  my_cluster   | DM1       |         4003
@@ -183,41 +183,41 @@ select * from dist_emaj.dist_emaj_mark order by mark_time_id;
  my_cluster   | DM3       |         4005
 (3 rows)
 
--- local mark deletion for a group and renaming for another
+-- Local mark deletion for a group and renaming for another.
 \c regression_1
-select emaj.emaj_delete_mark_group('myGroup1', 'DM2');
+SELECT emaj.emaj_delete_mark_group('myGroup1', 'DM2');
  emaj_delete_mark_group 
 ------------------------
                       1
 (1 row)
 
-select emaj.emaj_rename_mark_group('myGroup2', 'DM3', 'Renamed_DM3');
+SELECT emaj.emaj_rename_mark_group('myGroup2', 'DM3', 'Renamed_DM3');
  emaj_rename_mark_group 
 ------------------------
  
 (1 row)
 
 \c regression
--- fails if the missing mark is the new first mark
-select dist_emaj.dist_emaj_delete_before_mark_cluster('my_cluster', 'DM2');
+-- Fails if the missing mark is the new first mark.
+SELECT dist_emaj.dist_emaj_delete_before_mark_cluster('my_cluster', 'DM2');
 ERROR:  _check_dist_mark: The mark "DM2" is unknown within the cluster "my_cluster".
--- ok if the missing mark is an intermediate mark or if the new first mark has been renamed
-select dist_emaj.dist_emaj_delete_before_mark_cluster('my_cluster', 'DM3');
+-- Ok if the missing mark is an intermediate mark or if the new first mark has been renamed.
+SELECT dist_emaj.dist_emaj_delete_before_mark_cluster('my_cluster', 'DM3');
  dist_emaj_delete_before_mark_cluster 
 --------------------------------------
                                     1
 (1 row)
 
-select * from dist_emaj.dist_emaj_mark order by mark_time_id;
+SELECT * FROM dist_emaj.dist_emaj_mark ORDER BY mark_time_id;
  mark_cluster | mark_name | mark_time_id 
 --------------+-----------+--------------
  my_cluster   | DM3       |         4005
 (1 row)
 
-select hist_id, hist_function, hist_event, hist_object, hist_wording
-  from dist_emaj.dist_emaj_hist
-  where hist_id >= 4000 and hist_function in ('DELETE_BEFORE_MARK_CLUSTER', 'SYNC_MARKS_CLUSTER', 'PURGE_HISTORIES')
-  order by 1;
+SELECT hist_id, hist_function, hist_event, hist_object, hist_wording
+  FROM dist_emaj.dist_emaj_hist
+  WHERE hist_id >= 4000 AND hist_function in ('DELETE_BEFORE_MARK_CLUSTER', 'SYNC_MARKS_CLUSTER', 'PURGE_HISTORIES')
+  ORDER BY 1;
  hist_id |       hist_function        |  hist_event   | hist_object |                      hist_wording                       
 ---------+----------------------------+---------------+-------------+---------------------------------------------------------
     4017 | SYNC_MARKS_CLUSTER         | BEGIN         | my_cluster  | 
@@ -246,7 +246,7 @@ select hist_id, hist_function, hist_event, hist_object, hist_wording
 (23 rows)
 
 -----------------------------
--- dist_emaj_export_parameters_configuration() and dist_emaj_import_parameters_configuration() tests.
+-- Dist_emaj_export_parameters_configuration() and dist_emaj_import_parameters_configuration() tests.
 -----------------------------
 -- Direct export.
 --   OK.
@@ -432,7 +432,7 @@ SELECT dist_emaj.dist_emaj_import_parameters_configuration(:'EMAJTESTTMPDIR' || 
                                          1
 (1 row)
 
-select hist_id, hist_function, hist_event, hist_wording from dist_emaj.dist_emaj_hist where hist_id >= 4000 and hist_function like '%PARAM%' order by hist_id;
+SELECT hist_id, hist_function, hist_event, hist_wording FROM dist_emaj.dist_emaj_hist WHERE hist_id >= 4000 AND hist_function LIKE '%PARAM%' ORDER BY hist_id;
  hist_id |   hist_function   |     hist_event     |                   hist_wording                    
 ---------+-------------------+--------------------+---------------------------------------------------
     4000 | SET_PARAM         | INSERTED PARAMETER | From: 1 year to: 1 MONTH
@@ -463,36 +463,36 @@ select hist_id, hist_function, hist_event, hist_wording from dist_emaj.dist_emaj
 (25 rows)
 
 -----------------------------
--- dist_emaj_purge_histories() tests
+-- Dist_emaj_purge_histories() tests.
 -----------------------------
 -- Use the default 1 YEAR retention delay. There is nothing to purge.
-select dist_emaj.dist_emaj_purge_histories(NULL);
+SELECT dist_emaj.dist_emaj_purge_histories(NULL);
  dist_emaj_purge_histories 
 ---------------------------
  Nothing to delete
 (1 row)
 
 -- Use a 100 YEARS retention delay that disables the historyies purge.
-select dist_emaj.dist_emaj_purge_histories('100 YEARS');
+SELECT dist_emaj.dist_emaj_purge_histories('100 YEARS');
   dist_emaj_purge_histories  
 -----------------------------
  Histories purge is disabled
 (1 row)
 
--- Set a 1 second delay. It removes all traces prior the most recent cluster stop (no rollback is deleted)
-select dist_emaj.dist_emaj_set_param('history_retention', '1 second');
+-- Set a 1 second delay. It removes all traces prior the most recent cluster stop (no rollback is deleted).
+SELECT dist_emaj.dist_emaj_set_param('history_retention', '1 second');
  dist_emaj_set_param 
 ---------------------
                    1
 (1 row)
 
-select dist_emaj.dist_emaj_purge_histories();
+SELECT dist_emaj.dist_emaj_purge_histories();
                         dist_emaj_purge_histories                        
 -------------------------------------------------------------------------
  402 dist_emaj_hist rows deleted ; 7 distributed rollback events deleted
 (1 row)
 
-select dist_emaj.dist_emaj_set_param('history_retention', NULL);
+SELECT dist_emaj.dist_emaj_set_param('history_retention', NULL);
  dist_emaj_set_param 
 ---------------------
                    1
@@ -515,35 +515,35 @@ WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "mys
 WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp2" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
 The 'start' action on cluster 'my_cluster' is completed.
 It has processed 6 groups spread into 2 databases.
-select dist_emaj.dist_emaj_purge_histories('0 SECOND');
+SELECT dist_emaj.dist_emaj_purge_histories('0 SECOND');
    dist_emaj_purge_histories    
 --------------------------------
  62 dist_emaj_hist rows deleted
 (1 row)
 
 --
--- Final checks
+-- Final checks.
 --
 \c regression
--- Check dist_emaj tables content
-select hist_id, hist_function, hist_wording from dist_emaj.dist_emaj_hist where hist_id >= 4000 and hist_function = 'PURGE_HISTORIES' order by hist_id;
+-- Check dist_emaj tables content.
+SELECT hist_id, hist_function, hist_wording FROM dist_emaj.dist_emaj_hist WHERE hist_id >= 4000 AND hist_function = 'PURGE_HISTORIES' ORDER BY hist_id;
  hist_id |  hist_function  |          hist_wording          
 ---------+-----------------+--------------------------------
     4124 | PURGE_HISTORIES | 62 dist_emaj_hist rows deleted
 (1 row)
 
-select rlbk_id, rlbk_time_id from dist_emaj.dist_emaj_rlbk order by rlbk_id;
+SELECT rlbk_id, rlbk_time_id FROM dist_emaj.dist_emaj_rlbk ORDER BY rlbk_id;
  rlbk_id | rlbk_time_id 
 ---------+--------------
 (0 rows)
 
-select min(time_id) from dist_emaj.dist_emaj_time_stamp;
+SELECT min(time_id) FROM dist_emaj.dist_emaj_time_stamp;
  min  
 ------
  4006
 (1 row)
 
 --
-reset session_authorization;
+RESET session_authorization;
 -- Remove the temp directory.
 \! rm -R $EMAJTESTTMPDIR

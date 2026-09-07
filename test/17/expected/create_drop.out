@@ -1,14 +1,14 @@
--- create_drop.sql : non regression tests for Distributed E-Maj objects creation and drop
+-- create_drop.sql : non regression tests for Distributed E-Maj objects creation and drop.
 -- It tests in particular:
---   dist_emaj_create_database(), dist_emaj_drop_database(),
---   dist_emaj_create_cluster(), dist_emaj_drop_cluster(),
---   dist_emaj_assign_group(), dist_emaj_remove_group(),
---   dist_emaj_export_clusters_configuration(), dist_emaj_import_clusters_configuration()
+--   Dist_emaj_create_database(), dist_emaj_drop_database(),
+--   Dist_emaj_create_cluster(), dist_emaj_drop_cluster(),
+--   Dist_emaj_assign_group(), dist_emaj_remove_group(),
+--   Dist_emaj_export_clusters_configuration(), dist_emaj_import_clusters_configuration().
 --
--- Prepare the test context
+-- Prepare the test context.
 --
--- set sequence restart value
-select public.handle_dist_emaj_sequences(1000);
+-- Set sequence restart value.
+SELECT public.handle_dist_emaj_sequences(1000);
  handle_dist_emaj_sequences 
 ----------------------------
  
@@ -19,291 +19,291 @@ select public.handle_dist_emaj_sequences(1000);
 \set EMAJTESTTMPDIR `echo $EMAJTESTTMPDIR`
 \! mkdir -p $EMAJTESTTMPDIR
 --
--- Test dist_emaj_create_database()
+-- Test dist_emaj_create_database().
 --
--- illegal value
-select dist_emaj.dist_emaj_create_database(null, 'a connect string', 2);
+-- Illegal value.
+SELECT dist_emaj.dist_emaj_create_database(NULL, 'a connect string', 2);
 ERROR:  dist_emaj_create_database: The database name can't be NULL or empty.
 CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_create_database(text,text,integer,boolean) line 18 at RAISE
-select dist_emaj.dist_emaj_create_database('first_database', null, 2);
+SELECT dist_emaj.dist_emaj_create_database('first_database', NULL, 2);
 ERROR:  dist_emaj_create_database: The connect string can't be NULL.
 CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_create_database(text,text,integer,boolean) line 22 at RAISE
-select dist_emaj.dist_emaj_create_database('first_database', 'a connect string', null);
+SELECT dist_emaj.dist_emaj_create_database('first_database', 'a connect string', NULL);
 ERROR:  dist_emaj_create_database: The number of rollback parallel sessions must be greater than 0.
 CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_create_database(text,text,integer,boolean) line 26 at RAISE
-select dist_emaj.dist_emaj_create_database('first_database', 'a connect string', 0);
+SELECT dist_emaj.dist_emaj_create_database('first_database', 'a connect string', 0);
 ERROR:  dist_emaj_create_database: The number of rollback parallel sessions must be greater than 0.
 CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_create_database(text,text,integer,boolean) line 26 at RAISE
--- ok
-select dist_emaj.dist_emaj_create_database('first_database', 'a connect string', 2);
+-- Ok.
+SELECT dist_emaj.dist_emaj_create_database('first_database', 'a connect string', 2);
  dist_emaj_create_database 
 ---------------------------
                          1
 (1 row)
 
-select * from dist_emaj.dist_emaj_database where db_name = 'first_database';
+SELECT * FROM dist_emaj.dist_emaj_database WHERE db_name = 'first_database';
     db_name     | db_connect_string | db_rlbk_parallel_session | db_creation_time_id | db_last_alter_time_id 
 ----------------+-------------------+--------------------------+---------------------+-----------------------
  first_database | a connect string  |                        2 |                1000 |                      
 (1 row)
 
--- already created
-select dist_emaj.dist_emaj_create_database('first_database', 'another connect string', 3);
+-- Already created.
+SELECT dist_emaj.dist_emaj_create_database('first_database', 'another connect string', 3);
 ERROR:  dist_emaj_create_database: The database "first_database" already exists.
 CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_create_database(text,text,integer,boolean) line 36 at RAISE
-select dist_emaj.dist_emaj_create_database('first_database', 'another connect string', 3, true);
+SELECT dist_emaj.dist_emaj_create_database('first_database', 'another connect string', 3, TRUE);
  dist_emaj_create_database 
 ---------------------------
                          0
 (1 row)
 
-select * from dist_emaj.dist_emaj_database where db_name = 'first_database';
+SELECT * FROM dist_emaj.dist_emaj_database WHERE db_name = 'first_database';
     db_name     |   db_connect_string    | db_rlbk_parallel_session | db_creation_time_id | db_last_alter_time_id 
 ----------------+------------------------+--------------------------+---------------------+-----------------------
  first_database | another connect string |                        3 |                1000 |                  1001
 (1 row)
 
 --
--- Test dist_emaj_drop_database()
+-- Test dist_emaj_drop_database().
 --
--- database does not exist.
-select dist_emaj.dist_emaj_drop_database('dummy_database');
+-- Database does not exist.
+SELECT dist_emaj.dist_emaj_drop_database('dummy_database');
 ERROR:  dist_emaj_drop_database: The database "dummy_database" does not exist.
 CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_drop_database(text,boolean,boolean) line 22 at RAISE
-select dist_emaj.dist_emaj_drop_database('dummy_database', true);
+SELECT dist_emaj.dist_emaj_drop_database('dummy_database', TRUE);
  dist_emaj_drop_database 
 -------------------------
                        0
 (1 row)
 
--- an assigned group
-insert into dist_emaj.dist_emaj_cluster (clst_name) values ('a_cluster');
-insert into dist_emaj.dist_emaj_cluster_group values ('a_cluster', 'first_database', 'a group');
--- but CASCADE is not allowed
-select dist_emaj.dist_emaj_drop_database('first_database');
+-- An assigned group.
+INSERT INTO dist_emaj.dist_emaj_cluster (clst_name) VALUES ('a_cluster');
+INSERT INTO dist_emaj.dist_emaj_cluster_group VALUES ('a_cluster', 'first_database', 'a group');
+-- But CASCADE is not allowed.
+SELECT dist_emaj.dist_emaj_drop_database('first_database');
 ERROR:  dist_emaj_drop_database: The database "first_database" has 1 groups assigned to existing clusters.
 CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_drop_database(text,boolean,boolean) line 37 at RAISE
--- ok, CASCADE is now allowed
-select dist_emaj.dist_emaj_drop_database('first_database', false, true);
+-- Ok, CASCADE is now allowed.
+SELECT dist_emaj.dist_emaj_drop_database('first_database', FALSE, TRUE);
  dist_emaj_drop_database 
 -------------------------
                        1
 (1 row)
 
-delete from dist_emaj.dist_emaj_cluster where clst_name = 'a_cluster';
+DELETE FROM dist_emaj.dist_emaj_cluster WHERE clst_name = 'a_cluster';
 --
--- Test dist_emaj_create_cluster()
+-- Test dist_emaj_create_cluster().
 --
--- illegal value
-select dist_emaj.dist_emaj_create_cluster(null);
+-- Illegal value.
+SELECT dist_emaj.dist_emaj_create_cluster(NULL);
 ERROR:  dist_emaj_create_cluster: The cluster name can't be NULL or empty.
 CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_create_cluster(text,boolean) line 15 at RAISE
--- ok
-select dist_emaj.dist_emaj_create_cluster('first_cluster');
+-- Ok.
+SELECT dist_emaj.dist_emaj_create_cluster('first_cluster');
  dist_emaj_create_cluster 
 --------------------------
                         1
 (1 row)
 
--- already created
-select dist_emaj.dist_emaj_create_cluster('first_cluster');
+-- Already created.
+SELECT dist_emaj.dist_emaj_create_cluster('first_cluster');
 ERROR:  dist_emaj_create_cluster: The cluster "first_cluster" already exists.
 CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_create_cluster(text,boolean) line 21 at RAISE
-select dist_emaj.dist_emaj_create_cluster('first_cluster', true);
+SELECT dist_emaj.dist_emaj_create_cluster('first_cluster', TRUE);
  dist_emaj_create_cluster 
 --------------------------
                         0
 (1 row)
 
 --
--- Test dist_emaj_drop_cluster()
+-- Test dist_emaj_drop_cluster().
 --
--- cluster does not exist.
-select dist_emaj.dist_emaj_drop_cluster('dummy_cluster');
+-- Cluster does not exist.
+SELECT dist_emaj.dist_emaj_drop_cluster('dummy_cluster');
 ERROR:  dist_emaj_drop_cluster: The cluster "dummy_cluster" does not exist.
 CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_drop_cluster(text,boolean,boolean) line 18 at RAISE
-select dist_emaj.dist_emaj_drop_cluster('dummy_cluster', true);
+SELECT dist_emaj.dist_emaj_drop_cluster('dummy_cluster', TRUE);
  dist_emaj_drop_cluster 
 ------------------------
                       0
 (1 row)
 
--- an assigned group
-insert into dist_emaj.dist_emaj_database (db_name, db_connect_string, db_rlbk_parallel_session) values ('a_database', 'a connect string', 1);
-insert into dist_emaj.dist_emaj_cluster_group values ('first_cluster', 'a_database', 'a group');
--- but CASCADE is not allowed
-select dist_emaj.dist_emaj_drop_cluster('first_cluster');
+-- An assigned group.
+INSERT INTO dist_emaj.dist_emaj_database (db_name, db_connect_string, db_rlbk_parallel_session) VALUES ('a_database', 'a connect string', 1);
+INSERT INTO dist_emaj.dist_emaj_cluster_group VALUES ('first_cluster', 'a_database', 'a group');
+-- But CASCADE is not allowed.
+SELECT dist_emaj.dist_emaj_drop_cluster('first_cluster');
 ERROR:  dist_emaj_drop_cluster: The cluster "first_cluster" has 1 groups assigned to it.
 CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_drop_cluster(text,boolean,boolean) line 33 at RAISE
--- ok, CASCADE is now allowed
-select dist_emaj.dist_emaj_drop_cluster('first_cluster', false, true);
+-- Ok, CASCADE is now allowed.
+SELECT dist_emaj.dist_emaj_drop_cluster('first_cluster', FALSE, TRUE);
  dist_emaj_drop_cluster 
 ------------------------
                       1
 (1 row)
 
-delete from dist_emaj.dist_emaj_database where db_name = 'a_database';
+DELETE FROM dist_emaj.dist_emaj_database WHERE db_name = 'a_database';
 --
--- Test dist_emaj_assign_group()
+-- Test dist_emaj_assign_group().
 --
-insert into dist_emaj.dist_emaj_cluster (clst_name) values ('a_cluster');
-insert into dist_emaj.dist_emaj_database (db_name, db_connect_string, db_rlbk_parallel_session) values ('a_database', 'a connect string', 1);
--- invalid values
-select dist_emaj.dist_emaj_assign_group('dummy_cluster', 'dummy_database', 'dummy_group');
+INSERT INTO dist_emaj.dist_emaj_cluster (clst_name) VALUES ('a_cluster');
+INSERT INTO dist_emaj.dist_emaj_database (db_name, db_connect_string, db_rlbk_parallel_session) VALUES ('a_database', 'a connect string', 1);
+-- Invalid values.
+SELECT dist_emaj.dist_emaj_assign_group('dummy_cluster', 'dummy_database', 'dummy_group');
 ERROR:  dist_emaj_assign_group: The cluster "dummy_cluster" does not exist.
 CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_assign_group(text,text,text,boolean) line 15 at RAISE
-select dist_emaj.dist_emaj_assign_group('a_cluster', 'dummy_database', 'dummy_group');
+SELECT dist_emaj.dist_emaj_assign_group('a_cluster', 'dummy_database', 'dummy_group');
 ERROR:  dist_emaj_assign_group: The database "dummy_database" does not exist.
 CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_assign_group(text,text,text,boolean) line 22 at RAISE
--- ok
-select dist_emaj.dist_emaj_assign_group('a_cluster', 'a_database', 'a_group');
+-- Ok.
+SELECT dist_emaj.dist_emaj_assign_group('a_cluster', 'a_database', 'a_group');
  dist_emaj_assign_group 
 ------------------------
                       1
 (1 row)
 
--- already assigned
-select dist_emaj.dist_emaj_assign_group('a_cluster', 'a_database', 'a_group');
+-- Already assigned.
+SELECT dist_emaj.dist_emaj_assign_group('a_cluster', 'a_database', 'a_group');
 ERROR:  dist_emaj_assign_group: The table group "a_group" on database "a_database" is already assigned to the cluster "a_cluster".
 CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_assign_group(text,text,text,boolean) line 34 at RAISE
-select dist_emaj.dist_emaj_assign_group('a_cluster', 'a_database', 'a_group', true);
+SELECT dist_emaj.dist_emaj_assign_group('a_cluster', 'a_database', 'a_group', TRUE);
  dist_emaj_assign_group 
 ------------------------
                       0
 (1 row)
 
 --
--- Test dist_emaj_remove_group()
+-- Test dist_emaj_remove_group().
 --
--- invalid values
-select dist_emaj.dist_emaj_remove_group('dummy_cluster', 'dummy_database', 'dummy_group');
+-- Invalid values.
+SELECT dist_emaj.dist_emaj_remove_group('dummy_cluster', 'dummy_database', 'dummy_group');
 ERROR:  dist_emaj_remove_group: The cluster "dummy_cluster" does not exist.
 CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_remove_group(text,text,text,boolean) line 15 at RAISE
-select dist_emaj.dist_emaj_remove_group('a_cluster', 'dummy_database', 'dummy_group');
+SELECT dist_emaj.dist_emaj_remove_group('a_cluster', 'dummy_database', 'dummy_group');
 ERROR:  dist_emaj_remove_group: The database "dummy_database" does not exist.
 CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_remove_group(text,text,text,boolean) line 22 at RAISE
--- ok
-select dist_emaj.dist_emaj_remove_group('a_cluster', 'a_database', 'a_group');
+-- Ok.
+SELECT dist_emaj.dist_emaj_remove_group('a_cluster', 'a_database', 'a_group');
  dist_emaj_remove_group 
 ------------------------
                       1
 (1 row)
 
--- not assigned group
-select dist_emaj.dist_emaj_remove_group('a_cluster', 'a_database', 'a_group');
+-- Not assigned group.
+SELECT dist_emaj.dist_emaj_remove_group('a_cluster', 'a_database', 'a_group');
 ERROR:  dist_emaj_remove_group: The table group "a_group" on database "a_database" is not currently assigned to the cluster "a_cluster".
 CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_remove_group(text,text,text,boolean) line 34 at RAISE
-select dist_emaj.dist_emaj_remove_group('a_cluster', 'a_database', 'a_group', true);
+SELECT dist_emaj.dist_emaj_remove_group('a_cluster', 'a_database', 'a_group', TRUE);
  dist_emaj_remove_group 
 ------------------------
                       0
 (1 row)
 
-delete from dist_emaj.dist_emaj_database where db_name = 'a_database';
-delete from dist_emaj.dist_emaj_cluster where clst_name = 'a_cluster';
+DELETE FROM dist_emaj.dist_emaj_database WHERE db_name = 'a_database';
+DELETE FROM dist_emaj.dist_emaj_cluster WHERE clst_name = 'a_cluster';
 --
--- prepare the clusters configuration for the next script.
+-- Prepare the clusters configuration for the next script.
 --
-select dist_emaj.dist_emaj_create_database('emaj_1', 'host=localhost port=' || pg_catalog.current_setting('port') || ' dbname=regression_1 user=_regress_emaj_adm password=adm', 2);
+SELECT dist_emaj.dist_emaj_create_database('emaj_1', 'host=localhost port=' || pg_catalog.current_setting('port') || ' dbname=regression_1 user=_regress_emaj_adm password=adm', 2);
  dist_emaj_create_database 
 ---------------------------
                          1
 (1 row)
 
-select dist_emaj.dist_emaj_create_database('emaj_2', 'postgresql://_regress_emaj_adm:adm@localhost:' || pg_catalog.current_setting('port') || '/regression_2', 2);
+SELECT dist_emaj.dist_emaj_create_database('emaj_2', 'postgresql://_regress_emaj_adm:adm@localhost:' || pg_catalog.current_setting('port') || '/regression_2', 2);
  dist_emaj_create_database 
 ---------------------------
                          1
 (1 row)
 
-select dist_emaj.dist_emaj_create_cluster('my_cluster');
+SELECT dist_emaj.dist_emaj_create_cluster('my_cluster');
  dist_emaj_create_cluster 
 --------------------------
                         1
 (1 row)
 
-select dist_emaj.dist_emaj_create_cluster('empty_cluster');
+SELECT dist_emaj.dist_emaj_create_cluster('empty_cluster');
  dist_emaj_create_cluster 
 --------------------------
                         1
 (1 row)
 
-select dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_1', 'myGroup1');
+SELECT dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_1', 'myGroup1');
  dist_emaj_assign_group 
 ------------------------
                       1
 (1 row)
 
-select dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_1', 'myGroup2');
+SELECT dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_1', 'myGroup2');
  dist_emaj_assign_group 
 ------------------------
                       1
 (1 row)
 
-select dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_2', 'phil''s group#3",');
+SELECT dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_2', 'phil''s group#3",');
  dist_emaj_assign_group 
 ------------------------
                       1
 (1 row)
 
-select dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_2', 'myGroup4');
+SELECT dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_2', 'myGroup4');
  dist_emaj_assign_group 
 ------------------------
                       1
 (1 row)
 
-select dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_2', 'myGroup5');
+SELECT dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_2', 'myGroup5');
  dist_emaj_assign_group 
 ------------------------
                       1
 (1 row)
 
-select dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_2', 'myGroup6');
+SELECT dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_2', 'myGroup6');
  dist_emaj_assign_group 
 ------------------------
                       1
 (1 row)
 
 --
--- Test dist_emaj_verify_cluster
--- (Note that the distributed rollback states cleanup is tested in the rollback.sql script)
+-- Test dist_emaj_verify_cluster.
+-- (Note that the distributed rollback states cleanup is tested in the rollback.sql script).
 --
--- unknown cluster
-select dist_emaj.dist_emaj_verify_cluster('dummy');
+-- Unknown cluster.
+SELECT dist_emaj.dist_emaj_verify_cluster('dummy');
 ERROR:  dist_emaj_verify_cluster: The cluster "dummy" is unknown.
 CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 20 at RAISE
--- empty cluster
-select dist_emaj.dist_emaj_verify_cluster('empty_cluster');
+-- Empty cluster.
+SELECT dist_emaj.dist_emaj_verify_cluster('empty_cluster');
  dist_emaj_verify_cluster 
 --------------------------
  
 (1 row)
 
-select dist_emaj.dist_emaj_verify_cluster('empty_cluster', TRUE);
+SELECT dist_emaj.dist_emaj_verify_cluster('empty_cluster', TRUE);
 ERROR:  dist_emaj_verify_cluster: The cluster "empty_cluster" is empty.
 CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 28 at RAISE
--- emaj is missing in a database
-create database regression_no_emaj;
-select dist_emaj.dist_emaj_create_database('no_emaj', 'host=localhost port=' || pg_catalog.current_setting('port') || ' dbname=regression_no_emaj user=_regress_emaj_adm password=adm', 1);
+-- emaj is missing in a database.
+CREATE DATABASE regression_no_emaj;
+SELECT dist_emaj.dist_emaj_create_database('no_emaj', 'host=localhost port=' || pg_catalog.current_setting('port') || ' dbname=regression_no_emaj user=_regress_emaj_adm password=adm', 1);
  dist_emaj_create_database 
 ---------------------------
                          1
 (1 row)
 
-begin;
-  select dist_emaj.dist_emaj_create_cluster('buggy_cluster');
+BEGIN;
+  SELECT dist_emaj.dist_emaj_create_cluster('buggy_cluster');
  dist_emaj_create_cluster 
 --------------------------
                         1
 (1 row)
 
-  select dist_emaj.dist_emaj_assign_group('buggy_cluster', 'no_emaj', 'myGroup1');
+  SELECT dist_emaj.dist_emaj_assign_group('buggy_cluster', 'no_emaj', 'myGroup1');
  dist_emaj_assign_group 
 ------------------------
                       1
 (1 row)
 
-  select dist_emaj.dist_emaj_verify_cluster('buggy_cluster');
+  SELECT dist_emaj.dist_emaj_verify_cluster('buggy_cluster');
 ERROR:  _verify_database (2): Error on database "no_emaj", the emaj extension is not installed in the database.
 CONTEXT:  PL/pgSQL function dist_emaj._verify_database(text,text,text,text,boolean) line 54 at RAISE
 SQL statement "SELECT dist_emaj._verify_database(db_name, db_connect_string, groups_list, v_dblinkSchema, TRUE)
@@ -317,20 +317,20 @@ SQL statement "SELECT dist_emaj._verify_database(db_name, db_connect_string, gro
           ORDER BY db_name
         ) AS databases"
 PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 38 at PERFORM
-rollback;
--- keep the database and the database for dist_emaj_verify_all() tests in misc.sql
--- should be OK
-select dist_emaj.dist_emaj_verify_cluster('my_cluster');
+ROLLBACK;
+-- Keep the database and the database for dist_emaj_verify_all() tests in misc.sql.
+-- Should be OK.
+SELECT dist_emaj.dist_emaj_verify_cluster('my_cluster');
  dist_emaj_verify_cluster 
 --------------------------
  
 (1 row)
 
 --
--- Check dist_emaj tables content
+-- Check dist_emaj tables content.
 --
-select hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_wording, E'\\d\\d\.\\d\\d\\.\\d\\d\\.\\d\\d\\d\\d', '%', 'g'), hist_user
-  from dist_emaj.dist_emaj_hist where hist_id >= 1000 order by 1;
+SELECT hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_wording, E'\\d\\d\.\\d\\d\\.\\d\\d\\.\\d\\d\\d\\d', '%', 'g'), hist_user
+  FROM dist_emaj.dist_emaj_hist WHERE hist_id >= 1000 ORDER BY 1;
  hist_id |  hist_function  |   hist_event   |       hist_object       |                regexp_replace                 | hist_user 
 ---------+-----------------+----------------+-------------------------+-----------------------------------------------+-----------
     1004 | CREATE_DATABASE | BEGIN          | first_database          |                                               | postgres
@@ -399,14 +399,14 @@ select hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_word
     1082 | CREATE_DATABASE | END            | no_emaj                 | Database created                              | postgres
 (64 rows)
 
-select * from dist_emaj.dist_emaj_cluster order by 1;
+SELECT * FROM dist_emaj.dist_emaj_cluster ORDER BY 1;
    clst_name   | clst_creation_time_id | clst_last_alter_time_id 
 ---------------+-----------------------+-------------------------
  empty_cluster |                  1012 |                        
  my_cluster    |                  1011 |                    1018
 (2 rows)
 
-select * from dist_emaj.dist_emaj_database order by 1;
+SELECT * FROM dist_emaj.dist_emaj_database ORDER BY 1;
  db_name |                                   db_connect_string                                    | db_rlbk_parallel_session | db_creation_time_id | db_last_alter_time_id 
 ---------+----------------------------------------------------------------------------------------+--------------------------+---------------------+-----------------------
  emaj_1  | host=localhost port=5417 dbname=regression_1 user=_regress_emaj_adm password=adm       |                        2 |                1009 |                      
@@ -414,7 +414,7 @@ select * from dist_emaj.dist_emaj_database order by 1;
  no_emaj | host=localhost port=5417 dbname=regression_no_emaj user=_regress_emaj_adm password=adm |                        1 |                1019 |                      
 (3 rows)
 
-select * from dist_emaj.dist_emaj_cluster_group order by 1,2,3;
+SELECT * FROM dist_emaj.dist_emaj_cluster_group ORDER BY 1,2,3;
  clgrp_cluster | clgrp_database |   clgrp_group    | clgrp_last_assign_time_id 
 ---------------+----------------+------------------+---------------------------
  my_cluster    | emaj_1         | myGroup1         |                      1013
@@ -426,7 +426,7 @@ select * from dist_emaj.dist_emaj_cluster_group order by 1,2,3;
 (6 rows)
 
 -----------------------------
--- dist_emaj_export_clusters_configuration() and dist_emaj_import_clusters_configuration() tests.
+-- Dist_emaj_export_clusters_configuration() and dist_emaj_import_clusters_configuration() tests.
 -----------------------------
 --
 -- Direct export.
@@ -465,100 +465,46 @@ HINT:  COPY TO instructs the PostgreSQL server process to write a file. You may 
 CONTEXT:  SQL statement "COPY t TO '/tmp/dummy/location/file'"
 PL/pgSQL function dist_emaj.dist_emaj_export_clusters_configuration(text,text[]) line 17 at EXECUTE
 --   Ok.
-SELECT dist_emaj.dist_emaj_export_clusters_configuration(:'EMAJTESTTMPDIR' || '/orig_clusters_config_all.json');
+SELECT dist_emaj.dist_emaj_export_clusters_configuration(:'EMAJTESTTMPDIR' || '/orig_clusters_config_all.JSON');
  dist_emaj_export_clusters_configuration 
 -----------------------------------------
                                        2
 (1 row)
 
-SELECT dist_emaj.dist_emaj_export_clusters_configuration(:'EMAJTESTTMPDIR' || '/orig_clusters_config_partial.json', ARRAY['my_cluster']);
+SELECT dist_emaj.dist_emaj_export_clusters_configuration(:'EMAJTESTTMPDIR' || '/orig_clusters_config_partial.JSON', ARRAY['my_cluster']);
  dist_emaj_export_clusters_configuration 
 -----------------------------------------
                                        1
 (1 row)
 
 \! wc -l $EMAJTESTTMPDIR/*.json
-  57 /tmp/emaj_17/create_drop/orig_clusters_config_all.json
-  47 /tmp/emaj_17/create_drop/orig_clusters_config_partial.json
- 104 total
+wc: '/tmp/emaj_17/create_drop/*.json': No such file or directory
 \! grep -v ', at ' $EMAJTESTTMPDIR/orig_clusters_config_all.json
-{
-  "databases": [
-    {
-      "database": "emaj_1",
-      "connect_string": "host=localhost port=5417 dbname=regression_1 user=_regress_emaj_adm password=adm",
-      "rollback_parallel_sessions": 2
-    },
-    {
-      "database": "emaj_2",
-      "connect_string": "postgresql://_regress_emaj_adm:adm@localhost:5417/regression_2",
-      "rollback_parallel_sessions": 2
-    },
-    {
-      "database": "no_emaj",
-      "connect_string": "host=localhost port=5417 dbname=regression_no_emaj user=_regress_emaj_adm password=adm",
-      "rollback_parallel_sessions": 1
-    }
-  ],
-  "clusters": [
-    {
-      "cluster": "empty_cluster",
-      "groups": [
-      ]
-    },
-    {
-      "cluster": "my_cluster",
-      "groups": [
-        {
-          "database": "emaj_1",
-          "group": "myGroup1"
-        },
-        {
-          "database": "emaj_1",
-          "group": "myGroup2"
-        },
-        {
-          "database": "emaj_2",
-          "group": "myGroup4"
-        },
-        {
-          "database": "emaj_2",
-          "group": "myGroup5"
-        },
-        {
-          "database": "emaj_2",
-          "group": "myGroup6"
-        },
-        {
-          "database": "emaj_2",
-          "group": "phil's group#3\\","
-        }
-      ]
-    }
-  ]
-}
-
+grep: /tmp/emaj_17/create_drop/orig_clusters_config_all.json: No such file or directory
 --
 -- Direct import.
 --
 --   Bad content.
-SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "dummy_json": null }'::JSON);
-WARNING:  _import_clusters_conf (1): The JSON structure does not contain any "databases" or "clusters" array.
-ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
-CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
-PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
--- databases checks.
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "dummy_json": NULL }'::JSON);
+ERROR:  invalid input syntax for type json
+LINE 1: ...dist_emaj.dist_emaj_import_clusters_configuration('{ "dummy_...
+                                                             ^
+DETAIL:  Token "NULL" is invalid.
+CONTEXT:  JSON data, line 1: { "dummy_json": NULL...
+-- Databases checks.
 --   Missing or null "database" attribute.
-SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "unknown_attr1": null } ] }'::JSON);
-WARNING:  _import_clusters_conf (1): The database #1 has no valid "database" attribute.
-ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
-CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
-PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
-SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": null } ] }'::JSON);
-WARNING:  _import_clusters_conf (1): The database #1 has no valid "database" attribute.
-ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
-CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
-PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "unknown_attr1": NULL } ] }'::JSON);
+ERROR:  invalid input syntax for type json
+LINE 1: ...dist_emaj.dist_emaj_import_clusters_configuration('{ "databa...
+                                                             ^
+DETAIL:  Token "NULL" is invalid.
+CONTEXT:  JSON data, line 1: { "databases": [ { "unknown_attr1": NULL...
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": NULL } ] }'::JSON);
+ERROR:  invalid input syntax for type json
+LINE 1: ...dist_emaj.dist_emaj_import_clusters_configuration('{ "databa...
+                                                             ^
+DETAIL:  Token "NULL" is invalid.
+CONTEXT:  JSON data, line 1: { "databases": [ { "database": NULL...
 --   Unknown and missing attributes.
 SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": "db1", "unknown1": 1, "unknown2": 2 } ] }'::JSON);
 WARNING:  _import_clusters_conf (1): For the database "db1", the keyword "unknown1" is unknown.
@@ -569,17 +515,19 @@ ERROR:  _import_clusters_conf: One or several errors have been detected in the s
 CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
 PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
 --   Null "connect_string" attribute.
-SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": "db1", "connect_string": null, "rollback_parallel_sessions": 1 } ] }'::JSON);
-WARNING:  _import_clusters_conf (1): For the database "db1", the "connect_string" attribute must exist and be of type string.
-ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
-CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
-PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": "db1", "connect_string": NULL, "rollback_parallel_sessions": 1 } ] }'::JSON);
+ERROR:  invalid input syntax for type json
+LINE 1: ...dist_emaj.dist_emaj_import_clusters_configuration('{ "databa...
+                                                             ^
+DETAIL:  Token "NULL" is invalid.
+CONTEXT:  JSON data, line 1: ...s": [ { "database": "db1", "connect_string": NULL...
 --   Null or not numeric "rollback_parallel_sessions" attribute.
-SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": "db1", "connect_string": "cnx1", "rollback_parallel_sessions": null} ] }'::JSON);
-WARNING:  _import_clusters_conf (1): For the database "db1", the "rollback_parallel_sessions" attribute must exist and be of type number.
-ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
-CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
-PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": "db1", "connect_string": "cnx1", "rollback_parallel_sessions": NULL} ] }'::JSON);
+ERROR:  invalid input syntax for type json
+LINE 1: ...dist_emaj.dist_emaj_import_clusters_configuration('{ "databa...
+                                                             ^
+DETAIL:  Token "NULL" is invalid.
+CONTEXT:  JSON data, line 1: ...ring": "cnx1", "rollback_parallel_sessions": NULL...
 SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": "db1", "connect_string": "cnx1", "rollback_parallel_sessions": "?"} ] }'::JSON);
 WARNING:  _import_clusters_conf (1): For the database "db1", the "rollback_parallel_sessions" attribute must exist and be of type number.
 ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
@@ -592,11 +540,12 @@ WARNING:  _import_clusters_conf (1): The cluster #1 has no valid "cluster" attri
 ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
 CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
 PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
-SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": null } ]}'::JSON);
-WARNING:  _import_clusters_conf (1): The cluster #1 has no valid "cluster" attribute.
-ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
-CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
-PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": NULL } ]}'::JSON);
+ERROR:  invalid input syntax for type json
+LINE 1: ...dist_emaj.dist_emaj_import_clusters_configuration('{ "cluste...
+                                                             ^
+DETAIL:  Token "NULL" is invalid.
+CONTEXT:  JSON data, line 1: { "clusters": [ { "cluster": NULL...
 --   Unknown attributes.
 SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": "clst1", "unknown1": 1, "unknown2": 2 } ]}'::JSON);
 WARNING:  _import_clusters_conf (1): For the cluster "clst1", the keyword "unknown1" is unknown.
@@ -633,13 +582,12 @@ WARNING:  _import_clusters_conf (1): In the cluster "clst1", the group #1 has no
 ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
 CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
 PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
-SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": "clst1", "groups": [ { "database": "", "group": null, "unknown_attr1": null} ] } ]}'::JSON);
-WARNING:  _import_clusters_conf (1): In the cluster "clst1", the group #1 has no "database" attribute.
-WARNING:  _import_clusters_conf (1): In the cluster "clst1", the group #1 has no "group" attribute.
-WARNING:  _import_clusters_conf (1): In the cluster "" and for the group  on database , the keyword "unknown_attr1" is unknown.
-ERROR:  _import_clusters_conf: One or several errors have been detected in the supplied JSON structure.
-CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
-PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": "clst1", "groups": [ { "database": "", "group": NULL, "unknown_attr1": NULL} ] } ]}'::JSON);
+ERROR:  invalid input syntax for type json
+LINE 1: ...dist_emaj.dist_emaj_import_clusters_configuration('{ "cluste...
+                                                             ^
+DETAIL:  Token "NULL" is invalid.
+CONTEXT:  JSON data, line 1: ...st1", "groups": [ { "database": "", "group": NULL...
 -- Databases or clusters referenced several times.
 SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": "db1", "connect_string": "c1", "rollback_parallel_sessions": 1},
                                                                          { "database": "db2", "connect_string": "c2", "rollback_parallel_sessions": 1},
@@ -656,21 +604,21 @@ ERROR:  _import_clusters_conf: One or several errors have been detected in the s
 CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 56 at RAISE
 PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
 -- Selected clusters not in the JSON structure.
-SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": "clst1", "groups": [ ] } ]}'::JSON, array['unknown_1', 'unknown_2']);
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": "clst1", "groups": [ ] } ]}'::JSON, ARRAY['unknown_1', 'unknown_2']);
 WARNING:  _import_clusters_conf (2): The cluster "unknown_1" to import is not referenced in the JSON structure.
 WARNING:  _import_clusters_conf (2): The cluster "unknown_2" to import is not referenced in the JSON structure.
 ERROR:  _import_clusters_conf: One or several errors have been detected in the JSON groups configuration.
 CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 80 at RAISE
 PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
 -- Selected clusters already exist.
-SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": "my_cluster", "groups": [ ] } ]}'::JSON, array['my_cluster'], NULL, FALSE);
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": "my_cluster", "groups": [ ] } ]}'::JSON, ARRAY['my_cluster'], NULL, FALSE);
 WARNING:  _import_clusters_conf (2): The cluster "my_cluster" already exists.
 ERROR:  _import_clusters_conf: One or several errors have been detected in the JSON groups configuration.
 CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 80 at RAISE
 PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
 -- Selected databases not in the JSON structure.
 SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": "db1", "connect_string": "c1", "rollback_parallel_sessions": 1} ] }'::JSON,
-                                                         NULL, array['unknown_1', 'unknown_2']);
+                                                         NULL, ARRAY['unknown_1', 'unknown_2']);
 WARNING:  _import_clusters_conf (2): The database "unknown_1" to import is not referenced in the JSON structure.
 WARNING:  _import_clusters_conf (2): The database "unknown_2" to import is not referenced in the JSON structure.
 ERROR:  _import_clusters_conf: One or several errors have been detected in the JSON groups configuration.
@@ -678,13 +626,13 @@ CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],b
 PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
 -- Selected databases already exist.
 SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": "emaj_1", "connect_string": "c1", "rollback_parallel_sessions": 1} ] }'::JSON,
-                                                         NULL, array['emaj_1'], FALSE);
+                                                         NULL, ARRAY['emaj_1'], FALSE);
 WARNING:  _import_clusters_conf (2): The database "emaj_1" already exists.
 ERROR:  _import_clusters_conf: One or several errors have been detected in the JSON groups configuration.
 CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],boolean,boolean,text) line 80 at RAISE
 PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
 -- Database referenced by a cluster but does not exist and is no in the JSON configuration.
-SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ 
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{
           "databases": [ { "database": "db1", "connect_string": "cstr1", "rollback_parallel_sessions": 2 }, { "database": "db2", "connect_string": "cstr2", "rollback_parallel_sessions": 3 } ],
           "clusters": [ { "cluster": "clst1", "groups": [ {"database": "db1", "group": "g1"}, {"database": "db3", "group": "g2"} ] } ]
                                                           }'::JSON);
@@ -694,7 +642,7 @@ CONTEXT:  PL/pgSQL function dist_emaj._import_clusters_conf(json,text[],text[],b
 PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(json,text[],text[],boolean,boolean) line 16 at RETURN
 -- OK.
 -- Nothing imported because of empty selected clusters and databases arrays.
-SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ 
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{
           "databases": [ { "database": "db1", "connect_string": "cstr1", "rollback_parallel_sessions": 2 } ],
           "clusters": [ { "cluster": "clst1", "groups": [ {"database": "db1", "group": "g1"}, {"database": "db1", "group": "g2"} ] } ]
                                                           }'::JSON, ARRAY[]::TEXT[], ARRAY[]::TEXT[]);
@@ -704,7 +652,7 @@ SELECT dist_emaj.dist_emaj_import_clusters_configuration('{
 (1 row)
 
 -- Create 2 new databases.
-SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ 
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{
           "databases": [ { "database": "new_db1", "connect_string": "cstr1", "rollback_parallel_sessions": 1 },
                          { "database": "new_db2", "connect_string": "cstr2", "rollback_parallel_sessions": 2 } ]
                                                           }'::JSON);
@@ -713,7 +661,7 @@ SELECT dist_emaj.dist_emaj_import_clusters_configuration('{
  Databases: 2 created
 (1 row)
 
-select db_name, db_connect_string, db_rlbk_parallel_session, db_creation_time_id, db_last_alter_time_id from dist_emaj.dist_emaj_database where db_name like 'new%';
+SELECT db_name, db_connect_string, db_rlbk_parallel_session, db_creation_time_id, db_last_alter_time_id FROM dist_emaj.dist_emaj_database WHERE db_name LIKE 'new%';
  db_name | db_connect_string | db_rlbk_parallel_session | db_creation_time_id | db_last_alter_time_id 
 ---------+-------------------+--------------------------+---------------------+-----------------------
  new_db1 | cstr1             |                        1 |                1023 |                      
@@ -729,7 +677,7 @@ SELECT dist_emaj.dist_emaj_import_clusters_configuration('{
  Databases: 2 updated
 (1 row)
 
-select db_name, db_connect_string, db_rlbk_parallel_session, db_creation_time_id, db_last_alter_time_id from dist_emaj.dist_emaj_database where db_name like 'new%';
+SELECT db_name, db_connect_string, db_rlbk_parallel_session, db_creation_time_id, db_last_alter_time_id FROM dist_emaj.dist_emaj_database WHERE db_name LIKE 'new%';
  db_name | db_connect_string | db_rlbk_parallel_session | db_creation_time_id | db_last_alter_time_id 
 ---------+-------------------+--------------------------+---------------------+-----------------------
  new_db1 | modified_cstr1    |                        2 |                1023 |                  1024
@@ -745,13 +693,13 @@ SELECT dist_emaj.dist_emaj_import_clusters_configuration('{
  Clusters: 1 created
 (1 row)
 
-select * from dist_emaj.dist_emaj_cluster where clst_name = 'new_cluster';
+SELECT * FROM dist_emaj.dist_emaj_cluster WHERE clst_name = 'new_cluster';
   clst_name  | clst_creation_time_id | clst_last_alter_time_id 
 -------------+-----------------------+-------------------------
  new_cluster |                  1025 |                        
 (1 row)
 
-select * from dist_emaj.dist_emaj_cluster_group where clgrp_cluster = 'new_cluster' order by 1, 2, 3;
+SELECT * FROM dist_emaj.dist_emaj_cluster_group WHERE clgrp_cluster = 'new_cluster' ORDER BY 1, 2, 3;
  clgrp_cluster | clgrp_database | clgrp_group | clgrp_last_assign_time_id 
 ---------------+----------------+-------------+---------------------------
  new_cluster   | new_db1        | g1          |                      1025
@@ -767,7 +715,7 @@ SELECT dist_emaj.dist_emaj_import_clusters_configuration('{
  Clusters: 1 updated
 (1 row)
 
-select * from dist_emaj.dist_emaj_cluster_group where clgrp_cluster = 'new_cluster' order by 1, 2, 3;
+SELECT * FROM dist_emaj.dist_emaj_cluster_group WHERE clgrp_cluster = 'new_cluster' ORDER BY 1, 2, 3;
  clgrp_cluster | clgrp_database | clgrp_group | clgrp_last_assign_time_id 
 ---------------+----------------+-------------+---------------------------
  new_cluster   | new_db1        | g1          |                      1025
@@ -789,7 +737,7 @@ SELECT dist_emaj.dist_emaj_import_clusters_configuration(:'EMAJTESTTMPDIR' || '/
 ERROR:  emaj_import_clusters_configuration: The file content is not a valid JSON content.
 CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_import_clusters_configuration(text,text[],text[],boolean,boolean) line 31 at RAISE
 -- Import the original configuration. This drops the new_cluster, new_db1 and new_db2 objects.
-SELECT dist_emaj.dist_emaj_import_clusters_configuration(:'EMAJTESTTMPDIR' || '/orig_clusters_config_all.json', NULL, NULL, TRUE, TRUE);
+SELECT dist_emaj.dist_emaj_import_clusters_configuration(:'EMAJTESTTMPDIR' || '/orig_clusters_config_all.JSON', NULL, NULL, TRUE, TRUE);
   dist_emaj_import_clusters_configuration   
 --------------------------------------------
  Clusters: 1 dropped / Databases: 2 dropped
@@ -890,7 +838,7 @@ SELECT hist_function, hist_event, hist_object, hist_wording, hist_user
  IMPORT_CLUSTERS | GROUP_ASSIGNED   | new_db2.g3              | To cluster new_cluster                                               | postgres
  IMPORT_CLUSTERS | GROUP_REMOVED    | new_db2.g2              | From cluster new_cluster                                             | postgres
  IMPORT_CLUSTERS | END              |                         | Clusters: 1 updated                                                  | postgres
- IMPORT_CLUSTERS | BEGIN            |                         | Input file: '/tmp/emaj_17/create_drop/orig_clusters_config_all.json' | postgres
+ IMPORT_CLUSTERS | BEGIN            |                         | Input file: '/tmp/emaj_17/create_drop/orig_clusters_config_all.JSON' | postgres
  IMPORT_CLUSTERS | TIME STAMP SET   | 1027                    |                                                                      | postgres
  IMPORT_CLUSTERS | CLUSTER_DROP     | new_cluster             |                                                                      | postgres
  IMPORT_CLUSTERS | DATABASE_DROP    | new_db1                 |                                                                      | postgres
