@@ -17,6 +17,11 @@ La syntaxe de la commande est la suivante : ::
 
    distEmaj.pl --action <start|stop|set_mark> --cluster <cluster name> --mark <mark_name> [OPTION]...
 
+**Informations générales sur le programme** :
+
+- ``--help`` : affiche juste l'**aide** en ligne.
+- ``--version`` : affiche juste les informations sur la **version** du client.
+
 **Paramètres obligatoires** :
 
 - ``action`` : **Action** à exécuter, pouvant prendre l'une des 3 valeurs :
@@ -26,11 +31,6 @@ La syntaxe de la commande est la suivante : ::
    - ``set_mark`` : pose une marque distribuée.
 - ``cluster`` : Nom du **cluster**.
 - ``mark`` : Nom de la **marque distribuée** posée.
-
-**Options générales** :
-
-- ``--help`` : affiche juste l'**aide** en ligne.
-- ``--version`` : affiche juste les informations sur la **version** du client.
 
 **Options communnes à toutes les actions** :
 

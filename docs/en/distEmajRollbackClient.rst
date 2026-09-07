@@ -17,22 +17,22 @@ The command syntax is as follows::
 
    distEmajRollback.pl --cluster <cluster> --mark <target_mark> [OPTION]...
 
+**Generic Program Information**:
+
+- ``--help``: Output the **help** message and exit.
+- ``--version``: Output the **version** information of the client and exit.
+
 **Mandatory Parameters**:
 
 - ``cluster``: Name of the **cluster**.
 - ``target_mark``: Name of the **target distributed mark** for the rollback.
 
-**General Options**:
-
-- ``--help``: displays the **help** message.
-- ``--version``: displays the **version** information of the client.
-
 **Other Options**:
 
-- ``--alter-groups-allowed`` or ``--aga``: allows a rollback to a mark prior to a change in the structure of a table group (by default, any attempt to roll back to a mark prior to a structural change in one of the table groups in the *cluster* is prohibited).
-- ``--comment <comment>``: defines a **comment** describing the distributed mark being set (optional).
-- ``--logged``: the rollbacks of the table groups in the *cluster* are **logged** (*logged rollbacks*) (by default, rollbacks are unlogged).
-- ``--verbose``: displays more **details** about the execution of the rollback.
+- ``--alter-groups-allowed`` or ``--aga``: Allows a rollback to a mark prior to a change in the structure of a table group (by default, any attempt to roll back to a mark prior to a structural change in one of the table groups in the *cluster* is prohibited).
+- ``--comment <comment>``: Defines a **comment** describing the distributed mark being set (optional).
+- ``--logged``: The rollbacks of the table groups in the *cluster* are **logged** (*logged rollbacks*) (by default, rollbacks are unlogged).
+- ``--verbose``: Display more **details** about the execution of the rollback.
 
 **Options for Connecting to the Database Hosting the dist_emaj Extension**
 

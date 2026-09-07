@@ -104,7 +104,7 @@ GetOptions(
 	"logged" => \$isLogged,
 	"mark:s" => \$targetMark,
 	"regression-test|rt" => \$regressTest,
-	"verbose"   => \$verbose,
+	"verbose" => \$verbose,
 	"version" => \$askVersion,
 	)
 	or printHelp();
@@ -687,22 +687,25 @@ It performs consistent and parallel E-Maj rollbacks for several tables groups lo
 Usage:
   $PROGRAM --cluster <groups cluster name> --mark <rollback target mark> [OPTION]...
 
+Generic Program Information:
+  -?, --help    Output a usage message and exit.
+  --version     Output the program version number and exit.
+
 Options:
-  --alter-groups-allowed flag to allow the rollback to reach a mark set before alter group operations
-  --comment              comment to describe the rollback operation (optional)
-  --help                 shows this help, then exit
-  --logged               logged rollback mode (i.e. 'rollbackable' rollback)
-  --verbose              verbose mode
-  --version              outputs version information, then exit
+  --alter-groups-allowed
+                Flag to allow the rollback to reach a mark set before alter group operations.
+  --comment     Comment to describe the rollback operation (optional).
+  --logged      Logged rollback mode (i.e. 'rollbackable' rollback).
+  --verbose     Verbose mode.
 
 Connection options:
-  -d,         database to connect to
-  -h,         database database host or socket directory
-  -p,         database database port
-  -U,         user name to connect as
-  -W,         password associated to the user, if needed
+  -d,           Database to connect to.
+  -h,           Database database host or socket directory.
+  -p,           Database database port.
+  -U,           User name to connect as.
+  -W,           Password associated to the user, if needed.
 
-Example:
+Examples:
   $PROGRAM -h localhost -p 5432 -d myDb -U distemajadmin --cluster myCluster --mark Before-Prog-Start
   $PROGRAM -d myDb -U distemajadmin --cluster myCluster --mark Before-Prog-Start --logged --alter-groups-allowed --comment "Logged rollback before Prog abort"
 };

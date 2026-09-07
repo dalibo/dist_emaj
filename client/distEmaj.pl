@@ -107,7 +107,7 @@ GetOptions(
 	"mark:s" => \$mark,
 	"regression-test|rt" => \$regressTest,
 	"reset-logs|rl" => \$resetLogs,
-	"verbose"   => sub { $verbose = 1; },
+	"verbose" => sub { $verbose = 1; },
 	"version" => \$askVersion,
 	)
 	or printHelp();
@@ -660,26 +660,28 @@ It performs consistent E-Maj operations for several tables groups located on sev
 Usage:
   $PROGRAM --action <start|stop|set_mark> --cluster <groups cluster name> --mark <mark_name> [OPTION]...
 
+Generic Program Information:
+  -?, --help    Output a usage message and exit.
+  --version     Output the program version number and exit.
+
 Options:
-  --comment     comment describing the mark set for the operation (optional)
-  --help        just displays this help
+  --comment     Comment describing the mark set for the operation (optional).
   --idle-groups-allowed
-                allows tables groups already in IDLE state to be stopped (default = false)
-  --keep-logs   do not reset logs content at groups start time (default = logs are deleted)
+                Allows tables groups already in IDLE state to be stopped (default = false).
+  --keep-logs   Do not reset logs content at groups start time (default = logs are deleted).
   --logging-groups-allowed
-                allows tables groups already in LOGGING state to be started (default = false)
-  --reset-logs  reset logs content at groups stop time (default = logs are not deleted)
-  --verbose     verbose mode
-  --version     just displays version information
+                Allows tables groups already in LOGGING state to be started (default = false).
+  --reset-logs  Reset logs content at groups stop time (default = logs are not deleted).
+  --verbose     Verbose mode.
 
 Connection options:
-  -d,           Distributed E-Maj database to connect to
-  -h,           server host or socket directory
-  -p,           server port
-  -U,           user name to connect as
-  -W,           password associated to the user, if needed
+  -d,           Distributed E-Maj database to connect to.
+  -h,           Server host or socket directory.
+  -p,           Server port.
+  -U,           User name to connect as.
+  -W,           Password associated to the user, if needed.
   
-Example:
+Examples:
   $PROGRAM -h localhost -p 5432 -d myDb -U distemajadmin --action start --cluster myCluster --mark Start_mark
   $PROGRAM -d myDb -U distemajadmin --action set_mark --cluster myCluster --mark New_mark --comment "This is a new mark"
 };

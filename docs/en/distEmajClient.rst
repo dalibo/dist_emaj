@@ -17,35 +17,35 @@ The command syntax is as follows::
 
    distEmaj.pl --action <start|stop|set_mark> --cluster <cluster name> --mark <mark_name> [OPTION]...
 
+**Generic Program Information**:
+
+- ``--help``: Display the **help** message and exit.
+- ``--version``: Display the **version** information of the client and exit.
+
 **Mandatory Parameters**:
 
 - ``action``: **Action** to execute, which can take one of 3 values:
 
-   - ``start``: starts the *cluster* and sets an initial distributed mark,
-   - ``stop``: stops the *cluster* and sets a final distributed mark,
-   - ``set_mark``: sets a distributed mark.
+   - ``start``: Start the *cluster* and sets an initial distributed mark,
+   - ``stop``: Stop the *cluster* and sets a final distributed mark,
+   - ``set_mark``: Set a distributed mark.
 - ``cluster``: Name of the **cluster**.
 - ``mark``: Name of the **distributed mark** to be set.
 
-**General Options**:
-
-- ``--help``: displays the **help** message.
-- ``--version``: displays the **version** information of the client.
-
 **Options Common to All Actions**:
 
-- ``--comment <comment>``: defines a **comment** describing the distributed mark being set (optional).
-- ``--verbose``: displays more **details** about the execution of the requested action.
+- ``--comment <comment>``: Define a **comment** describing the distributed mark being set (optional).
+- ``--verbose``: Display more **details** about the execution of the requested action.
 
 **Options Specific to Starting a Cluster**:
 
-- ``--keep-logs`` or ``--kl``: **keeps the logs** (updates and marks) of the table groups (by default, logs are deleted).
-- ``--logging-groups-allowed`` or ``--lga``: allows starting table groups in an **active state** (by default, a group already started generates an error).
+- ``--keep-logs`` or ``--kl``: **Keeps the logs** (updates and marks) of the table groups (by default, logs are deleted).
+- ``--logging-groups-allowed`` or ``--lga``: Allows starting table groups in an **active state** (by default, a group already started generates an error).
 
 **Options Specific to Stopping a Cluster**:
 
-- ``--idle-groups-allowed`` or ``--iga``: allows stopping table groups in an **inactive state** (by default, a group already stopped generates an error).
-- ``--reset-logs`` or ``--rl``: **deletes the logs** (updates and marks) of the table groups (by default, logs are kept).
+- ``--idle-groups-allowed`` or ``--iga``: Allows stopping table groups in an **inactive state** (by default, a group already stopped generates an error).
+- ``--reset-logs`` or ``--rl``: **Deletes the logs** (updates and marks) of the table groups (by default, logs are kept).
 
 **Options for Connecting to the Database Hosting the dist_emaj Extension**
 

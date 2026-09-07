@@ -17,15 +17,15 @@ La syntaxe de la commande est la suivante : ::
 
    distEmajRollback.pl --cluster <cluster> --mark <target_mark> [OPTION]...
 
+**Informations générales sur le programme** :
+
+- ``--help`` : affiche juste l'**aide** en ligne.
+- ``--version`` : affiche juste les informations sur la **version** du client.
+
 **Paramètres obligatoires** :
 
 - ``cluster`` : Nom du **cluster**.
 - ``target_mark`` : Nom de la **marque distribuée** cible du rollback.
-
-**Options générales** :
-
-- ``--help`` : affiche juste l'**aide** en ligne.
-- ``--version`` : affiche juste les informations sur la **version** du client.
 
 **Autres options** :
 
