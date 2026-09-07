@@ -16,7 +16,7 @@
 # DIST_EMAJ_REGTEST_MENU                : Contains the menu's entries (do not fill this array)
 typeset -r DIST_EMAJ_REGTEST_STANDART=('install' 'setup' 'create_drop' 'start_stop' 'rollback' 'misc' 'viewer' 'adm' 'check' 'cleanup')
 typeset -r DIST_EMAJ_REGTEST_STANDART_PGVER='14 17 18 19'
-typeset -r DIST_EMAJ_REGTEST_UNINSTALL=('install' 'setup' 'before_uninstall' 'uninstall' 'install' 'cleanup')
+typeset -r DIST_EMAJ_REGTEST_UNINSTALL=('install' 'setup' 'uninstall' 'install' 'cleanup')
 typeset -r DIST_EMAJ_REGTEST_UNINSTALL_PGVER=(18)
 
 declare -A DIST_EMAJ_REGTEST_MENU_ACTIONS
