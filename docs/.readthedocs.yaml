@@ -1,0 +1,14 @@
+# .readthedocs.yaml
+version: 2
+
+projects:
+  - name: dist_emaj
+    path: docs/en
+    configuration: docs/en/conf.py
+    language: en
+
+  - name: dist_emaj-french
+    path: docs/fr
+    configuration: docs/fr/conf.py
+    language: fr
+
