@@ -30,7 +30,7 @@ The command syntax is as follows::
    - ``stop``: Stop the *cluster* and sets a final distributed mark,
    - ``set_mark``: Set a distributed mark.
 - ``cluster``: Name of the **cluster**.
-- ``mark``: Name of the **distributed mark** to be set.
+- ``mark``: Name of the **distributed mark** to be set. It may contain a generic ``%`` character, which is replaced by the current time with the pattern ``hh.mm.ss.mmmm``. If the parameter is not specified, or is empty or *NULL*, a ``MARK_%`` name is generated.
 
 **Options Common to All Actions**:
 

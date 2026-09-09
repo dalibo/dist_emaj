@@ -30,7 +30,7 @@ La syntaxe de la commande est la suivante : ::
    - ``stop`` : arrête le *cluster* et pose une marque distribuée finale,
    - ``set_mark`` : pose une marque distribuée.
 - ``cluster`` : Nom du **cluster**.
-- ``mark`` : Nom de la **marque distribuée** posée.
+- ``mark`` : Nom de la **marque distribuée** posée. Il peut contenir un caractère ``%`` représentant l’heure courante au format ``hh.mm.ss.mmmm``. Si le paramètre n'est pas fourni ou est une chaîne vide ou a une valeur *NULL*, un nom de marque ``MARK_%`` est généré.
 
 **Options communnes à toutes les actions** :
 
