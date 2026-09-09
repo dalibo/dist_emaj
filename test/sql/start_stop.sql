@@ -68,7 +68,7 @@ DELETE FROM dist_emaj.dist_emaj_cluster_group WHERE clgrp_cluster = 'my_cluster'
 -- Various mark names.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark 'Fixed_Mark_Name' --comment "Comment on mark set" --verbose --regression-test
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark --comment "Comment on generated mark name"
-\! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark --comment "Comment on generated mark name"
+\! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark 'M-%'
 
 --
 -- Marks synchronization tests.

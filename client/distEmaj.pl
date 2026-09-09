@@ -467,7 +467,7 @@ foreach my $db (@$databasesArray) {
 					)
 		} elsif ($action eq 'set_mark') {
 			$sql = qq(
-				SELECT emaj._set_mark_groups_exec(?, ?, ?, TRUE, ?)
+				SELECT emaj._set_mark_groups_exec(?, ?, ?, TRUE, ?, FALSE)
 					)
 		}
 

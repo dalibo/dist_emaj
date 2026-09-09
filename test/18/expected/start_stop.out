@@ -226,7 +226,7 @@ It has processed 6 groups spread into 2 databases.
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
 It has processed 6 groups spread into 2 databases.
-\! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark --comment "Comment on generated mark name"
+\! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark 'M-%'
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
@@ -511,10 +511,10 @@ SELECT hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_word
     2065 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 16                      | postgres
     2066 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 18                      | postgres
     2067 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
-    2068 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark                                      | postgres
+    2068 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark M-%                                  | postgres
     2069 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
     2070 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 0 distributed marks deleted                             | postgres
-    2071 | DIST_EMAJ            | RESOLVE_MARK   |               | MARK_%                                                  | postgres
+    2071 | DIST_EMAJ            | RESOLVE_MARK   | M-%           | M-%                                                     | postgres
     2072 | DIST_EMAJ            | TIME STAMP SET | 2008          |                                                         | postgres
     2073 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                         | postgres
     2074 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                         | postgres
@@ -757,127 +757,118 @@ SELECT hist_id, hist_function, hist_event, hist_object,
       72 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
       73 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
       74 | SET_MARK_GROUPS    | TIME STAMP SET     | 11                           |                                            | _regress_emaj_adm
-      75 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | Fixed_Mark_Name                            | _regress_emaj_adm
-      76 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | Fixed_Mark_Name                            | _regress_emaj_adm
-      77 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | MARK_%                                     | _regress_emaj_adm
-      78 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-      79 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
-      80 | SET_MARK_GROUPS    | TIME STAMP SET     | 12                           |                                            | _regress_emaj_adm
-      81 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | MARK_%                                     | _regress_emaj_adm
-      82 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | MARK_%                                     | _regress_emaj_adm
-      83 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | MARK_%                                     | _regress_emaj_adm
-      84 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-      85 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
-      86 | SET_MARK_GROUPS    | TIME STAMP SET     | 13                           |                                            | _regress_emaj_adm
-      87 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | MARK_%                                     | _regress_emaj_adm
-      88 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | MARK_%                                     | _regress_emaj_adm
-      89 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM1                                        | _regress_emaj_adm
-      90 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-      91 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
-      92 | SET_MARK_GROUPS    | TIME STAMP SET     | 14                           |                                            | _regress_emaj_adm
-      93 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM1                                        | _regress_emaj_adm
-      94 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM1                                        | _regress_emaj_adm
-      95 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM2                                        | _regress_emaj_adm
-      96 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-      97 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
-      98 | SET_MARK_GROUPS    | TIME STAMP SET     | 15                           |                                            | _regress_emaj_adm
-      99 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM2                                        | _regress_emaj_adm
-     100 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM2                                        | _regress_emaj_adm
-     101 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM3                                        | _regress_emaj_adm
+      75 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | Fixed_Mark_Name                            | _regress_emaj_adm
+      76 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | MARK_%                                     | _regress_emaj_adm
+      77 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
+      78 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+      79 | SET_MARK_GROUPS    | TIME STAMP SET     | 12                           |                                            | _regress_emaj_adm
+      80 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | MARK_%                                     | _regress_emaj_adm
+      81 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | M-%                                        | _regress_emaj_adm
+      82 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
+      83 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+      84 | SET_MARK_GROUPS    | TIME STAMP SET     | 13                           |                                            | _regress_emaj_adm
+      85 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | M-%                                        | _regress_emaj_adm
+      86 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM1                                        | _regress_emaj_adm
+      87 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
+      88 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+      89 | SET_MARK_GROUPS    | TIME STAMP SET     | 14                           |                                            | _regress_emaj_adm
+      90 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM1                                        | _regress_emaj_adm
+      91 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM2                                        | _regress_emaj_adm
+      92 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
+      93 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+      94 | SET_MARK_GROUPS    | TIME STAMP SET     | 15                           |                                            | _regress_emaj_adm
+      95 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM2                                        | _regress_emaj_adm
+      96 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM3                                        | _regress_emaj_adm
+      97 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
+      98 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+      99 | SET_MARK_GROUPS    | TIME STAMP SET     | 16                           |                                            | _regress_emaj_adm
+     100 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM3                                        | _regress_emaj_adm
+     101 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM4                                        | _regress_emaj_adm
      102 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
      103 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
-     104 | SET_MARK_GROUPS    | TIME STAMP SET     | 16                           |                                            | _regress_emaj_adm
-     105 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM3                                        | _regress_emaj_adm
-     106 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM3                                        | _regress_emaj_adm
-     107 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM4                                        | _regress_emaj_adm
-     108 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-     109 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
-     110 | SET_MARK_GROUPS    | TIME STAMP SET     | 17                           |                                            | _regress_emaj_adm
-     111 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM4                                        | _regress_emaj_adm
-     112 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM4                                        | _regress_emaj_adm
-     113 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM5                                        | _regress_emaj_adm
-     114 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-     115 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
-     116 | SET_MARK_GROUPS    | TIME STAMP SET     | 18                           |                                            | _regress_emaj_adm
-     117 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM5                                        | _regress_emaj_adm
-     118 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM5                                        | _regress_emaj_adm
-     119 | DELETE_MARK_GROUP  | BEGIN              | myGroup1                     | DM2                                        | postgres
-     120 | DELETE_MARK_GROUP  | END                | myGroup1                     | DM2                                        | postgres
-     121 | DELETE_MARK_GROUP  | BEGIN              | myGroup1                     | DM4                                        | postgres
-     122 | DELETE_MARK_GROUP  | END                | myGroup1                     | DM4                                        | postgres
-     123 | STOP_GROUP         | BEGIN              | myGroup1                     | Without logs reset                         | postgres
-     124 | LOCK_GROUP         | BEGIN              | myGroup1                     |                                            | postgres
-     125 | LOCK_GROUP         | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | postgres
-     126 | STOP_GROUP         | TIME STAMP SET     | 19                           |                                            | postgres
-     127 | SET_MARK_GROUP     | BEGIN              | myGroup1                     | STOP_%                                     | postgres
-     128 | SET_MARK_GROUP     | END                | myGroup1                     | STOP_%                                     | postgres
-     129 | STOP_GROUP         | END                | myGroup1                     | 7 tables/sequences processed               | postgres
-     131 | STOP_GROUPS        | BEGIN              | myGroup1,myGroup2            | Without logs reset                         | _regress_emaj_adm
-     132 | LOCK_GROUPS        | BEGIN              | myGroup2                     |                                            | _regress_emaj_adm
-     133 | LOCK_GROUPS        | END                | myGroup2                     | 6 tables locked, 0 deadlock(s)             | _regress_emaj_adm
-     134 | LOCK_GROUPS        | BEGIN              | myGroup1                     |                                            | _regress_emaj_adm
-     135 | LOCK_GROUPS        | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | _regress_emaj_adm
-     136 | STOP_GROUPS        | TIME STAMP SET     | 20                           |                                            | _regress_emaj_adm
-     137 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | MARK_%                                     | _regress_emaj_adm
-     138 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | MARK_%                                     | _regress_emaj_adm
-     139 | STOP_GROUPS        | END                | myGroup2                     | 9 tables/sequences processed               | _regress_emaj_adm
-     140 | START_GROUPS       | BEGIN              | myGroup1,myGroup2            | With logs reset                            | _regress_emaj_adm
-     141 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-     142 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
-     143 | START_GROUPS       | TIME STAMP SET     | 21                           |                                            | _regress_emaj_adm
-     144 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM1                                        | _regress_emaj_adm
-     145 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM1                                        | _regress_emaj_adm
-     146 | START_GROUPS       | END                | myGroup1,myGroup2            | 16 tables/sequences processed              | _regress_emaj_adm
-     147 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM2                                        | _regress_emaj_adm
-     148 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-     149 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
-     150 | SET_MARK_GROUPS    | TIME STAMP SET     | 22                           |                                            | _regress_emaj_adm
-     151 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM2                                        | _regress_emaj_adm
-     152 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM2                                        | _regress_emaj_adm
-     153 | STOP_GROUP         | BEGIN              | myGroup1                     | Without logs reset                         | postgres
-     154 | LOCK_GROUP         | BEGIN              | myGroup1                     |                                            | postgres
-     155 | LOCK_GROUP         | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | postgres
-     156 | STOP_GROUP         | TIME STAMP SET     | 23                           |                                            | postgres
-     157 | SET_MARK_GROUP     | BEGIN              | myGroup1                     | STOP_%                                     | postgres
-     158 | SET_MARK_GROUP     | END                | myGroup1                     | STOP_%                                     | postgres
-     159 | STOP_GROUP         | END                | myGroup1                     | 7 tables/sequences processed               | postgres
-     160 | START_GROUP        | BEGIN              | myGroup1                     | With logs reset                            | postgres
-     161 | LOCK_GROUP         | BEGIN              | myGroup1                     |                                            | postgres
-     162 | LOCK_GROUP         | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | postgres
-     163 | START_GROUP        | TIME STAMP SET     | 24                           |                                            | postgres
-     164 | SET_MARK_GROUP     | BEGIN              | myGroup1                     | START_%                                    | postgres
-     165 | SET_MARK_GROUP     | END                | myGroup1                     | START_%                                    | postgres
-     166 | START_GROUP        | END                | myGroup1                     | 7 tables/sequences processed               | postgres
-     167 | STOP_GROUPS        | BEGIN              | myGroup1,myGroup2            | Without logs reset                         | _regress_emaj_adm
-     168 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-     169 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
-     170 | STOP_GROUPS        | TIME STAMP SET     | 25                           |                                            | _regress_emaj_adm
-     171 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | resync_and_STOP                            | _regress_emaj_adm
-     172 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | resync_and_STOP                            | _regress_emaj_adm
-     173 | STOP_GROUPS        | END                | myGroup1,myGroup2            | 16 tables/sequences processed              | _regress_emaj_adm
-     174 | START_GROUP        | BEGIN              | myGroup1                     | With logs reset                            | postgres
-     175 | LOCK_GROUP         | BEGIN              | myGroup1                     |                                            | postgres
-     176 | LOCK_GROUP         | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | postgres
-     177 | START_GROUP        | TIME STAMP SET     | 26                           |                                            | postgres
-     178 | SET_MARK_GROUP     | BEGIN              | myGroup1                     | Local_Start                                | postgres
-     179 | SET_MARK_GROUP     | END                | myGroup1                     | Local_Start                                | postgres
-     180 | START_GROUP        | END                | myGroup1                     | 7 tables/sequences processed               | postgres
-     182 | START_GROUPS       | BEGIN              | myGroup1,myGroup2            | With logs reset                            | _regress_emaj_adm
-     183 | LOCK_GROUPS        | BEGIN              | myGroup2                     |                                            | _regress_emaj_adm
-     184 | LOCK_GROUPS        | END                | myGroup2                     | 6 tables locked, 0 deadlock(s)             | _regress_emaj_adm
-     185 | LOCK_GROUPS        | BEGIN              | myGroup1                     |                                            | _regress_emaj_adm
-     186 | LOCK_GROUPS        | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | _regress_emaj_adm
-     187 | START_GROUPS       | TIME STAMP SET     | 27                           |                                            | _regress_emaj_adm
-     188 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM1                                        | _regress_emaj_adm
-     189 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM1                                        | _regress_emaj_adm
-     190 | START_GROUPS       | END                | myGroup2                     | 9 tables/sequences processed               | _regress_emaj_adm
-     191 | STOP_GROUPS        | BEGIN              | myGroup1,myGroup2            | Without logs reset                         | _regress_emaj_adm
-     192 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-     193 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
-     194 | STOP_GROUPS        | TIME STAMP SET     | 28                           |                                            | _regress_emaj_adm
-     195 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | STOP                                       | _regress_emaj_adm
-     196 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | STOP                                       | _regress_emaj_adm
-     197 | STOP_GROUPS        | END                | myGroup1,myGroup2            | 16 tables/sequences processed              | _regress_emaj_adm
-(193 rows)
+     104 | SET_MARK_GROUPS    | TIME STAMP SET     | 17                           |                                            | _regress_emaj_adm
+     105 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM4                                        | _regress_emaj_adm
+     106 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM5                                        | _regress_emaj_adm
+     107 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
+     108 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+     109 | SET_MARK_GROUPS    | TIME STAMP SET     | 18                           |                                            | _regress_emaj_adm
+     110 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM5                                        | _regress_emaj_adm
+     111 | DELETE_MARK_GROUP  | BEGIN              | myGroup1                     | DM2                                        | postgres
+     112 | DELETE_MARK_GROUP  | END                | myGroup1                     | DM2                                        | postgres
+     113 | DELETE_MARK_GROUP  | BEGIN              | myGroup1                     | DM4                                        | postgres
+     114 | DELETE_MARK_GROUP  | END                | myGroup1                     | DM4                                        | postgres
+     115 | STOP_GROUP         | BEGIN              | myGroup1                     | Without logs reset                         | postgres
+     116 | LOCK_GROUP         | BEGIN              | myGroup1                     |                                            | postgres
+     117 | LOCK_GROUP         | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | postgres
+     118 | STOP_GROUP         | TIME STAMP SET     | 19                           |                                            | postgres
+     119 | SET_MARK_GROUP     | BEGIN              | myGroup1                     | STOP_%                                     | postgres
+     120 | SET_MARK_GROUP     | END                | myGroup1                     | STOP_%                                     | postgres
+     121 | STOP_GROUP         | END                | myGroup1                     | 7 tables/sequences processed               | postgres
+     123 | STOP_GROUPS        | BEGIN              | myGroup1,myGroup2            | Without logs reset                         | _regress_emaj_adm
+     124 | LOCK_GROUPS        | BEGIN              | myGroup2                     |                                            | _regress_emaj_adm
+     125 | LOCK_GROUPS        | END                | myGroup2                     | 6 tables locked, 0 deadlock(s)             | _regress_emaj_adm
+     126 | LOCK_GROUPS        | BEGIN              | myGroup1                     |                                            | _regress_emaj_adm
+     127 | LOCK_GROUPS        | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | _regress_emaj_adm
+     128 | STOP_GROUPS        | TIME STAMP SET     | 20                           |                                            | _regress_emaj_adm
+     129 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | MARK_%                                     | _regress_emaj_adm
+     130 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | MARK_%                                     | _regress_emaj_adm
+     131 | STOP_GROUPS        | END                | myGroup2                     | 9 tables/sequences processed               | _regress_emaj_adm
+     132 | START_GROUPS       | BEGIN              | myGroup1,myGroup2            | With logs reset                            | _regress_emaj_adm
+     133 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
+     134 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+     135 | START_GROUPS       | TIME STAMP SET     | 21                           |                                            | _regress_emaj_adm
+     136 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM1                                        | _regress_emaj_adm
+     137 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM1                                        | _regress_emaj_adm
+     138 | START_GROUPS       | END                | myGroup1,myGroup2            | 16 tables/sequences processed              | _regress_emaj_adm
+     139 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM2                                        | _regress_emaj_adm
+     140 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
+     141 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+     142 | SET_MARK_GROUPS    | TIME STAMP SET     | 22                           |                                            | _regress_emaj_adm
+     143 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM2                                        | _regress_emaj_adm
+     144 | STOP_GROUP         | BEGIN              | myGroup1                     | Without logs reset                         | postgres
+     145 | LOCK_GROUP         | BEGIN              | myGroup1                     |                                            | postgres
+     146 | LOCK_GROUP         | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | postgres
+     147 | STOP_GROUP         | TIME STAMP SET     | 23                           |                                            | postgres
+     148 | SET_MARK_GROUP     | BEGIN              | myGroup1                     | STOP_%                                     | postgres
+     149 | SET_MARK_GROUP     | END                | myGroup1                     | STOP_%                                     | postgres
+     150 | STOP_GROUP         | END                | myGroup1                     | 7 tables/sequences processed               | postgres
+     151 | START_GROUP        | BEGIN              | myGroup1                     | With logs reset                            | postgres
+     152 | LOCK_GROUP         | BEGIN              | myGroup1                     |                                            | postgres
+     153 | LOCK_GROUP         | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | postgres
+     154 | START_GROUP        | TIME STAMP SET     | 24                           |                                            | postgres
+     155 | SET_MARK_GROUP     | BEGIN              | myGroup1                     | START_%                                    | postgres
+     156 | SET_MARK_GROUP     | END                | myGroup1                     | START_%                                    | postgres
+     157 | START_GROUP        | END                | myGroup1                     | 7 tables/sequences processed               | postgres
+     158 | STOP_GROUPS        | BEGIN              | myGroup1,myGroup2            | Without logs reset                         | _regress_emaj_adm
+     159 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
+     160 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+     161 | STOP_GROUPS        | TIME STAMP SET     | 25                           |                                            | _regress_emaj_adm
+     162 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | resync_and_STOP                            | _regress_emaj_adm
+     163 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | resync_and_STOP                            | _regress_emaj_adm
+     164 | STOP_GROUPS        | END                | myGroup1,myGroup2            | 16 tables/sequences processed              | _regress_emaj_adm
+     165 | START_GROUP        | BEGIN              | myGroup1                     | With logs reset                            | postgres
+     166 | LOCK_GROUP         | BEGIN              | myGroup1                     |                                            | postgres
+     167 | LOCK_GROUP         | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | postgres
+     168 | START_GROUP        | TIME STAMP SET     | 26                           |                                            | postgres
+     169 | SET_MARK_GROUP     | BEGIN              | myGroup1                     | Local_Start                                | postgres
+     170 | SET_MARK_GROUP     | END                | myGroup1                     | Local_Start                                | postgres
+     171 | START_GROUP        | END                | myGroup1                     | 7 tables/sequences processed               | postgres
+     173 | START_GROUPS       | BEGIN              | myGroup1,myGroup2            | With logs reset                            | _regress_emaj_adm
+     174 | LOCK_GROUPS        | BEGIN              | myGroup2                     |                                            | _regress_emaj_adm
+     175 | LOCK_GROUPS        | END                | myGroup2                     | 6 tables locked, 0 deadlock(s)             | _regress_emaj_adm
+     176 | LOCK_GROUPS        | BEGIN              | myGroup1                     |                                            | _regress_emaj_adm
+     177 | LOCK_GROUPS        | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | _regress_emaj_adm
+     178 | START_GROUPS       | TIME STAMP SET     | 27                           |                                            | _regress_emaj_adm
+     179 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM1                                        | _regress_emaj_adm
+     180 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM1                                        | _regress_emaj_adm
+     181 | START_GROUPS       | END                | myGroup2                     | 9 tables/sequences processed               | _regress_emaj_adm
+     182 | STOP_GROUPS        | BEGIN              | myGroup1,myGroup2            | Without logs reset                         | _regress_emaj_adm
+     183 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
+     184 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+     185 | STOP_GROUPS        | TIME STAMP SET     | 28                           |                                            | _regress_emaj_adm
+     186 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | STOP                                       | _regress_emaj_adm
+     187 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | STOP                                       | _regress_emaj_adm
+     188 | STOP_GROUPS        | END                | myGroup1,myGroup2            | 16 tables/sequences processed              | _regress_emaj_adm
+(184 rows)
 
 \c regression
