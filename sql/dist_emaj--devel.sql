@@ -210,10 +210,10 @@ CREATE TABLE dist_emaj.dist_emaj_mark_database (
   FOREIGN KEY (mkdb_database) REFERENCES dist_emaj.dist_emaj_database (db_name),
   FOREIGN KEY (mkdb_time_id) REFERENCES dist_emaj.dist_emaj_mark (mark_time_id) ON DELETE CASCADE
   );
-COMMENT ON TABLE dist_emaj.dist_emaj_database IS
+COMMENT ON TABLE dist_emaj.dist_emaj_mark_database IS
 $$Contains database local mark data corresponding to distributed marks.$$;
 
-CREATE INDEX dist_emaj_mark_database_idx1 ON dist_emaj.dist_emaj_mark_database(mkdb_database);
+CREATE UNIQUE INDEX dist_emaj_mark_database_idx1 ON dist_emaj.dist_emaj_mark_database(mkdb_database, mkdb_time_id);
 
 -- Table containing distributed rollback operations.
 CREATE TABLE dist_emaj.dist_emaj_rlbk (
@@ -235,7 +235,7 @@ CREATE TABLE dist_emaj.dist_emaj_rlbk (
   FOREIGN KEY (rlbk_cluster) REFERENCES dist_emaj.dist_emaj_cluster (clst_name)
   );
 COMMENT ON TABLE dist_emaj.dist_emaj_rlbk IS
-$$Contains the description of distributed rollback operations.$$;
+$$Contains description of distributed rollback operations.$$;
 
 CREATE INDEX dist_emaj_rlbk_idx1 ON dist_emaj.dist_emaj_rlbk(rlbk_cluster);
 
