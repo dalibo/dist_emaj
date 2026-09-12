@@ -252,9 +252,7 @@ if ($action eq 'set_mark') {
 		);
 	($nbDeletedMark) = $dbh->selectrow_array($sql, undef, $cluster)
 		or die "Error while synchronizing marks for the cluster.\n$DBI::errstr\n\n";
-	if ($nbDeletedMark > 0) {
-		traceIfVerbose("    => $nbDeletedMark distributed marks deleted.");
-	}
+	traceIfVerbose("    => $nbDeletedMark distributed marks deleted.");
 }
 
 # Get data about the requested cluster.

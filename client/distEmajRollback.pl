@@ -104,7 +104,7 @@ GetOptions(
 	"logged" => \$isLogged,
 	"mark:s" => \$targetMark,
 	"regression-test|rt" => \$regressTest,
-	"verbose" => \$verbose,
+	"verbose"   => \$verbose,
 	"version" => \$askVersion,
 	)
 	or printHelp();
