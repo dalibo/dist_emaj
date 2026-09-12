@@ -1890,7 +1890,6 @@ $dist_emaj_delete_before_mark_cluster$
     v_dblinkSchema           TEXT;
     v_stmt                   TEXT;
     v_group                  TEXT;
-    v_localTimeId            BIGINT;
     v_nbMark                 INT;
     v_nbLocalMark            INT = 0;
     v_nbDistMark             INT;
@@ -1913,30 +1912,25 @@ $dist_emaj_delete_before_mark_cluster$
       LIMIT 1;
 -- For each database involved in the cluster.
     FOR r_database IN
-      SELECT db_name, db_connect_string,
+      SELECT db_name, db_connect_string, mkdb_local_time_id,
              array_agg(clgrp_group ORDER BY clgrp_group) AS groups_array
         FROM dist_emaj.dist_emaj_cluster_group
              JOIN dist_emaj.dist_emaj_database ON (dist_emaj_database.db_name = dist_emaj_cluster_group.clgrp_database)
+             JOIN dist_emaj.dist_emaj_mark_database ON (mkdb_time_id = v_markTimeId AND mkdb_database = dist_emaj_database.db_name)
         WHERE clgrp_cluster = p_cluster
-        GROUP BY db_name, db_connect_string
+        GROUP BY db_name, db_connect_string, mkdb_local_time_id
         ORDER BY db_name
     LOOP
 -- Log on the database.
       EXECUTE format('SELECT %I.dblink_connect(%L)',
                      v_dblinkSchema, r_database.db_connect_string);
--- Get the local time_id of the mark for all groups of the database.
-      SELECT mkdb_local_time_id
-        INTO v_localTimeId
-        FROM dist_emaj.dist_emaj_mark_database
-        WHERE mkdb_time_id = v_markTimeId
-          AND mkdb_database = r_database.db_name;
 -- Process each group of the database.
       FOREACH v_group IN ARRAY r_database.groups_array
       LOOP
 -- Execute the emaj_delete_before_mark_group() function.
         v_stmt = 'SELECT emaj.emaj_delete_before_mark_group(' || quote_literal(v_group) || ', mark_name) '
                    'FROM emaj.emaj_mark '
-                   'WHERE mark_time_id = ' || v_localTimeId || ' '
+                   'WHERE mark_time_id = ' || r_database.mkdb_local_time_id || ' '
                      'AND mark_group = ' || quote_literal(v_group);
         EXECUTE format('SELECT nb_mark FROM %I.dblink(%L) AS (nb_mark INT)',
                        v_dblinkSchema, v_stmt)
