@@ -237,7 +237,7 @@ It has processed 6 groups spread into 2 databases.
 --
 SELECT dist_emaj.dist_emaj_sync_marks_cluster('dummy');
 ERROR:  dist_emaj_sync_marks_cluster: The cluster "dummy" is unknown.
-CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_sync_marks_cluster(text) line 29 at RAISE
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_sync_marks_cluster(text) line 28 at RAISE
 SELECT dist_emaj.dist_emaj_sync_marks_cluster('empty_cluster');
  dist_emaj_sync_marks_cluster 
 ------------------------------

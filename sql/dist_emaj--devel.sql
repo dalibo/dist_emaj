@@ -2236,8 +2236,7 @@ $dist_emaj_sync_marks_cluster$
     v_nbMark                 INT;
     v_timeIdList             TEXT;
     v_missingMarkTimeIdArray BIGINT[];
-    v_localTimeId            BIGINT;
-    r_database                 RECORD;
+    r_database               RECORD;
   BEGIN
 -- Record the BEGIN event into dist_emaj_hist.
     INSERT INTO dist_emaj.dist_emaj_hist(hist_function, hist_event, hist_object)
@@ -2315,31 +2314,26 @@ $dist_emaj_sync_marks_cluster$
 -- Detect the missing distributed marks on the database.
       v_stmt = 'SELECT array_agg(time_id) AS time_id_array FROM ( '
                  'SELECT time_id FROM (VALUES ' || v_timeIdList || ') AS t(time_id) '
-                   'EXCEPT '
-                 'SELECT mark_time_id '
-                   'FROM emaj.emaj_mark '
-                   'WHERE mark_group = ANY (ARRAY[' || r_database.groups_list || ']) '
-                     'AND mark_time_id >= ' || v_mostRecentStart || ' '
-                   'GROUP BY mark_time_id '
-                   'HAVING count(mark_group) = ' || r_database.nb_groups_in_cluster || ' '
+                   'WHERE ( '
+                     'SELECT count(*) '
+                       'FROM emaj.emaj_mark '
+                       'WHERE mark_time_id = time_id '
+                         'AND mark_group IN (' || r_database.groups_list || ') '
+                    ') <> ' || r_database.nb_groups_in_cluster || ' '
                ') AS t';
       EXECUTE format('SELECT time_id_array FROM %I.dblink(%L) AS (time_id_array BIGINT[])',
                      v_dblinkSchema, v_stmt)
         INTO v_missingMarkTimeIdArray;
 -- Delete distributed marks corresponding to the missing local marks.
       IF v_missingMarkTimeIdArray IS NOT NULL THEN
-        FOREACH v_localTimeId IN ARRAY v_missingMarkTimeIdArray
-        LOOP
-          DELETE FROM dist_emaj.dist_emaj_mark
-            WHERE mark_cluster = p_cluster
-              AND mark_time_id = (
-                  SELECT mkdb_time_id
-                    FROM dist_emaj.dist_emaj_mark_database
-                    WHERE mkdb_database = r_database.db_name
-                      AND mkdb_local_time_id = v_localTimeId
-                    LIMIT 1
-                  );
-        END LOOP;
+        DELETE FROM dist_emaj.dist_emaj_mark
+          WHERE mark_cluster = p_cluster
+            AND mark_time_id IN (
+                SELECT mkdb_time_id
+                  FROM dist_emaj.dist_emaj_mark_database
+                  WHERE mkdb_database = r_database.db_name
+                    AND mkdb_local_time_id = ANY(v_missingMarkTimeIdArray)
+                );
         v_nbMark = array_length(v_missingMarkTimeIdArray, 1);
         v_nbDeletedMark = v_nbDeletedMark + v_nbMark;
         v_databaseHistMsg = v_databaseHistMsg || 'Some deleted local marks => ' || v_nbMark || ' distributed marks deleted';
