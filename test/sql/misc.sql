@@ -65,7 +65,6 @@ BEGIN;
 ROLLBACK;
 -- Clean up errors and recheck.
 SELECT dist_emaj.dist_emaj_drop_database('no_emaj');
-DROP DATABASE regression_no_emaj;
 
 SELECT * FROM dist_emaj.dist_emaj_verify_all();
 

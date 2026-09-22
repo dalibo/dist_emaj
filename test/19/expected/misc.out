@@ -125,7 +125,6 @@ SELECT dist_emaj.dist_emaj_drop_database('no_emaj');
                        1
 (1 row)
 
-DROP DATABASE regression_no_emaj;
 SELECT * FROM dist_emaj.dist_emaj_verify_all();
                        dist_emaj_verify_all                        
 -------------------------------------------------------------------

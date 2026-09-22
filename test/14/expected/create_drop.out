@@ -282,9 +282,8 @@ SELECT dist_emaj.dist_emaj_verify_cluster('empty_cluster');
 SELECT dist_emaj.dist_emaj_verify_cluster('empty_cluster', TRUE);
 ERROR:  dist_emaj_verify_cluster: The cluster "empty_cluster" is empty.
 CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 28 at RAISE
--- emaj is missing in a database.
-CREATE DATABASE regression_no_emaj;
-SELECT dist_emaj.dist_emaj_create_database('no_emaj', 'host=localhost port=' || pg_catalog.current_setting('port') || ' dbname=regression_no_emaj user=_regress_emaj_adm password=adm', 1);
+-- emaj is missing in a database (use template1).
+SELECT dist_emaj.dist_emaj_create_database('no_emaj', 'host=localhost port=' || pg_catalog.current_setting('port') || ' dbname=template1 user=_regress_emaj_adm password=adm', 1);
  dist_emaj_create_database 
 ---------------------------
                          1
@@ -407,11 +406,11 @@ SELECT * FROM dist_emaj.dist_emaj_cluster ORDER BY 1;
 (2 rows)
 
 SELECT * FROM dist_emaj.dist_emaj_database ORDER BY 1;
- db_name |                                   db_connect_string                                    | db_rlbk_parallel_session | db_creation_time_id | db_last_alter_time_id 
----------+----------------------------------------------------------------------------------------+--------------------------+---------------------+-----------------------
- emaj_1  | host=localhost port=5414 dbname=regression_1 user=_regress_emaj_adm password=adm       |                        2 |                1009 |                      
- emaj_2  | postgresql://_regress_emaj_adm:adm@localhost:5414/regression_2                         |                        2 |                1010 |                      
- no_emaj | host=localhost port=5414 dbname=regression_no_emaj user=_regress_emaj_adm password=adm |                        1 |                1019 |                      
+ db_name |                                db_connect_string                                 | db_rlbk_parallel_session | db_creation_time_id | db_last_alter_time_id 
+---------+----------------------------------------------------------------------------------+--------------------------+---------------------+-----------------------
+ emaj_1  | host=localhost port=5414 dbname=regression_1 user=_regress_emaj_adm password=adm |                        2 |                1009 |                      
+ emaj_2  | postgresql://_regress_emaj_adm:adm@localhost:5414/regression_2                   |                        2 |                1010 |                      
+ no_emaj | host=localhost port=5414 dbname=template1 user=_regress_emaj_adm password=adm    |                        1 |                1019 |                      
 (3 rows)
 
 SELECT * FROM dist_emaj.dist_emaj_cluster_group ORDER BY 1,2,3;
