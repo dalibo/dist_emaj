@@ -226,7 +226,7 @@ if ($action eq 'start') {
 }
 
 # The conditions to start the operation are met.
-# Prepare the statement to trace the operation into emaj_dist.
+# Prepare the statement to trace the operation into dist_emaj.
 $sql_trace = qq(
     INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object, hist_wording)
 		VALUES (?, ?, ?, ?)

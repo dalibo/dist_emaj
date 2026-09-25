@@ -1927,7 +1927,7 @@ $dist_emaj_delete_before_mark_cluster$
 -- Process each group of the database.
       FOREACH v_group IN ARRAY r_database.groups_array
       LOOP
--- Execute the emaj_delete_before_mark_group() function.
+-- Call the emaj_delete_before_mark_group() function.
         v_stmt = 'SELECT emaj.emaj_delete_before_mark_group(' || quote_literal(v_group) || ', mark_name) '
                    'FROM emaj.emaj_mark '
                    'WHERE mark_time_id = ' || r_database.mkdb_local_time_id || ' '
@@ -2198,8 +2198,8 @@ $dist_emaj_verify_cluster$
         WHERE pid = r_rlbk.rlbk_backend_pid
           AND datname = current_database()
           AND application_name = 'distEmajRollback';
--- If the pid is visible, the rollback is still in progress.
--- Otherwise, set the rollback event in emaj_rlbk as "ABORTED".
+-- If the pid is visible, the distributed rollback is still in progress.
+-- Otherwise, set the rollback event in dist_emaj_rlbk as "ABORTED".
       IF NOT FOUND THEN
         UPDATE dist_emaj.dist_emaj_rlbk
           SET rlbk_status = 'ABORTED'
@@ -2380,7 +2380,7 @@ SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS
 $dist_emaj_set_param$
 -- This function changes a parameter value in the dist_emaj_param table.
 -- If the supplied value is NULL, it resetss the key to its default value.
--- The supplied key is case insensitive, eventhough keys in emaj_param are in lower case.
+-- The supplied key is case insensitive, eventhough keys in dist_emaj_param are in lower case.
 -- Input: key and value.
 -- Ouput: number of updated parameters (0 or 1).
 -- The function is defined as SECURITY DEFINER to disable/enable the trigger on dist_emaj_param.
@@ -2417,7 +2417,7 @@ $dist_emaj_set_param$
         END;
       ELSE
     END CASE;
--- Disable the trigger on emaj_param.
+-- Disable the trigger on dist_emaj_param.
     ALTER TABLE dist_emaj.dist_emaj_param DISABLE TRIGGER dist_emaj_param_before_stmt_trg;
 -- Record the change in dist_emaj_param.
     IF p_value IS NULL THEN
@@ -2501,7 +2501,7 @@ $dist_emaj_purge_histories$
     SELECT max(time_id) INTO v_maxTimeId
       FROM dist_emaj.dist_emaj_time_stamp
       WHERE time_tx_timestamp < v_datetimeLimit;
--- Delete oldest rows from emaj_hist.
+-- Delete oldest rows from dist_emaj_hist.
     DELETE FROM dist_emaj.dist_emaj_hist
       WHERE hist_datetime < v_datetimeLimit;
     GET DIAGNOSTICS v_nbDeletedRow = ROW_COUNT;
@@ -2625,7 +2625,7 @@ $dist_emaj_verify_all$
           AND datname = current_database()
           AND application_name = 'distEmajRollback';
 -- If the pid is visible, the rollback is still in progress.
--- Otherwise, set the rollback event in emaj_rlbk as "ABORTED".
+-- Otherwise, set the rollback event in dist_emaj_rlbk as "ABORTED".
       IF NOT FOUND THEN
         UPDATE dist_emaj.dist_emaj_rlbk
           SET rlbk_status = 'ABORTED'
@@ -2669,7 +2669,7 @@ $dist_emaj_export_parameters_configuration$
 -- Input: - output file location,
 --        - boolean indicating whether keys which current value equals their default value must be exported (false by default).
 -- Output: the number of parameters of the recorded JSON structure.
--- The function is defined as SECURITY DEFINER so that emaj roles can perform the COPY statement.
+-- The function is defined as SECURITY DEFINER so that distributed emaj roles can perform the COPY statement.
   DECLARE
     v_paramsJson             JSON;
   BEGIN
@@ -2874,7 +2874,7 @@ $_import_param_conf$
     v_parameters = p_json #> '{"parameters"}';
     p_nbParamInJson = json_array_length(v_parameters);
     p_nbModifiedParam = 0;
--- Disable the trigger that blocks any attempt to update the emaj_param table.
+-- Disable the trigger that blocks any attempt to update the dist_emaj_param table.
     ALTER TABLE dist_emaj.dist_emaj_param DISABLE TRIGGER dist_emaj_param_before_stmt_trg;
 -- Process each parameter.
     FOR r_param IN
@@ -2898,12 +2898,12 @@ $_import_param_conf$
         IF v_newValue IS NOT NULL THEN
 -- The parameter value has changed. So record and trace the change.
           IF v_newValue = r_param.param_default THEN
--- The new parameter value equals the default value, so DELETE the existing row from emaj_param.
+-- The new parameter value equals the default value, so DELETE the existing row from dist_emaj_param.
             DELETE FROM dist_emaj.dist_emaj_param
               WHERE param_key = r_param.param_key;
             v_event = 'PARAMETER DELETED';
           ELSIF r_param.param_value = r_param.param_default THEN
--- The parameter has currently its default value, so INSERT a row into emaj_param.
+-- The parameter has currently its default value, so INSERT a row into dist_emaj_param.
             INSERT INTO dist_emaj.dist_emaj_param (param_key, param_value)
               VALUES (r_param.param_key, v_newValue);
             v_event = 'PARAMETER INSERTED';
@@ -2919,7 +2919,7 @@ $_import_param_conf$
           p_nbModifiedParam = p_nbModifiedParam + 1;
         END IF;
       END LOOP;
--- Enable the trigger that blocks any attempt to update the emaj_param table.
+-- Enable the trigger that blocks any attempt to update the dist_emaj_param table.
     ALTER TABLE dist_emaj.dist_emaj_param ENABLE TRIGGER dist_emaj_param_before_stmt_trg;
 --
     RETURN;
@@ -3009,7 +3009,7 @@ $_dist_emaj_protection_event_trigger_fnct$
       END IF;
       IF r_dropped.object_type = 'extension' AND r_dropped.object_name = 'dist_emaj' THEN
 -- Detecting an attempt to drop the dist_emaj extension.
-        RAISE EXCEPTION 'Distributed E-Maj event trigger: Attempting to drop the emaj extension.'
+        RAISE EXCEPTION 'Distributed E-Maj event trigger: Attempting to drop the dist_emaj extension.'
                         ' Please execute the dist_emaj.dist_emaj_drop_extension() function if you really want to remove all'
                         ' Distributed E-Maj components.';
       END IF;
@@ -3033,13 +3033,13 @@ CREATE EVENT TRIGGER dist_emaj_protection_trg
 COMMENT ON EVENT TRIGGER dist_emaj_protection_trg IS
 $$Blocks any attempt to drop the dist_emaj extension or schema.$$;
 
--- remove both event trigger components from the extension, so that they can fire the "DROP EXTENSION emaj".
+-- remove both event trigger components from the extension, so that they can fire the "DROP EXTENSION dist_emaj".
 ALTER EXTENSION dist_emaj DROP FUNCTION public._dist_emaj_protection_event_trigger_fnct();
 ALTER EXTENSION dist_emaj DROP EVENT TRIGGER dist_emaj_protection_trg;
 
 ----------------------------------------------------------------
 --                                                            --
---                 Rights on emaj components                  --
+--               Rights on dist_emaj components               --
 --                                                            --
 ----------------------------------------------------------------
 
@@ -3101,14 +3101,14 @@ SELECT pg_catalog.pg_extension_config_dump('dist_emaj.dist_emaj_hist_hist_id_seq
 SELECT pg_catalog.pg_extension_config_dump('dist_emaj.dist_emaj_time_stamp_time_id_seq', '');
 SELECT pg_catalog.pg_extension_config_dump('dist_emaj.dist_emaj_rlbk_rlbk_id_seq', '');
 
--- Set comments for all internal functions, by directly inserting a row in the pg_description table for all emaj functions that do not
--- have yet a recorded comment.
+-- Set comments for all internal functions, by directly inserting a row in the pg_description table for all dist_emaj functions that do
+-- not have yet a recorded comment.
 INSERT INTO pg_catalog.pg_description (objoid, classoid, objsubid, description)
   SELECT pg_proc.oid, pg_class.oid, 0 , 'Distributed E-Maj internal function'
     FROM pg_catalog.pg_proc
          CROSS JOIN pg_catalog.pg_class
     WHERE pg_class.relname = 'pg_proc'
-      AND pg_proc.oid IN               -- list all emaj functions that do not have yet a comment in pg_description
+      AND pg_proc.oid IN               -- list all dist_emaj functions that do not have yet a comment in pg_description
         (SELECT pg_proc.oid
            FROM pg_catalog.pg_proc
                 JOIN pg_catalog.pg_namespace ON (pg_namespace.oid = pronamespace)
