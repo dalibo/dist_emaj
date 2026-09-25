@@ -1,5 +1,5 @@
 Uninstalling Distributed E-Maj
-===============================
+==============================
 
 Removing Distributed E-Maj from a Database
 ------------------------------------------

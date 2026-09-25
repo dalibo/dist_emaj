@@ -17,12 +17,14 @@ The command syntax is as follows::
 
    distEmaj.pl --action <start|stop|set_mark> --cluster <cluster name> --mark <mark_name> [OPTION]...
 
-**Generic Program Information**:
+**Generic Program Information**
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - ``--help``: Display the **help** message and exit.
 - ``--version``: Display the **version** information of the client and exit.
 
-**Mandatory Parameters**:
+**Mandatory Parameters**
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 - ``action``: **Action** to execute, which can take one of 3 values:
 
@@ -32,22 +34,26 @@ The command syntax is as follows::
 - ``cluster``: Name of the **cluster**.
 - ``mark``: Name of the **distributed mark** to be set. It may contain a generic ``%`` character, which is replaced by the current time with the pattern ``hh.mm.ss.mmmm``. If the parameter is not specified, or is empty or *NULL*, a ``MARK_%`` name is generated.
 
-**Options Common to All Actions**:
+**Options Common to All Actions**
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - ``--comment <comment>``: Define a **comment** describing the distributed mark being set (optional).
 - ``--verbose``: Display more **details** about the execution of the requested action.
 
-**Options Specific to Starting a Cluster**:
+**Options Specific to Starting a Cluster**
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - ``--keep-logs`` or ``--kl``: **Keeps the logs** (updates and marks) of the table groups (by default, logs are deleted).
 - ``--logging-groups-allowed`` or ``--lga``: Allows starting table groups in an **active state** (by default, a group already started generates an error).
 
-**Options Specific to Stopping a Cluster**:
+**Options Specific to Stopping a Cluster**
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - ``--idle-groups-allowed`` or ``--iga``: Allows stopping table groups in an **inactive state** (by default, a group already stopped generates an error).
 - ``--reset-logs`` or ``--rl``: **Deletes the logs** (updates and marks) of the table groups (by default, logs are kept).
 
 **Options for Connecting to the Database Hosting the dist_emaj Extension**
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - ``-d <database>``: **Database** to connect to.
 - ``-h <host>``: **Host** to connect to.

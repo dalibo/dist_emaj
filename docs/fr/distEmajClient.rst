@@ -17,12 +17,14 @@ La syntaxe de la commande est la suivante : ::
 
    distEmaj.pl --action <start|stop|set_mark> --cluster <cluster name> --mark <mark_name> [OPTION]...
 
-**Informations générales sur le programme** :
+**Informations générales sur le programme**
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - ``--help`` : affiche juste l'**aide** en ligne.
 - ``--version`` : affiche juste les informations sur la **version** du client.
 
-**Paramètres obligatoires** :
+**Paramètres obligatoires**
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - ``action`` : **Action** à exécuter, pouvant prendre l'une des 3 valeurs :
 
@@ -32,22 +34,26 @@ La syntaxe de la commande est la suivante : ::
 - ``cluster`` : Nom du **cluster**.
 - ``mark`` : Nom de la **marque distribuée** posée. Il peut contenir un caractère ``%`` représentant l’heure courante au format ``hh.mm.ss.mmmm``. Si le paramètre n'est pas fourni ou est une chaîne vide ou a une valeur *NULL*, un nom de marque ``MARK_%`` est généré.
 
-**Options communnes à toutes les actions** :
+**Options communnes à toutes les actions**
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - ``--comment <commentaire>`` : définit un **commentaire** décrivant la marque distribuée posée (optionnel).
 - ``--verbose`` : affiche davantage de **détails** sur l'exécution de l'action demandée.
 
-**Options spécifiques au démarrage d'un cluster** :
+**Options spécifiques au démarrage d'un cluster**
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - ``--keep-logs`` ou ``--kl``: **conserve les logs** (mises à jour et marques) des groupes de tables (par défaut, les logs sont effacés).
 - ``--logging-groups-allowed`` ou ``--lga`` : autorise le démarrage de groupes de tables en **état actif** (par défaut, un groupe déjà démarré génère une erreur).
 
-**Options spécifiques à l'arrêt d'un cluster** :
+**Options spécifiques à l'arrêt d'un cluster**
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - ``--idle-groups-allowed`` ou  ``--iga``: autorise l'arrêt de groupes de tables en **état inactif** (par défaut, un groupe déjà arrêté génère une erreur).
 - ``--reset-logs`` ou ``--rl`` : **supprime les logs** (mises à jour et marques) des groupes de tables (par défaut, les logs sont conservés).
 
 **Options de connexion à la base de données hébergeant l'extension dist_emaj**
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - ``-d <database>`` : **base de données** à atteindre.
 - ``-h <hôte>`` : **hôte** à atteindre.

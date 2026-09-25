@@ -17,17 +17,20 @@ The command syntax is as follows::
 
    distEmajRollback.pl --cluster <cluster> --mark <target_mark> [OPTION]...
 
-**Generic Program Information**:
+**Generic Program Information**
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - ``--help``: Output the **help** message and exit.
 - ``--version``: Output the **version** information of the client and exit.
 
-**Mandatory Parameters**:
+**Mandatory Parameters**
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 - ``cluster``: Name of the **cluster**.
 - ``target_mark``: Name of the **target distributed mark** for the rollback.
 
-**Other Options**:
+**Other Options**
+^^^^^^^^^^^^^^^^^
 
 - ``--alter-groups-allowed`` or ``--aga``: Allows a rollback to a mark prior to a change in the structure of a table group (by default, any attempt to roll back to a mark prior to a structural change in one of the table groups in the *cluster* is prohibited).
 - ``--comment <comment>``: Defines a **comment** describing the distributed mark being set (optional).
@@ -35,6 +38,7 @@ The command syntax is as follows::
 - ``--verbose``: Display more **details** about the execution of the rollback.
 
 **Options for Connecting to the Database Hosting the dist_emaj Extension**
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - ``-d <database>``: **Database** to connect to.
 - ``-h <host>``: **Host** to connect to.

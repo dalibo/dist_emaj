@@ -23,11 +23,9 @@ Welcome to the Distributed E-Maj documentation!
    :maxdepth: 1
    :caption: How to install Distributed E-Maj:
 
-   quickStart
    install
    setup
    uninstall
-   postgresUpgrade
 
 .. toctree::
    :maxdepth: 1

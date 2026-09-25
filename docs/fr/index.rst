@@ -8,7 +8,7 @@ Bienvenue dans la documentation Distributed E-Maj !
 
 .. toctree::
    :maxdepth: 1
-   :caption: Aperçu:
+   :caption: Aperçu :
 
    introduction
 
@@ -23,11 +23,9 @@ Bienvenue dans la documentation Distributed E-Maj !
    :maxdepth: 1
    :caption: Comment installer Distributed E-Maj :
 
-   quickStart
    install
    setup
    uninstall
-   postgresUpgrade
 
 .. toctree::
    :maxdepth: 1

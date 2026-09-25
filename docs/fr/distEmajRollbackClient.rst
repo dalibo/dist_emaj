@@ -17,17 +17,20 @@ La syntaxe de la commande est la suivante : ::
 
    distEmajRollback.pl --cluster <cluster> --mark <target_mark> [OPTION]...
 
-**Informations générales sur le programme** :
+**Informations générales sur le programme**
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - ``--help`` : affiche juste l'**aide** en ligne.
 - ``--version`` : affiche juste les informations sur la **version** du client.
 
-**Paramètres obligatoires** :
+**Paramètres obligatoires**
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - ``cluster`` : Nom du **cluster**.
 - ``target_mark`` : Nom de la **marque distribuée** cible du rollback.
 
-**Autres options** :
+**Autres options**
+^^^^^^^^^^^^^^^^^^
 
 - ``--alter-groups-allowed`` ou ``--aga`` : autorise un rollback à une marque antérieure à un changement de structure de groupe de tables (par défaut, toute tentative de rollback à une marque antérieure à un changement de structure de l'un des groupes de tables du *cluster* est interdite).
 - ``--comment <commentaire>`` : définit un **commentaire** décrivant la marque distribuée posée (optionnel).
@@ -35,6 +38,7 @@ La syntaxe de la commande est la suivante : ::
 - ``--verbose`` : affiche davantage de **détails** sur l'exécution du rollback.
 
 **Options de connexion à la base de données hébergeant l'extension dist_emaj**
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - ``-d <database>`` : **base de données** à atteindre.
 - ``-h <hôte>`` : **hôte** à atteindre.
