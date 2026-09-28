@@ -93,7 +93,7 @@ INSERT INTO dist_emaj.dist_emaj_cluster_group VALUES
 --------------------------------------------
 Error while checking the cluster.
 ERROR:  _verify_database (7): Error on database "emaj_1", some table groups (extraGroup_1, extraGroup_2) are missing.
-CONTEXT:  PL/pgSQL function dist_emaj._verify_database(text,text,text,text,boolean) line 153 at RAISE
+CONTEXT:  PL/pgSQL function dist_emaj._verify_database(text,text,text,text,boolean) line 155 at RAISE
 SQL statement "SELECT dist_emaj._verify_database(db_name, db_connect_string, groups_list, v_dblinkSchema, TRUE)
       FROM (
         SELECT db_name, db_connect_string,

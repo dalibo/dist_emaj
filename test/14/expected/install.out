@@ -20,7 +20,7 @@ ALTER DATABASE regression_2 SET lc_time TO 'C';
 ALTER DATABASE regression_2 SET bytea_output TO 'hex';
 ALTER DATABASE regression_2 SET timezone_abbreviations TO 'Default';
 -----------------------------
--- Create the emaj extension into regression_1 and regression_2.
+-- Create the emaj extension into regression_1, regression_2 and regression.
 -----------------------------
 \c regression_1
 CREATE EXTENSION emaj VERSION 'devel' CASCADE;
@@ -30,16 +30,18 @@ NOTICE:  installing required extension "btree_gist"
 CREATE EXTENSION emaj VERSION 'devel' CASCADE;
 NOTICE:  installing required extension "dblink"
 NOTICE:  installing required extension "btree_gist"
+\c regression
+CREATE EXTENSION emaj VERSION 'devel' CASCADE;
+NOTICE:  installing required extension "dblink"
+NOTICE:  installing required extension "btree_gist"
 -----------------------------
 -- Create the dist_emaj extension into regression.
 -----------------------------
-\c regression
 -- The bad way.
 \set ECHO none
 Use "CREATE EXTENSION dist_emaj CASCADE" to install the dist_emaj extension.
 -- The good way.
 CREATE EXTENSION dist_emaj VERSION 'devel' CASCADE;
-NOTICE:  installing required extension "dblink"
 -----------------------------
 -- Check installation.
 -----------------------------

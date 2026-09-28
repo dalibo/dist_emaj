@@ -53,11 +53,18 @@ TRUNCATE dist_emaj.dist_emaj_default_param;
 -- Test dist_emaj_verify_all().
 -----------------------------
 
--- Add missing groups.
 BEGIN;
+-- Unknown user for emaj_1.
+  UPDATE dist_emaj.dist_emaj_database
+    SET db_connect_string = replace(db_connect_string, 'user=_regress_emaj_adm', 'user=unknown_user')
+    WHERE db_name = 'emaj_1';
+  SELECT * FROM dist_emaj.dist_emaj_verify_all();
+ROLLBACK;
+BEGIN;
+-- Add missing groups for emaj_1.
   SELECT dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_1', 'extraGroup_1');
   SELECT dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_1', 'extraGroup_2');
--- Add non emaj adm user.
+-- Non emaj adm user for emaj_2.
   UPDATE dist_emaj.dist_emaj_database
     SET db_connect_string = replace(db_connect_string, '_regress_emaj_adm:adm', '_regress_dist_emaj_anonym:anonym')
     WHERE db_name = 'emaj_2';

@@ -94,9 +94,10 @@ SELECT 'SELECT ok' AS result FROM (SELECT count(*) FROM dist_emaj.dist_emaj_data
 SELECT db_name, db_rlbk_parallel_session FROM dist_emaj.dist_emaj_database ORDER BY 1;
  db_name | db_rlbk_parallel_session 
 ---------+--------------------------
+ emaj    |                        1
  emaj_1  |                        2
  emaj_2  |                        2
-(2 rows)
+(3 rows)
 
 SELECT clst_name, db_name, db_rlbk_parallel_session, db_groups_array FROM dist_emaj.dist_emaj_database_aggregates ORDER BY 1, 2;
  clst_name  | db_name | db_rlbk_parallel_session |                 db_groups_array                  

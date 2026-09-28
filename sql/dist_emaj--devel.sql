@@ -1982,6 +1982,7 @@ $_verify_database$
 -- The function is defined as SECURITY DEFINER to allow the function to use the dblink_connect() function.
   DECLARE
     v_checkStep              INT = 0;
+    v_errDetail              TEXT;
     v_msg                    TEXT;
     v_stmt                   TEXT;
     v_schemaExists           BOOLEAN;
@@ -1999,8 +2000,9 @@ $_verify_database$
                      p_dblinkSchema, p_connectString);
       v_checkStep = v_checkStep + 1;
     EXCEPTION WHEN OTHERS THEN
-      v_msg = format('Error on database "%s", the dblink connection failed (SQLSTATE %s - %s).',
-                     p_database, SQLSTATE, SQLERRM);
+      GET STACKED DIAGNOSTICS v_errDetail = PG_EXCEPTION_DETAIL;
+      v_msg = format('Error on database "%s", the dblink connection failed (SQLSTATE %s - %s - %s).',
+                     p_database, SQLSTATE, SQLERRM, v_errDetail);
       IF p_onErrorStop THEN
         RAISE EXCEPTION '_verify_database (1): %', v_msg;
       END IF;
@@ -3033,7 +3035,7 @@ CREATE EVENT TRIGGER dist_emaj_protection_trg
 COMMENT ON EVENT TRIGGER dist_emaj_protection_trg IS
 $$Blocks any attempt to drop the dist_emaj extension or schema.$$;
 
--- remove both event trigger components from the extension, so that they can fire the "DROP EXTENSION dist_emaj".
+-- Remove both event trigger components from the extension, so that they can fire the "DROP EXTENSION dist_emaj".
 ALTER EXTENSION dist_emaj DROP FUNCTION public._dist_emaj_protection_event_trigger_fnct();
 ALTER EXTENSION dist_emaj DROP EVENT TRIGGER dist_emaj_protection_trg;
 

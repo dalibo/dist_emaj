@@ -25,7 +25,7 @@ ALTER DATABASE regression_2 SET bytea_output TO 'hex';
 ALTER DATABASE regression_2 SET timezone_abbreviations TO 'Default';
 
 -----------------------------
--- Create the emaj extension into regression_1 and regression_2.
+-- Create the emaj extension into regression_1, regression_2 and regression.
 -----------------------------
 
 \c regression_1
@@ -34,10 +34,12 @@ CREATE EXTENSION emaj VERSION 'devel' CASCADE;
 \c regression_2
 CREATE EXTENSION emaj VERSION 'devel' CASCADE;
 
+\c regression
+CREATE EXTENSION emaj VERSION 'devel' CASCADE;
+
 -----------------------------
 -- Create the dist_emaj extension into regression.
 -----------------------------
-\c regression
 
 -- The bad way.
 \set ECHO none

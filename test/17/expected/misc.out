@@ -89,8 +89,24 @@ ERROR:  dist_emaj_default_param_before_stmt_trg: Modifying the dist_emaj_default
 -----------------------------
 -- Test dist_emaj_verify_all().
 -----------------------------
--- Add missing groups.
 BEGIN;
+-- Unknown user for emaj_1.
+  UPDATE dist_emaj.dist_emaj_database
+    SET db_connect_string = replace(db_connect_string, 'user=_regress_emaj_adm', 'user=unknown_user')
+    WHERE db_name = 'emaj_1';
+  SELECT * FROM dist_emaj.dist_emaj_verify_all();
+                                                                                                              dist_emaj_verify_all                                                                                                               
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Warning: the cluster "empty_cluster" has no assigned table group.
+ Warning: the database "emaj" has no assigned table group.
+ Warning: the database "no_emaj" has no assigned table group.
+ Error on database "emaj_1", the dblink connection failed (SQLSTATE 08001 - could not establish connection - connection to server at "localhost" (127.0.0.1), port 5417 failed: FATAL:  password authentication failed for user "unknown_user").
+ Error on database "no_emaj", the emaj extension is not installed in the database.
+(5 rows)
+
+ROLLBACK;
+BEGIN;
+-- Add missing groups for emaj_1.
   SELECT dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_1', 'extraGroup_1');
  dist_emaj_assign_group 
 ------------------------
@@ -103,7 +119,7 @@ BEGIN;
                       1
 (1 row)
 
--- Add non emaj adm user.
+-- Non emaj adm user for emaj_2.
   UPDATE dist_emaj.dist_emaj_database
     SET db_connect_string = replace(db_connect_string, '_regress_emaj_adm:adm', '_regress_dist_emaj_anonym:anonym')
     WHERE db_name = 'emaj_2';
@@ -111,11 +127,12 @@ BEGIN;
                                   dist_emaj_verify_all                                   
 -----------------------------------------------------------------------------------------
  Warning: the cluster "empty_cluster" has no assigned table group.
+ Warning: the database "emaj" has no assigned table group.
  Warning: the database "no_emaj" has no assigned table group.
  Error on database "emaj_1", some table groups (extraGroup_1, extraGroup_2) are missing.
  Error on database "emaj_2", the configured user is not an E-Maj administrator.
  Error on database "no_emaj", the emaj extension is not installed in the database.
-(5 rows)
+(6 rows)
 
 ROLLBACK;
 -- Clean up errors and recheck.
@@ -129,8 +146,9 @@ SELECT * FROM dist_emaj.dist_emaj_verify_all();
                        dist_emaj_verify_all                        
 -------------------------------------------------------------------
  Warning: the cluster "empty_cluster" has no assigned table group.
+ Warning: the database "emaj" has no assigned table group.
  No error detected
-(2 rows)
+(3 rows)
 
 -----------------------------
 -- Dist_emaj_delete_before_mark_cluster() tests.
@@ -488,7 +506,7 @@ SELECT dist_emaj.dist_emaj_set_param('history_retention', '1 second');
 SELECT dist_emaj.dist_emaj_purge_histories();
                         dist_emaj_purge_histories                        
 -------------------------------------------------------------------------
- 402 dist_emaj_hist rows deleted ; 7 distributed rollback events deleted
+ 405 dist_emaj_hist rows deleted ; 7 distributed rollback events deleted
 (1 row)
 
 SELECT dist_emaj.dist_emaj_set_param('history_retention', NULL);

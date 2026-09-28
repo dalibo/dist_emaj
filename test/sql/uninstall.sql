@@ -15,4 +15,6 @@ SELECT dist_emaj.dist_emaj_drop_extension();
 \dn dist_emaj
 
 -- Drop the extra extensions to get a stable re-install test.
+SELECT emaj.emaj_drop_extension();
 DROP EXTENSION dblink;
+DROP EXTENSION btree_gist;

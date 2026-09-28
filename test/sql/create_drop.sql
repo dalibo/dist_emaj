@@ -119,9 +119,10 @@ DELETE FROM dist_emaj.dist_emaj_database WHERE db_name = 'a_database';
 DELETE FROM dist_emaj.dist_emaj_cluster WHERE clst_name = 'a_cluster';
 
 --
--- Prepare the clusters configuration for the next script.
+-- Prepare the clusters configuration for the next scripts.
 --
 
+SELECT dist_emaj.dist_emaj_create_database('emaj', 'host=localhost port=' || pg_catalog.current_setting('port') || ' dbname=regression user=_regress_emaj_adm password=adm', 1);
 SELECT dist_emaj.dist_emaj_create_database('emaj_1', 'host=localhost port=' || pg_catalog.current_setting('port') || ' dbname=regression_1 user=_regress_emaj_adm password=adm', 2);
 SELECT dist_emaj.dist_emaj_create_database('emaj_2', 'postgresql://_regress_emaj_adm:adm@localhost:' || pg_catalog.current_setting('port') || '/regression_2', 2);
 
@@ -152,7 +153,7 @@ BEGIN;
   SELECT dist_emaj.dist_emaj_assign_group('buggy_cluster', 'no_emaj', 'myGroup1');
   SELECT dist_emaj.dist_emaj_verify_cluster('buggy_cluster');
 ROLLBACK;
--- Keep the database and the database for dist_emaj_verify_all() tests in misc.sql.
+-- Keep the database for dist_emaj_verify_all() tests in misc.sql.
 
 -- Should be OK.
 SELECT dist_emaj.dist_emaj_verify_cluster('my_cluster');
@@ -196,24 +197,24 @@ SELECT dist_emaj.dist_emaj_export_clusters_configuration(:'EMAJTESTTMPDIR' || '/
 -- Direct import.
 --
 --   Bad content.
-SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "dummy_json": NULL }'::JSON);
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "dummy_json": null }'::JSON);
 
 -- Databases checks.
 --   Missing or null "database" attribute.
-SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "unknown_attr1": NULL } ] }'::JSON);
-SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": NULL } ] }'::JSON);
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "unknown_attr1": null } ] }'::JSON);
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": null } ] }'::JSON);
 --   Unknown and missing attributes.
 SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": "db1", "unknown1": 1, "unknown2": 2 } ] }'::JSON);
 --   Null "connect_string" attribute.
-SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": "db1", "connect_string": NULL, "rollback_parallel_sessions": 1 } ] }'::JSON);
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": "db1", "connect_string": null, "rollback_parallel_sessions": 1 } ] }'::JSON);
 --   Null or not numeric "rollback_parallel_sessions" attribute.
-SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": "db1", "connect_string": "cnx1", "rollback_parallel_sessions": NULL} ] }'::JSON);
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": "db1", "connect_string": "cnx1", "rollback_parallel_sessions": null} ] }'::JSON);
 SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": "db1", "connect_string": "cnx1", "rollback_parallel_sessions": "?"} ] }'::JSON);
 
 -- Clusters checks.
 --   Missing or null "cluster" attribute.
 SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ {  } ]}'::JSON);
-SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": NULL } ]}'::JSON);
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": null } ]}'::JSON);
 --   Unknown attributes.
 SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": "clst1", "unknown1": 1, "unknown2": 2 } ]}'::JSON);
 --   Missing or invalid "group" attribute.
@@ -223,7 +224,7 @@ SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "clu
 SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": "clst1", "groups": [ { } ] } ]}'::JSON);
 SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": "clst1", "groups": [ { "database": "ssss"} ] } ]}'::JSON);
 SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": "clst1", "groups": [ { "group": "gggg"} ] } ]}'::JSON);
-SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": "clst1", "groups": [ { "database": "", "group": NULL, "unknown_attr1": NULL} ] } ]}'::JSON);
+SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "clusters": [ { "cluster": "clst1", "groups": [ { "database": "", "group": null, "unknown_attr1": null} ] } ]}'::JSON);
 
 -- Databases or clusters referenced several times.
 SELECT dist_emaj.dist_emaj_import_clusters_configuration('{ "databases": [ { "database": "db1", "connect_string": "c1", "rollback_parallel_sessions": 1},

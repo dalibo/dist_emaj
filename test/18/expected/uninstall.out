@@ -33,4 +33,17 @@ List of schemas
 (0 rows)
 
 -- Drop the extra extensions to get a stable re-install test.
+SELECT emaj.emaj_drop_extension();
+NOTICE:  drop cascades to event trigger emaj_protection_trg
+WARNING:  emaj_drop_extension: The emaj_adm role is also referenced in some other databases (postgres, regression_1, regression_2)
+WARNING:  emaj_drop_extension: There are remaining roles (_regress_emaj_adm) who have been granted emaj_adm role.
+WARNING:  emaj_drop_extension: For these reasons, emaj_adm has not been dropped by this script.
+WARNING:  emaj_drop_extension: The emaj_viewer role is also referenced in some other databases (postgres, regression_1, regression_2)
+WARNING:  emaj_drop_extension: For these reasons, the emaj_viewer role has not been dropped by this script.
+ emaj_drop_extension 
+---------------------
+ 
+(1 row)
+
 DROP EXTENSION dblink;
+DROP EXTENSION btree_gist;

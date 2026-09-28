@@ -72,6 +72,13 @@ SELECT emaj.emaj_set_param('dblink_user_password', 'user=_regress_emaj_adm passw
               1
 (1 row)
 
+\c regression
+SELECT emaj.emaj_set_param('dblink_user_password', 'user=_regress_emaj_adm password=adm');
+ emaj_set_param 
+----------------
+              1
+(1 row)
+
 ------------------------------------------------------------
 -- Create application schemas with tables, sequences, triggers into regression_1.
 ------------------------------------------------------------
