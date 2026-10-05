@@ -100,10 +100,10 @@ SELECT db_name, db_rlbk_parallel_session FROM dist_emaj.dist_emaj_database ORDER
 (3 rows)
 
 SELECT clst_name, db_name, db_rlbk_parallel_session, db_groups_array FROM dist_emaj.dist_emaj_database_aggregates ORDER BY 1, 2;
- clst_name  | db_name | db_rlbk_parallel_session |                 db_groups_array                  
-------------+---------+--------------------------+--------------------------------------------------
- my_cluster | emaj_1  |                        2 | {myGroup1,myGroup2}
- my_cluster | emaj_2  |                        2 | {myGroup4,myGroup5,myGroup6,"phil's group#3\","}
+ clst_name  | db_name | db_rlbk_parallel_session |        db_groups_array         
+------------+---------+--------------------------+--------------------------------
+ my_cluster | emaj_1  |                        2 | {myGroup1,myGroup2,myGroup4}
+ my_cluster | emaj_2  |                        2 | {myGroup4,"phil's group#3\","}
 (2 rows)
 
 -- Forbidden.

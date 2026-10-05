@@ -5,6 +5,17 @@
 -----------------------------
 DROP FUNCTION public.handle_dist_emaj_sequences(INT);
 -----------------------------
+-- Drop FDW objects
+-----------------------------
+DROP EXTENSION postgres_fdw CASCADE;
+NOTICE:  drop cascades to 6 other objects
+DETAIL:  drop cascades to server srv_1
+drop cascades to user mapping for postgres on server srv_1
+drop cascades to foreign table myschema.myftbl1
+drop cascades to server srv_2
+drop cascades to user mapping for postgres on server srv_2
+drop cascades to foreign table myschema.myftbl2
+-----------------------------
 -- Drop roles used for tests.
 -----------------------------
 DROP role _regress_dist_emaj_adm;

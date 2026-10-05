@@ -283,6 +283,25 @@ ALTER TABLE myschema2.myTbl8 ADD FOREIGN KEY (col81) REFERENCES myschema2.myTbl6
 CREATE SEQUENCE mySeq1 MINVALUE 1000 MAXVALUE 2000 CYCLE;
 CREATE SEQUENCE mySeq2;
 
+--
+-- Schema for partitioning.
+--
+
+DROP SCHEMA IF EXISTS mySchema4 CASCADE;
+CREATE SCHEMA mySchema4;
+
+SET search_path=mySchema4;
+
+DROP TABLE IF EXISTS myTblP;
+CREATE TABLE myTblP (
+  col1       INT              NOT NULL CHECK (col1 < 0),
+  col2       CHAR             NOT NULL,
+  col3       TEXT             NOT NULL,
+  col4       SERIAL,
+  PRIMARY KEY (col1, col2)
+);
+
+
 ------------------------------------------------------------
 -- Create tables groups into regression_1.
 ------------------------------------------------------------
@@ -294,6 +313,9 @@ SELECT emaj.emaj_assign_sequences('myschema1', '.*', NULL, 'myGroup1');
 SELECT emaj.emaj_create_group('myGroup2');
 SELECT emaj.emaj_assign_tables('myschema2', '.*', 'mytbl[7,8]', 'myGroup2');
 SELECT emaj.emaj_assign_sequences('myschema2', '.*', NULL, 'myGroup2');
+
+SELECT emaj.emaj_create_group('myGroup4');
+SELECT emaj.emaj_assign_tables('myschema4', '.*', NULL, 'myGroup4');
 
 ------------------------------------------------------------
 -- Create application schemas with tables, sequences, triggers into regression_2.
@@ -349,133 +371,13 @@ CREATE SCHEMA mySchema4;
 
 SET search_path=mySchema4;
 
--- Old partitionning style.
-
-DROP TABLE IF EXISTS myTblM ;
-CREATE TABLE myTblM (
-  col1       DATE             NOT NULL,
-  col2       INT              ,
-  col3       VARCHAR          ,
-  PRIMARY KEY (col1)
-);
-
-DROP TABLE IF EXISTS myTblC1 ;
-CREATE TABLE myTblC1 (CHECK (col1 BETWEEN '2000-01-01' AND '2009-12-31'), PRIMARY KEY (col1, col2)) INHERITS (myTblM);
-
-DROP TABLE IF EXISTS myTblC2 ;
-CREATE TABLE myTblC2 (CHECK (col1 BETWEEN '2010-01-01' AND '2019-12-31'), PRIMARY KEY (col1, col2)) INHERITS (myTblM);
-
-DROP TRIGGER IF EXISTS myTblM_insert_trigger ON myTblM;
-CREATE OR REPLACE FUNCTION myTblM_insert_trigger() RETURNS TRIGGER AS $trigger$
-BEGIN
-  IF NEW.col1 BETWEEN '2000-01-01' AND '2009-12-31' THEN
-    INSERT INTO myschema4.myTblC1 VALUES (NEW.*);
-    RETURN NULL;
-  ELSEIF NEW.col1 BETWEEN '2010-01-01' AND '2019-12-31' THEN
-    INSERT INTO myschema4.myTblC2 VALUES (NEW.*);
-    RETURN NULL;
-  END IF;
-  RETURN NEW;
-END;
-$trigger$ LANGUAGE PLPGSQL;
-CREATE TRIGGER myTblM_insert_trigger BEFORE INSERT ON myTblM FOR EACH ROW EXECUTE PROCEDURE mySchema4.myTblM_insert_trigger();
-
--- Declarative partitionning (with subpartitions, FK and triggers on partitionned table).
-
 DROP TABLE IF EXISTS myTblP;
 CREATE TABLE myTblP (
-  col1       INT              NOT NULL,
+  col1       INT              NOT NULL CHECK (col1 >= 0),
   col2       CHAR             NOT NULL,
   col3       TEXT             NOT NULL,
   col4       SERIAL,
   PRIMARY KEY (col1, col2)
-) PARTITION BY RANGE (col1);
-
-DROP TABLE IF EXISTS myPartP1;
-CREATE TABLE myPartP1 PARTITION OF myTblP FOR VALUES FROM (MINVALUE) TO (0) PARTITION BY RANGE (col2);
-
-DROP TABLE IF EXISTS myPartP1A;
-CREATE TABLE myPartP1A PARTITION OF myPartP1 FOR VALUES FROM (MINVALUE) TO ('L');
-
-DROP TABLE IF EXISTS myPartP1B;
-CREATE TABLE myPartP1B PARTITION OF myPartP1 FOR VALUES FROM ('L') TO (MAXVALUE);
-
-DROP TABLE IF EXISTS myPartP2;
-CREATE TABLE myPartP2 PARTITION OF myTblP FOR VALUES FROM (0) TO (9);
-
-DROP TABLE IF EXISTS myTblR1 ;
-CREATE TABLE myTblR1 (
-  col1       INT              NOT NULL PRIMARY KEY
-);
--- Add a global FK.
-ALTER TABLE myTblP ADD FOREIGN KEY (col1) REFERENCES myTblR1(col1)
-  ON DELETE CASCADE
-;
-
-DROP TABLE IF EXISTS myTblR2;
-CREATE TABLE myTblR2 (
-  col1       SERIAL           NOT NULL PRIMARY KEY,
-  col2       INT,
-  col3       CHAR,
-  col4       TEXT
-);
-
--- Add a global FK.
-ALTER TABLE myTblR2 ADD FOREIGN KEY (col2, col3) REFERENCES myTblP(col1, col2)
-  DEFERRABLE INITIALLY DEFERRED
-;
--- Add a global trigger.
-CREATE TRIGGER z_min_update
-  BEFORE UPDATE ON myTblP
-  FOR EACH ROW EXECUTE FUNCTION suppress_redundant_updates_trigger();
-
---
--- Fifth schema (for tables unsupported in rollbackable tables groups).
---
-
-DROP SCHEMA IF EXISTS mySchema5 CASCADE;
-CREATE SCHEMA mySchema5;
-
-SET search_path=mySchema5;
-
--- MyTempTbl will be created in the test script that needs is.
-
-DROP TABLE IF EXISTS myUnloggedTbl;
-CREATE UNLOGGED TABLE myUnloggedTbl (
-  col1       INT     NOT NULL,
-  PRIMARY KEY (col1)
-);
-
---
--- Sixth schema (for tables with very long names).
---
-
-DROP SCHEMA IF EXISTS mySchema6 CASCADE;
-CREATE SCHEMA mySchema6;
-
-SET search_path=mySchema6;
-
-DROP TABLE IF EXISTS table_with_50_characters_long_name_____0_________0;
-CREATE TABLE table_with_50_characters_long_name_____0_________0 (
-  col1       INT     NOT NULL,
-  PRIMARY KEY (col1)
-);
-
-DROP TABLE IF EXISTS table_with_51_characters_long_name_____0_________0a;
-CREATE TABLE table_with_51_characters_long_name_____0_________0a (
-  col1       INT     NOT NULL,
-  PRIMARY KEY (col1)
-);
-
-DROP TABLE IF EXISTS table_with_55_characters_long_name_____0_________0abcde;
-CREATE TABLE table_with_55_characters_long_name_____0_________0abcde (
-  col1       INT     NOT NULL,
-  PRIMARY KEY (col1)
-);
-DROP TABLE IF EXISTS table_with_55_characters_long_name_____0_________0fghij;
-CREATE TABLE table_with_55_characters_long_name_____0_________0fghij (
-  col1       INT     NOT NULL,
-  PRIMARY KEY (col1)
 );
 
 ------------------------------------------------------------
@@ -488,10 +390,82 @@ SELECT emaj.emaj_assign_sequences('phil''s schema"3', '.*', NULL, 'phil''s group
 
 SELECT emaj.emaj_create_group('myGroup4');
 SELECT emaj.emaj_assign_tables('myschema4', '.*', NULL, 'myGroup4');
-SELECT emaj.emaj_assign_sequences('myschema4', '.*', NULL, 'myGroup4');
 
-SELECT emaj.emaj_create_group('myGroup5', TRUE);
-SELECT emaj.emaj_assign_tables('myschema5', '.*', NULL, 'myGroup6');
+------------------------------------------------------------
+-- Create FDW objects into regression.
+------------------------------------------------------------
+\c regression
 
-SELECT emaj.emaj_create_group('myGroup6', TRUE);
-SELECT emaj.emaj_assign_tables('myschema6', '.*', NULL, 'myGroup6');
+CREATE EXTENSION IF NOT EXISTS postgres_fdw;
+
+DO LANGUAGE plpgsql
+$$
+  BEGIN
+    EXECUTE format(
+      'CREATE SERVER srv_1'
+      '  FOREIGN DATA WRAPPER postgres_fdw'
+      '  OPTIONS (host ''localhost'', port ''%s'', dbname ''regression_1'')',
+      pg_catalog.current_setting('port'));
+    EXECUTE format(
+      'CREATE SERVER srv_2'
+      '  FOREIGN DATA WRAPPER postgres_fdw'
+      '  OPTIONS (host ''localhost'', port ''%s'', dbname ''regression_2'')',
+      pg_catalog.current_setting('port'));
+  END;
+$$;
+
+CREATE USER MAPPING FOR postgres
+  SERVER srv_1
+  OPTIONS (user 'postgres', password 'postgres');
+CREATE USER MAPPING FOR postgres
+  SERVER srv_2
+  OPTIONS (user 'postgres', password 'postgres');
+
+DROP SCHEMA IF EXISTS mySchema CASCADE;
+CREATE SCHEMA mySchema;
+
+SET search_path=mySchema;
+
+CREATE FOREIGN TABLE myFTbl1 (
+  col1       INT              NOT NULL,
+  col2       CHAR             NOT NULL,
+  col3       TEXT             NOT NULL,
+  col4       SERIAL
+)
+SERVER srv_1
+OPTIONS (schema_name 'myschema4', table_name  'mytblp');
+
+CREATE FOREIGN TABLE myFTbl2 (
+  col1       INT              NOT NULL,
+  col2       CHAR             NOT NULL,
+  col3       TEXT             NOT NULL,
+  col4       SERIAL
+)
+SERVER srv_2
+OPTIONS (schema_name 'myschema4', table_name  'mytblp');
+
+CREATE TABLE myTblP (
+  col1       INT              NOT NULL,
+  col2       CHAR             NOT NULL,
+  col3       TEXT             NOT NULL,
+  col4       SERIAL
+) PARTITION BY RANGE (col1);
+
+ALTER TABLE myTblP
+  ATTACH PARTITION myFTbl1 FOR VALUES FROM (MINVALUE) TO (0);
+ALTER TABLE myTblP
+  ATTACH PARTITION myFTbl2 FOR VALUES FROM (0) TO (MAXVALUE);
+
+CREATE TABLE myTbl2 (
+  col21       INT              NOT NULL,
+  col22       TEXT             ,
+  col23       DATE             ,
+  PRIMARY KEY (col21)
+);
+
+------------------------------------------------------------
+-- Create tables groups into regression.
+------------------------------------------------------------
+SELECT emaj.emaj_create_group('myGroup');
+SELECT emaj.emaj_assign_tables('myschema', '.*', NULL, 'myGroup');
+SELECT emaj.emaj_assign_sequences('myschema', '.*', NULL, 'myGroup');

@@ -163,17 +163,17 @@ ERROR:  _check_dist_mark: The mark "dummy_mark" is unknown within the cluster "m
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 databases.
+It has processed 5 groups spread into 2 databases.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark DM2
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 databases.
+It has processed 5 groups spread into 2 databases.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark DM3
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 databases.
+It has processed 5 groups spread into 2 databases.
 SELECT dist_emaj.dist_emaj_delete_before_mark_cluster('my_cluster', 'START');
  dist_emaj_delete_before_mark_cluster 
 --------------------------------------
@@ -250,7 +250,7 @@ SELECT hist_id, hist_function, hist_event, hist_object, hist_wording
     4053 | DELETE_BEFORE_MARK_CLUSTER | BEGIN         | my_cluster  | DM1
     4054 | SYNC_MARKS_CLUSTER         | BEGIN         | my_cluster  | 
     4055 | SYNC_MARKS_CLUSTER         | END           | my_cluster  | 0 distributed marks deleted
-    4056 | DELETE_BEFORE_MARK_CLUSTER | END           | my_cluster  | 1 distributed marks deleted ; 6 local marks deleted
+    4056 | DELETE_BEFORE_MARK_CLUSTER | END           | my_cluster  | 1 distributed marks deleted ; 5 local marks deleted
     4057 | DELETE_BEFORE_MARK_CLUSTER | BEGIN         | my_cluster  | DM1
     4058 | SYNC_MARKS_CLUSTER         | BEGIN         | my_cluster  | 
     4059 | SYNC_MARKS_CLUSTER         | END           | my_cluster  | 0 distributed marks deleted
@@ -259,7 +259,7 @@ SELECT hist_id, hist_function, hist_event, hist_object, hist_wording
     4066 | SYNC_MARKS_CLUSTER         | BEGIN         | my_cluster  | 
     4067 | SYNC_MARKS_CLUSTER         | MARKS DELETED | emaj_1      | Some deleted local marks => 1 distributed marks deleted
     4068 | SYNC_MARKS_CLUSTER         | END           | my_cluster  | 1 distributed marks deleted
-    4069 | DELETE_BEFORE_MARK_CLUSTER | END           | my_cluster  | 1 distributed marks deleted ; 11 local marks deleted
+    4069 | DELETE_BEFORE_MARK_CLUSTER | END           | my_cluster  | 1 distributed marks deleted ; 9 local marks deleted
 (23 rows)
 
 -----------------------------
@@ -506,7 +506,7 @@ SELECT dist_emaj.dist_emaj_set_param('history_retention', '1 second');
 SELECT dist_emaj.dist_emaj_purge_histories();
                         dist_emaj_purge_histories                        
 -------------------------------------------------------------------------
- 405 dist_emaj_hist rows deleted ; 7 distributed rollback events deleted
+ 402 dist_emaj_hist rows deleted ; 7 distributed rollback events deleted
 (1 row)
 
 SELECT dist_emaj.dist_emaj_set_param('history_retention', NULL);
@@ -520,19 +520,16 @@ SELECT dist_emaj.dist_emaj_set_param('history_retention', NULL);
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'stop' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 databases.
+It has processed 5 groups spread into 2 databases.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action start --cluster my_cluster --mark START
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
-WARNING:  _check_fk_groups: The foreign key "mytbl6_col61_fkey" on the table "myschema2.mytbl6" references the table "myschema2.mytbl7" that is outside the groups (myGroup1,myGroup2).
-WARNING:  _check_fk_groups: The table "myschema2.mytbl6" is referenced by the foreign key "mytbl8_col81_fkey" on the table "myschema2.mytbl8" that is outside the groups (myGroup1,myGroup2).
-WARNING:  _check_fk_groups: The table "phil's schema"3.my"tbl4" is referenced by the foreign key "mytbl2_col21_fkey_ne" on the table "phil's schema"3.myTbl2\" that is outside the groups (myGroup4,myGroup5,myGroup6,phil's group#3",).
-WARNING:  _check_fk_groups: The table "phil's schema"3.my"tbl4" is referenced by the foreign key "mytbl2_col21_fkey_nv" on the table "phil's schema"3.myTbl2\" that is outside the groups (myGroup4,myGroup5,myGroup6,phil's group#3",).
-WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp1a" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
-WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp1b" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
-WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp2" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
+WARNING:  _check_fk_groups: The foreign key "mytbl6_col61_fkey" on the table "myschema2.mytbl6" references the table "myschema2.mytbl7" that is outside the groups (myGroup1,myGroup2,myGroup4).
+WARNING:  _check_fk_groups: The table "myschema2.mytbl6" is referenced by the foreign key "mytbl8_col81_fkey" on the table "myschema2.mytbl8" that is outside the groups (myGroup1,myGroup2,myGroup4).
+WARNING:  _check_fk_groups: The table "phil's schema"3.my"tbl4" is referenced by the foreign key "mytbl2_col21_fkey_ne" on the table "phil's schema"3.myTbl2\" that is outside the groups (myGroup4,phil's group#3",).
+WARNING:  _check_fk_groups: The table "phil's schema"3.my"tbl4" is referenced by the foreign key "mytbl2_col21_fkey_nv" on the table "phil's schema"3.myTbl2\" that is outside the groups (myGroup4,phil's group#3",).
 The 'start' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 databases.
+It has processed 5 groups spread into 2 databases.
 SELECT dist_emaj.dist_emaj_purge_histories('0 SECOND');
    dist_emaj_purge_histories    
 --------------------------------

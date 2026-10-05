@@ -35,4 +35,198 @@ SELECT * FROM dist_emaj.dist_emaj_all_param ORDER BY param_rank;
 (1 row)
 
 --
+-- Build a new cluster configuration
+--
+\! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U _regress_dist_emaj_adm -W adm --action stop --cluster my_cluster --mark 'STOP'
+ Distributed E-Maj (version <devel>) - launching parallel actions
+----------------------------------------------------------------
+The 'stop' action on cluster 'my_cluster' is completed.
+It has processed 5 groups spread into 2 databases.
+SELECT clst_name, dist_emaj.dist_emaj_drop_cluster(clst_name) FROM dist_emaj.dist_emaj_cluster ORDER BY clst_name;
+ERROR:  dist_emaj_drop_cluster: The cluster "my_cluster" has 5 groups assigned to it.
+SELECT dist_emaj.dist_emaj_create_cluster('cluster_1');
+ dist_emaj_create_cluster 
+--------------------------
+                        1
+(1 row)
+
+SELECT dist_emaj.dist_emaj_create_cluster('cluster_2');
+ dist_emaj_create_cluster 
+--------------------------
+                        1
+(1 row)
+
+SELECT dist_emaj.dist_emaj_assign_group('cluster_1', 'emaj', 'myGroup');
+ dist_emaj_assign_group 
+------------------------
+                      1
+(1 row)
+
+SELECT dist_emaj.dist_emaj_assign_group('cluster_1', 'emaj_1', 'myGroup1');
+ dist_emaj_assign_group 
+------------------------
+                      1
+(1 row)
+
+SELECT dist_emaj.dist_emaj_assign_group('cluster_1', 'emaj_1', 'myGroup4');
+ dist_emaj_assign_group 
+------------------------
+                      1
+(1 row)
+
+SELECT dist_emaj.dist_emaj_assign_group('cluster_1', 'emaj_2', 'myGroup4');
+ dist_emaj_assign_group 
+------------------------
+                      1
+(1 row)
+
+SELECT dist_emaj.dist_emaj_assign_group('cluster_2', 'emaj_1', 'myGroup1');
+ dist_emaj_assign_group 
+------------------------
+                      1
+(1 row)
+
+SELECT dist_emaj.dist_emaj_assign_group('cluster_2', 'emaj_2', 'phil''s group#3",');
+ dist_emaj_assign_group 
+------------------------
+                      1
+(1 row)
+
+--
+-- Start all clusters.
+--
+\! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U _regress_dist_emaj_adm -W adm --action start --cluster cluster_1 --mark '1_START'
+ Distributed E-Maj (version <devel>) - launching parallel actions
+----------------------------------------------------------------
+The 'start' action on cluster 'cluster_1' is completed.
+It has processed 4 groups spread into 3 databases.
+\! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U _regress_dist_emaj_adm -W adm --action start --cluster cluster_2 --mark '2_START' --logging-groups-allowed
+ Distributed E-Maj (version <devel>) - launching parallel actions
+----------------------------------------------------------------
+WARNING:  _start_groups_init: The group "myGroup1" is already in LOGGING state.
+WARNING:  _check_fk_groups: The table "phil's schema"3.my"tbl4" is referenced by the foreign key "mytbl2_col21_fkey_nv" on the table "phil's schema"3.myTbl2\" that is outside the groups (phil's group#3",).
+The 'start' action on cluster 'cluster_2' is completed.
+It has processed 2 groups spread into 2 databases.
+--
+-- Perform data changes, with intermediate distributed marks on cluster_1.
+--
+RESET session_authorization;
+INSERT INTO mySchema.myTblP (col1, col2, col3) VALUES (1, 'A', 'aaaaa'), (-1, 'A', 'aaaaa'), (2, 'B', 'bbbbb'), (-2, 'B', 'bbbbb');
+INSERT INTO mySchema.myTbl2 VALUES (1, 'First row', DATE '2030-01-01');
+SET session_authorization TO _regress_dist_emaj_adm;
+\! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U _regress_dist_emaj_adm -W adm --action set_mark --cluster cluster_1 --mark '1_M1'
+ Distributed E-Maj (version <devel>) - launching parallel actions
+----------------------------------------------------------------
+The 'set_mark' action on cluster 'cluster_1' is completed.
+It has processed 4 groups spread into 3 databases.
+RESET session_authorization;
+INSERT INTO mySchema.myTblP (col1, col2, col3) VALUES (3, 'C', 'ccccc'), (-3, 'C', 'ccccc');
+INSERT INTO mySchema.myTbl2 VALUES (2, 'Second row', DATE '2030-01-02');
+SET session_authorization TO _regress_dist_emaj_adm;
+\! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U _regress_dist_emaj_adm -W adm --action set_mark --cluster cluster_1 --mark '1_M2'
+ Distributed E-Maj (version <devel>) - launching parallel actions
+----------------------------------------------------------------
+The 'set_mark' action on cluster 'cluster_1' is completed.
+It has processed 4 groups spread into 3 databases.
+RESET session_authorization;
+UPDATE mySchema.myTblP SET col3 = 'a a a' WHERE col2 = 'A';
+UPDATE mySchema.myTbl2 SET col23 = col23 + INTERVAL '1 MONTHS';
+--
+-- Final checks.
+--
+\c regression
+-- Check dist_emaj tables content.
+SELECT hist_function, hist_event, hist_object, hist_wording FROM dist_emaj.dist_emaj_hist WHERE hist_id >= 6000 ORDER BY hist_id;
+    hist_function     |     hist_event     |       hist_object       |                      hist_wording                       
+----------------------+--------------------+-------------------------+---------------------------------------------------------
+ SET_PARAM            | INSERTED PARAMETER | history_retention       | From: 1 year to: 1 MONTHS
+ DIST_EMAJ            | BEGIN              | my_cluster              | stop with mark STOP
+ DIST_EMAJ            | TIME STAMP SET     | 6000                    | 
+ EMAJ_STOP_GROUPS     | INIT               | emaj_1                  | 
+ EMAJ_STOP_GROUPS     | INIT               | emaj_2                  | 
+ EMAJ_STOP_GROUPS     | LOCK               | emaj_1                  | Time_id: 44
+ EMAJ_STOP_GROUPS     | LOCK               | emaj_2                  | Time_id: 35
+ EMAJ_STOP_GROUPS     | EXEC               | emaj_1                  | Processed tables and sequences: 17
+ EMAJ_STOP_GROUPS     | EXEC               | emaj_2                  | Processed tables and sequences: 5
+ DIST_EMAJ            | END                | my_cluster              | 
+ CREATE_CLUSTER       | BEGIN              | cluster_1               | 
+ CREATE_CLUSTER       | TIME STAMP SET     | 6003                    | 
+ CREATE_CLUSTER       | END                | cluster_1               | Cluster created
+ CREATE_CLUSTER       | BEGIN              | cluster_2               | 
+ CREATE_CLUSTER       | TIME STAMP SET     | 6004                    | 
+ CREATE_CLUSTER       | END                | cluster_2               | Cluster created
+ ASSIGN_GROUP         | BEGIN              | emaj.myGroup            | To cluster cluster_1
+ ASSIGN_GROUP         | TIME STAMP SET     | 6005                    | 
+ ASSIGN_GROUP         | END                | emaj.myGroup            | Group assigned to the cluster
+ ASSIGN_GROUP         | BEGIN              | emaj_1.myGroup1         | To cluster cluster_1
+ ASSIGN_GROUP         | TIME STAMP SET     | 6006                    | 
+ ASSIGN_GROUP         | END                | emaj_1.myGroup1         | Group assigned to the cluster
+ ASSIGN_GROUP         | BEGIN              | emaj_1.myGroup4         | To cluster cluster_1
+ ASSIGN_GROUP         | TIME STAMP SET     | 6007                    | 
+ ASSIGN_GROUP         | END                | emaj_1.myGroup4         | Group assigned to the cluster
+ ASSIGN_GROUP         | BEGIN              | emaj_2.myGroup4         | To cluster cluster_1
+ ASSIGN_GROUP         | TIME STAMP SET     | 6008                    | 
+ ASSIGN_GROUP         | END                | emaj_2.myGroup4         | Group assigned to the cluster
+ ASSIGN_GROUP         | BEGIN              | emaj_1.myGroup1         | To cluster cluster_2
+ ASSIGN_GROUP         | TIME STAMP SET     | 6009                    | 
+ ASSIGN_GROUP         | END                | emaj_1.myGroup1         | Group assigned to the cluster
+ ASSIGN_GROUP         | BEGIN              | emaj_2.phil's group#3", | To cluster cluster_2
+ ASSIGN_GROUP         | TIME STAMP SET     | 6010                    | 
+ ASSIGN_GROUP         | END                | emaj_2.phil's group#3", | Group assigned to the cluster
+ DIST_EMAJ            | BEGIN              | cluster_1               | start with mark 1_START
+ DIST_EMAJ            | TIME STAMP SET     | 6011                    | 
+ EMAJ_START_GROUPS    | INIT               | emaj                    | 
+ EMAJ_START_GROUPS    | INIT               | emaj_1                  | 
+ EMAJ_START_GROUPS    | INIT               | emaj_2                  | 
+ EMAJ_START_GROUPS    | LOCK               | emaj                    | Time_id: 4
+ EMAJ_START_GROUPS    | LOCK               | emaj_1                  | Time_id: 45
+ EMAJ_START_GROUPS    | LOCK               | emaj_2                  | Time_id: 36
+ EMAJ_START_GROUPS    | EXEC               | emaj                    | Processed tables and sequences: 4
+ EMAJ_START_GROUPS    | EXEC               | emaj_1                  | Processed tables and sequences: 8
+ EMAJ_START_GROUPS    | EXEC               | emaj_2                  | Processed tables and sequences: 1
+ DIST_EMAJ            | END                | cluster_1               | 
+ DIST_EMAJ            | BEGIN              | cluster_2               | start with mark 2_START
+ DIST_EMAJ            | TIME STAMP SET     | 6012                    | 
+ EMAJ_START_GROUPS    | INIT               | emaj_1                  | 
+ EMAJ_START_GROUPS    | INIT               | emaj_2                  | 
+ EMAJ_START_GROUPS    | LOCK               | emaj_1                  | Time_id: 46
+ EMAJ_START_GROUPS    | LOCK               | emaj_2                  | Time_id: 37
+ EMAJ_START_GROUPS    | EXEC               | emaj_1                  | Processed tables and sequences: 0
+ EMAJ_START_GROUPS    | EXEC               | emaj_2                  | Processed tables and sequences: 4
+ DIST_EMAJ            | END                | cluster_2               | 
+ DIST_EMAJ            | BEGIN              | cluster_1               | set_mark with mark 1_M1
+ SYNC_MARKS_CLUSTER   | BEGIN              | cluster_1               | 
+ SYNC_MARKS_CLUSTER   | MARKS DELETED      | emaj_1                  | Some deleted local marks => 3 distributed marks deleted
+ SYNC_MARKS_CLUSTER   | MARKS DELETED      | emaj_2                  | Some deleted local marks => 3 distributed marks deleted
+ SYNC_MARKS_CLUSTER   | END                | cluster_1               | 6 distributed marks deleted
+ DIST_EMAJ            | TIME STAMP SET     | 6013                    | 
+ EMAJ_SET_MARK_GROUPS | INIT               | emaj                    | 
+ EMAJ_SET_MARK_GROUPS | INIT               | emaj_1                  | 
+ EMAJ_SET_MARK_GROUPS | INIT               | emaj_2                  | 
+ EMAJ_SET_MARK_GROUPS | LOCK               | emaj                    | Time_id: 5
+ EMAJ_SET_MARK_GROUPS | LOCK               | emaj_1                  | Time_id: 47
+ EMAJ_SET_MARK_GROUPS | LOCK               | emaj_2                  | Time_id: 38
+ EMAJ_SET_MARK_GROUPS | EXEC               | emaj                    | Processed tables and sequences: 4
+ EMAJ_SET_MARK_GROUPS | EXEC               | emaj_1                  | Processed tables and sequences: 8
+ EMAJ_SET_MARK_GROUPS | EXEC               | emaj_2                  | Processed tables and sequences: 1
+ DIST_EMAJ            | END                | cluster_1               | 
+ DIST_EMAJ            | BEGIN              | cluster_1               | set_mark with mark 1_M2
+ SYNC_MARKS_CLUSTER   | BEGIN              | cluster_1               | 
+ SYNC_MARKS_CLUSTER   | MARKS DELETED      | emaj_1                  | Some deleted local marks => 3 distributed marks deleted
+ SYNC_MARKS_CLUSTER   | MARKS DELETED      | emaj_2                  | Some deleted local marks => 3 distributed marks deleted
+ SYNC_MARKS_CLUSTER   | END                | cluster_1               | 6 distributed marks deleted
+ DIST_EMAJ            | TIME STAMP SET     | 6014                    | 
+ EMAJ_SET_MARK_GROUPS | INIT               | emaj                    | 
+ EMAJ_SET_MARK_GROUPS | INIT               | emaj_1                  | 
+ EMAJ_SET_MARK_GROUPS | INIT               | emaj_2                  | 
+ EMAJ_SET_MARK_GROUPS | LOCK               | emaj                    | Time_id: 6
+ EMAJ_SET_MARK_GROUPS | LOCK               | emaj_1                  | Time_id: 48
+ EMAJ_SET_MARK_GROUPS | LOCK               | emaj_2                  | Time_id: 39
+ EMAJ_SET_MARK_GROUPS | EXEC               | emaj                    | Processed tables and sequences: 4
+ EMAJ_SET_MARK_GROUPS | EXEC               | emaj_1                  | Processed tables and sequences: 8
+ EMAJ_SET_MARK_GROUPS | EXEC               | emaj_2                  | Processed tables and sequences: 1
+ DIST_EMAJ            | END                | cluster_1               | 
+(87 rows)
+
+--
 RESET session_authorization;

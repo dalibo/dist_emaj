@@ -83,44 +83,44 @@ SELECT funcname, calls FROM pg_stat_user_functions
  _check_dist_mark                          |    11
  _check_json_clusters_conf                 |    29
  _check_json_param_conf                    |    17
- _check_new_dist_mark                      |    28
- _does_exist_cluster                       |   124
+ _check_new_dist_mark                      |    33
+ _does_exist_cluster                       |   140
  _export_clusters_conf                     |     6
  _export_param_conf                        |     7
  _import_clusters_conf                     |     6
  _import_clusters_conf_exec                |     6
  _import_clusters_conf_prepare             |    11
  _import_param_conf                        |     8
- _set_time_stamp                           |    69
- _verify_database                          |   107
- dist_emaj_assign_group                    |    11
- dist_emaj_create_cluster                  |     5
+ _set_time_stamp                           |    83
+ _verify_database                          |   120
+ dist_emaj_assign_group                    |    16
+ dist_emaj_create_cluster                  |     7
  dist_emaj_create_database                 |     6
  dist_emaj_delete_before_mark_cluster      |     4
- dist_emaj_drop_cluster                    |     2
+ dist_emaj_drop_cluster                    |     3
  dist_emaj_drop_database                   |     3
  dist_emaj_export_clusters_configuration   |     3
  dist_emaj_export_clusters_configuration   |     2
  dist_emaj_export_parameters_configuration |     5
  dist_emaj_export_parameters_configuration |     1
- dist_emaj_get_version                     |    16
+ dist_emaj_get_version                     |    15
  dist_emaj_import_clusters_configuration   |     5
  dist_emaj_import_clusters_configuration   |     1
  dist_emaj_import_parameters_configuration |     6
  dist_emaj_import_parameters_configuration |     2
- dist_emaj_purge_histories                 |    18
+ dist_emaj_purge_histories                 |    20
  dist_emaj_remove_group                    |     2
  dist_emaj_set_param                       |    10
- dist_emaj_sync_marks_cluster              |    24
+ dist_emaj_sync_marks_cluster              |    26
  dist_emaj_verify_all                      |     3
- dist_emaj_verify_cluster                  |    49
+ dist_emaj_verify_cluster                  |    54
 (34 rows)
 
 -- Count the total number of user-callable function calls (those who failed are not counted).
 SELECT sum(calls) FROM pg_stat_user_functions WHERE funcname LIKE E'dist\\_emaj\\_%';
  sum 
 -----
- 178
+ 194
 (1 row)
 
 -----------------------------

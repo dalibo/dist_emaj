@@ -7,6 +7,11 @@
 DROP FUNCTION public.handle_dist_emaj_sequences(INT);
 
 -----------------------------
+-- Drop FDW objects
+-----------------------------
+DROP EXTENSION postgres_fdw CASCADE;
+
+-----------------------------
 -- Drop roles used for tests.
 -----------------------------
 DROP role _regress_dist_emaj_adm;

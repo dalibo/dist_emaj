@@ -131,10 +131,9 @@ SELECT dist_emaj.dist_emaj_create_cluster('empty_cluster');
 
 SELECT dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_1', 'myGroup1');
 SELECT dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_1', 'myGroup2');
+SELECT dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_1', 'myGroup4');
 SELECT dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_2', 'phil''s group#3",');
 SELECT dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_2', 'myGroup4');
-SELECT dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_2', 'myGroup5');
-SELECT dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_2', 'myGroup6');
 
 --
 -- Test dist_emaj_verify_cluster.

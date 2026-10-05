@@ -78,25 +78,22 @@ dd/mm/yyyy - hh:mn:ss Global time id = 2000.
 dd/mm/yyyy - hh:mn:ss Start transaction on session #1...
 dd/mm/yyyy - hh:mn:ss Start transaction on session #2...
 dd/mm/yyyy - hh:mn:ss Action start - Call the initial step for database emaj_1...
-WARNING:  _check_fk_groups: The foreign key "mytbl6_col61_fkey" on the table "myschema2.mytbl6" references the table "myschema2.mytbl7" that is outside the groups (myGroup1,myGroup2).
-WARNING:  _check_fk_groups: The table "myschema2.mytbl6" is referenced by the foreign key "mytbl8_col81_fkey" on the table "myschema2.mytbl8" that is outside the groups (myGroup1,myGroup2).
+WARNING:  _check_fk_groups: The foreign key "mytbl6_col61_fkey" on the table "myschema2.mytbl6" references the table "myschema2.mytbl7" that is outside the groups (myGroup1,myGroup2,myGroup4).
+WARNING:  _check_fk_groups: The table "myschema2.mytbl6" is referenced by the foreign key "mytbl8_col81_fkey" on the table "myschema2.mytbl8" that is outside the groups (myGroup1,myGroup2,myGroup4).
 dd/mm/yyyy - hh:mn:ss Action start - Call the initial step for database emaj_2...
-WARNING:  _check_fk_groups: The table "phil's schema"3.my"tbl4" is referenced by the foreign key "mytbl2_col21_fkey_nv" on the table "phil's schema"3.myTbl2\" that is outside the groups (myGroup4,myGroup5,myGroup6,phil's group#3",).
-WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp1a" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
-WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp1b" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
-WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp2" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
+WARNING:  _check_fk_groups: The table "phil's schema"3.my"tbl4" is referenced by the foreign key "mytbl2_col21_fkey_nv" on the table "phil's schema"3.myTbl2\" that is outside the groups (myGroup4,phil's group#3",).
 dd/mm/yyyy - hh:mn:ss Action start - Asynchronously call the lock step for database emaj_1...
 dd/mm/yyyy - hh:mn:ss Action start - Asynchronously call the lock step for database emaj_2...
 dd/mm/yyyy - hh:mn:ss Action start - Get result of the lock function call for database emaj_1...
-dd/mm/yyyy - hh:mn:ss     => time_id = 7
+dd/mm/yyyy - hh:mn:ss     => time_id = 9
 dd/mm/yyyy - hh:mn:ss Action start - Get result of the lock function call for database emaj_2...
-dd/mm/yyyy - hh:mn:ss     => time_id = 10
+dd/mm/yyyy - hh:mn:ss     => time_id = 6
 dd/mm/yyyy - hh:mn:ss Action start - Asynchronously call the exec step for database emaj_1...
 dd/mm/yyyy - hh:mn:ss Action start - Asynchronously call the exec step for database emaj_2...
 dd/mm/yyyy - hh:mn:ss Action start - Get result of the exec function call for database emaj_1...
-dd/mm/yyyy - hh:mn:ss     => processed tables and sequences = 16
+dd/mm/yyyy - hh:mn:ss     => processed tables and sequences = 17
 dd/mm/yyyy - hh:mn:ss Action start - Get result of the exec function call for database emaj_2...
-dd/mm/yyyy - hh:mn:ss     => processed tables and sequences = 18
+dd/mm/yyyy - hh:mn:ss     => processed tables and sequences = 5
 dd/mm/yyyy - hh:mn:ss Action start - Comment the mark for database emaj_1...
 dd/mm/yyyy - hh:mn:ss Action start - Comment the mark for database emaj_2...
 dd/mm/yyyy - hh:mn:ss Action start - Delete old marks in the distributed emaj database...
@@ -107,13 +104,13 @@ dd/mm/yyyy - hh:mn:ss Commit transaction #1...
 dd/mm/yyyy - hh:mn:ss Commit transaction #2...
 dd/mm/yyyy - hh:mn:ss Close all sessions...
 The 'start' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 databases.
+It has processed 5 groups spread into 2 databases.
 -- Try to restart the cluster without --logging-groups-allowed.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action start --cluster my_cluster --mark 'START_ko'
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 Error while executing the initial step for database emaj_1.
-ERROR:  _check_group_names: The groups "myGroup1, myGroup2" are not in IDLE state.
+ERROR:  _check_group_names: The groups "myGroup1, myGroup2, myGroup4" are not in IDLE state.
 CONTEXT:  PL/pgSQL function emaj._check_group_names(text[],boolean,boolean,boolean,boolean,boolean,boolean) line 74 at RAISE
 SQL statement "SELECT emaj._check_group_names(p_groups := p_groups, p_mayBeNull := p_multiGroup,
                                    p_lockGroups := TRUE, p_checkIdle := NOT p_loggingGroupsAllowed)"
@@ -134,13 +131,13 @@ CONTEXT:  PL/pgSQL function dist_emaj._check_new_dist_mark(text,text,boolean) li
 The --keep-logs option has no effect on stop action
 The --logging-groups-allowed option has no effect on stop action
 The 'stop' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 databases.
+It has processed 5 groups spread into 2 databases.
 -- Re-stop a cluster without --idle-groups-allowed.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action stop --cluster my_cluster --mark 'STOP_ko' --comment "Comment on stop mark"
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 Error while executing the initial step for database emaj_1.
-ERROR:  _check_group_names: The groups "myGroup1, myGroup2" are not in LOGGING state.
+ERROR:  _check_group_names: The groups "myGroup1, myGroup2, myGroup4" are not in LOGGING state.
 CONTEXT:  PL/pgSQL function emaj._check_group_names(text[],boolean,boolean,boolean,boolean,boolean,boolean) line 87 at RAISE
 SQL statement "SELECT emaj._check_group_names(p_groups := p_groups, p_mayBeNull := p_multiGroup,
                                    p_lockGroups := TRUE, p_checkLogging := NOT p_idleGroupsAllowed)"
@@ -159,24 +156,21 @@ CONTEXT:  PL/pgSQL function dist_emaj._check_new_dist_mark(text,text,boolean) li
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The --comment option has no effect on stop operations with --reset-logs option
-WARNING:  _stop_groups_init: The groups "myGroup1, myGroup2" are already in IDLE state.
-WARNING:  _stop_groups_init: The groups "myGroup4, myGroup5, myGroup6, phil's group#3"," are already in IDLE state.
+WARNING:  _stop_groups_init: The groups "myGroup1, myGroup2, myGroup4" are already in IDLE state.
+WARNING:  _stop_groups_init: The groups "myGroup4, phil's group#3"," are already in IDLE state.
 The 'stop' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 databases.
+It has processed 5 groups spread into 2 databases.
 --
 -- Set mark tests.
 --
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action start --cluster my_cluster --mark 'RESTART'
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
-WARNING:  _check_fk_groups: The foreign key "mytbl6_col61_fkey" on the table "myschema2.mytbl6" references the table "myschema2.mytbl7" that is outside the groups (myGroup1,myGroup2).
-WARNING:  _check_fk_groups: The table "myschema2.mytbl6" is referenced by the foreign key "mytbl8_col81_fkey" on the table "myschema2.mytbl8" that is outside the groups (myGroup1,myGroup2).
-WARNING:  _check_fk_groups: The table "phil's schema"3.my"tbl4" is referenced by the foreign key "mytbl2_col21_fkey_nv" on the table "phil's schema"3.myTbl2\" that is outside the groups (myGroup4,myGroup5,myGroup6,phil's group#3",).
-WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp1a" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
-WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp1b" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
-WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp2" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
+WARNING:  _check_fk_groups: The foreign key "mytbl6_col61_fkey" on the table "myschema2.mytbl6" references the table "myschema2.mytbl7" that is outside the groups (myGroup1,myGroup2,myGroup4).
+WARNING:  _check_fk_groups: The table "myschema2.mytbl6" is referenced by the foreign key "mytbl8_col81_fkey" on the table "myschema2.mytbl8" that is outside the groups (myGroup1,myGroup2,myGroup4).
+WARNING:  _check_fk_groups: The table "phil's schema"3.my"tbl4" is referenced by the foreign key "mytbl2_col21_fkey_nv" on the table "phil's schema"3.myTbl2\" that is outside the groups (myGroup4,phil's group#3",).
 The 'start' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 databases.
+It has processed 5 groups spread into 2 databases.
 -- Illegal mark name.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark EMAJ_LAST_MARK
  Distributed E-Maj (version <devel>) - launching parallel actions
@@ -203,15 +197,15 @@ dd/mm/yyyy - hh:mn:ss Action set_mark - Call the initial step for database emaj_
 dd/mm/yyyy - hh:mn:ss Action set_mark - Asynchronously call the lock step for database emaj_1...
 dd/mm/yyyy - hh:mn:ss Action set_mark - Asynchronously call the lock step for database emaj_2...
 dd/mm/yyyy - hh:mn:ss Action set_mark - Get result of the lock function call for database emaj_1...
-dd/mm/yyyy - hh:mn:ss     => time_id = 11
+dd/mm/yyyy - hh:mn:ss     => time_id = 13
 dd/mm/yyyy - hh:mn:ss Action set_mark - Get result of the lock function call for database emaj_2...
-dd/mm/yyyy - hh:mn:ss     => time_id = 14
+dd/mm/yyyy - hh:mn:ss     => time_id = 10
 dd/mm/yyyy - hh:mn:ss Action set_mark - Asynchronously call the exec step for database emaj_1...
 dd/mm/yyyy - hh:mn:ss Action set_mark - Asynchronously call the exec step for database emaj_2...
 dd/mm/yyyy - hh:mn:ss Action set_mark - Get result of the exec function call for database emaj_1...
-dd/mm/yyyy - hh:mn:ss     => processed tables and sequences = 16
+dd/mm/yyyy - hh:mn:ss     => processed tables and sequences = 17
 dd/mm/yyyy - hh:mn:ss Action set_mark - Get result of the exec function call for database emaj_2...
-dd/mm/yyyy - hh:mn:ss     => processed tables and sequences = 18
+dd/mm/yyyy - hh:mn:ss     => processed tables and sequences = 5
 dd/mm/yyyy - hh:mn:ss Action set_mark - Register the mark in the distributed emaj database...
 dd/mm/yyyy - hh:mn:ss Prepare transaction #1...
 dd/mm/yyyy - hh:mn:ss Prepare transaction #2...
@@ -219,17 +213,17 @@ dd/mm/yyyy - hh:mn:ss Commit transaction #1...
 dd/mm/yyyy - hh:mn:ss Commit transaction #2...
 dd/mm/yyyy - hh:mn:ss Close all sessions...
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 databases.
+It has processed 5 groups spread into 2 databases.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark --comment "Comment on generated mark name"
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 databases.
+It has processed 5 groups spread into 2 databases.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark 'M-%'
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 databases.
+It has processed 5 groups spread into 2 databases.
 --
 -- Marks synchronization tests.
 --
@@ -254,27 +248,27 @@ SELECT dist_emaj.dist_emaj_sync_marks_cluster('my_cluster');
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 databases.
+It has processed 5 groups spread into 2 databases.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark DM2
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 databases.
+It has processed 5 groups spread into 2 databases.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark DM3
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 databases.
+It has processed 5 groups spread into 2 databases.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark DM4
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 databases.
+It has processed 5 groups spread into 2 databases.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark DM5
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 databases.
+It has processed 5 groups spread into 2 databases.
 \c regression_1
 SELECT emaj.emaj_delete_mark_group('myGroup1', 'DM2');
  emaj_delete_mark_group 
@@ -340,23 +334,20 @@ PL/pgSQL function emaj._stop_groups_init(text[],text,boolean,boolean,boolean,boo
 ----------------------------------------------------------------
 WARNING:  _stop_groups_init: The group "myGroup1" is already in IDLE state.
 The 'stop' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 databases.
+It has processed 5 groups spread into 2 databases.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action start --cluster my_cluster --mark DM1
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
-WARNING:  _check_fk_groups: The foreign key "mytbl6_col61_fkey" on the table "myschema2.mytbl6" references the table "myschema2.mytbl7" that is outside the groups (myGroup1,myGroup2).
-WARNING:  _check_fk_groups: The table "myschema2.mytbl6" is referenced by the foreign key "mytbl8_col81_fkey" on the table "myschema2.mytbl8" that is outside the groups (myGroup1,myGroup2).
-WARNING:  _check_fk_groups: The table "phil's schema"3.my"tbl4" is referenced by the foreign key "mytbl2_col21_fkey_nv" on the table "phil's schema"3.myTbl2\" that is outside the groups (myGroup4,myGroup5,myGroup6,phil's group#3",).
-WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp1a" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
-WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp1b" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
-WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp2" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
+WARNING:  _check_fk_groups: The foreign key "mytbl6_col61_fkey" on the table "myschema2.mytbl6" references the table "myschema2.mytbl7" that is outside the groups (myGroup1,myGroup2,myGroup4).
+WARNING:  _check_fk_groups: The table "myschema2.mytbl6" is referenced by the foreign key "mytbl8_col81_fkey" on the table "myschema2.mytbl8" that is outside the groups (myGroup1,myGroup2,myGroup4).
+WARNING:  _check_fk_groups: The table "phil's schema"3.my"tbl4" is referenced by the foreign key "mytbl2_col21_fkey_nv" on the table "phil's schema"3.myTbl2\" that is outside the groups (myGroup4,phil's group#3",).
 The 'start' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 databases.
+It has processed 5 groups spread into 2 databases.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action set_mark --cluster my_cluster --mark DM2
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'set_mark' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 databases.
+It has processed 5 groups spread into 2 databases.
 \c regression_1
 SELECT emaj.emaj_stop_group('myGroup1');
  emaj_stop_group 
@@ -387,15 +378,15 @@ dd/mm/yyyy - hh:mn:ss Action stop - Call the initial step for database emaj_2...
 dd/mm/yyyy - hh:mn:ss Action stop - Asynchronously call the lock step for database emaj_1...
 dd/mm/yyyy - hh:mn:ss Action stop - Asynchronously call the lock step for database emaj_2...
 dd/mm/yyyy - hh:mn:ss Action stop - Get result of the lock function call for database emaj_1...
-dd/mm/yyyy - hh:mn:ss     => time_id = 25
+dd/mm/yyyy - hh:mn:ss     => time_id = 27
 dd/mm/yyyy - hh:mn:ss Action stop - Get result of the lock function call for database emaj_2...
-dd/mm/yyyy - hh:mn:ss     => time_id = 25
+dd/mm/yyyy - hh:mn:ss     => time_id = 21
 dd/mm/yyyy - hh:mn:ss Action stop - Asynchronously call the exec step for database emaj_1...
 dd/mm/yyyy - hh:mn:ss Action stop - Asynchronously call the exec step for database emaj_2...
 dd/mm/yyyy - hh:mn:ss Action stop - Get result of the exec function call for database emaj_1...
-dd/mm/yyyy - hh:mn:ss     => processed tables and sequences = 16
+dd/mm/yyyy - hh:mn:ss     => processed tables and sequences = 17
 dd/mm/yyyy - hh:mn:ss Action stop - Get result of the exec function call for database emaj_2...
-dd/mm/yyyy - hh:mn:ss     => processed tables and sequences = 18
+dd/mm/yyyy - hh:mn:ss     => processed tables and sequences = 5
 dd/mm/yyyy - hh:mn:ss Action stop - Register the mark in the distributed emaj database...
 dd/mm/yyyy - hh:mn:ss Prepare transaction #1...
 dd/mm/yyyy - hh:mn:ss Prepare transaction #2...
@@ -403,7 +394,7 @@ dd/mm/yyyy - hh:mn:ss Commit transaction #1...
 dd/mm/yyyy - hh:mn:ss Commit transaction #2...
 dd/mm/yyyy - hh:mn:ss Close all sessions...
 The 'stop' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 databases.
+It has processed 5 groups spread into 2 databases.
 -- A group has been locally started.
 \c regression_1
 SELECT emaj.emaj_start_group('myGroup1', 'Local_Start');
@@ -426,21 +417,18 @@ PL/pgSQL function emaj._start_groups_init(text[],text,boolean,boolean,boolean) l
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action start --cluster my_cluster --mark DM1 --logging-groups-allowed
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
-WARNING:  _check_fk_groups: The foreign key "mytbl6_col61_fkey" on the table "myschema2.mytbl6" references the table "myschema2.mytbl7" that is outside the groups (myGroup1,myGroup2).
-WARNING:  _check_fk_groups: The table "myschema2.mytbl6" is referenced by the foreign key "mytbl8_col81_fkey" on the table "myschema2.mytbl8" that is outside the groups (myGroup1,myGroup2).
+WARNING:  _check_fk_groups: The foreign key "mytbl6_col61_fkey" on the table "myschema2.mytbl6" references the table "myschema2.mytbl7" that is outside the groups (myGroup1,myGroup2,myGroup4).
+WARNING:  _check_fk_groups: The table "myschema2.mytbl6" is referenced by the foreign key "mytbl8_col81_fkey" on the table "myschema2.mytbl8" that is outside the groups (myGroup1,myGroup2,myGroup4).
 WARNING:  _start_groups_init: The group "myGroup1" is already in LOGGING state.
-WARNING:  _check_fk_groups: The table "phil's schema"3.my"tbl4" is referenced by the foreign key "mytbl2_col21_fkey_nv" on the table "phil's schema"3.myTbl2\" that is outside the groups (myGroup4,myGroup5,myGroup6,phil's group#3",).
-WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp1a" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
-WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp1b" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
-WARNING:  _check_fk_groups: The foreign key "mytblp_col1_fkey" on the table "myschema4.mypartp2" is inherited from a partitionned table. An E-Maj rollback targeting a mark set before the latest table assignement could fail.
+WARNING:  _check_fk_groups: The table "phil's schema"3.my"tbl4" is referenced by the foreign key "mytbl2_col21_fkey_nv" on the table "phil's schema"3.myTbl2\" that is outside the groups (myGroup4,phil's group#3",).
 The 'start' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 databases.
+It has processed 5 groups spread into 2 databases.
 -- Final stop.
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action stop --cluster my_cluster --mark 'STOP'
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
 The 'stop' action on cluster 'my_cluster' is completed.
-It has processed 6 groups spread into 2 databases.
+It has processed 5 groups spread into 2 databases.
 --
 -- Final checks.
 --
@@ -453,26 +441,26 @@ SELECT hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_word
     2001 | DIST_EMAJ            | TIME STAMP SET | 2000          |                                                         | postgres
     2002 | EMAJ_START_GROUPS    | INIT           | emaj_1        |                                                         | postgres
     2003 | EMAJ_START_GROUPS    | INIT           | emaj_2        |                                                         | postgres
-    2004 | EMAJ_START_GROUPS    | LOCK           | emaj_1        | Time_id: 7                                              | postgres
-    2005 | EMAJ_START_GROUPS    | LOCK           | emaj_2        | Time_id: 10                                             | postgres
-    2006 | EMAJ_START_GROUPS    | EXEC           | emaj_1        | Processed tables and sequences: 16                      | postgres
-    2007 | EMAJ_START_GROUPS    | EXEC           | emaj_2        | Processed tables and sequences: 18                      | postgres
+    2004 | EMAJ_START_GROUPS    | LOCK           | emaj_1        | Time_id: 9                                              | postgres
+    2005 | EMAJ_START_GROUPS    | LOCK           | emaj_2        | Time_id: 6                                              | postgres
+    2006 | EMAJ_START_GROUPS    | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
+    2007 | EMAJ_START_GROUPS    | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
     2008 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
     2012 | DIST_EMAJ            | BEGIN          | my_cluster    | stop with mark STOP                                     | postgres
     2013 | DIST_EMAJ            | TIME STAMP SET | 2002          |                                                         | postgres
     2014 | EMAJ_STOP_GROUPS     | INIT           | emaj_1        |                                                         | postgres
     2015 | EMAJ_STOP_GROUPS     | INIT           | emaj_2        |                                                         | postgres
-    2016 | EMAJ_STOP_GROUPS     | LOCK           | emaj_1        | Time_id: 8                                              | postgres
-    2017 | EMAJ_STOP_GROUPS     | LOCK           | emaj_2        | Time_id: 11                                             | postgres
-    2018 | EMAJ_STOP_GROUPS     | EXEC           | emaj_1        | Processed tables and sequences: 16                      | postgres
-    2019 | EMAJ_STOP_GROUPS     | EXEC           | emaj_2        | Processed tables and sequences: 18                      | postgres
+    2016 | EMAJ_STOP_GROUPS     | LOCK           | emaj_1        | Time_id: 10                                             | postgres
+    2017 | EMAJ_STOP_GROUPS     | LOCK           | emaj_2        | Time_id: 7                                              | postgres
+    2018 | EMAJ_STOP_GROUPS     | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
+    2019 | EMAJ_STOP_GROUPS     | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
     2020 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
     2024 | DIST_EMAJ            | BEGIN          | my_cluster    | stop with mark START                                    | postgres
     2025 | DIST_EMAJ            | TIME STAMP SET | 2004          |                                                         | postgres
     2026 | EMAJ_STOP_GROUPS     | INIT           | emaj_1        |                                                         | postgres
     2027 | EMAJ_STOP_GROUPS     | INIT           | emaj_2        |                                                         | postgres
-    2028 | EMAJ_STOP_GROUPS     | LOCK           | emaj_1        | Time_id: 9                                              | postgres
-    2029 | EMAJ_STOP_GROUPS     | LOCK           | emaj_2        | Time_id: 12                                             | postgres
+    2028 | EMAJ_STOP_GROUPS     | LOCK           | emaj_1        | Time_id: 11                                             | postgres
+    2029 | EMAJ_STOP_GROUPS     | LOCK           | emaj_2        | Time_id: 8                                              | postgres
     2030 | EMAJ_STOP_GROUPS     | EXEC           | emaj_1        | Processed tables and sequences: 0                       | postgres
     2031 | EMAJ_STOP_GROUPS     | EXEC           | emaj_2        | Processed tables and sequences: 0                       | postgres
     2032 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
@@ -480,10 +468,10 @@ SELECT hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_word
     2034 | DIST_EMAJ            | TIME STAMP SET | 2005          |                                                         | postgres
     2035 | EMAJ_START_GROUPS    | INIT           | emaj_1        |                                                         | postgres
     2036 | EMAJ_START_GROUPS    | INIT           | emaj_2        |                                                         | postgres
-    2037 | EMAJ_START_GROUPS    | LOCK           | emaj_1        | Time_id: 10                                             | postgres
-    2038 | EMAJ_START_GROUPS    | LOCK           | emaj_2        | Time_id: 13                                             | postgres
-    2039 | EMAJ_START_GROUPS    | EXEC           | emaj_1        | Processed tables and sequences: 16                      | postgres
-    2040 | EMAJ_START_GROUPS    | EXEC           | emaj_2        | Processed tables and sequences: 18                      | postgres
+    2037 | EMAJ_START_GROUPS    | LOCK           | emaj_1        | Time_id: 12                                             | postgres
+    2038 | EMAJ_START_GROUPS    | LOCK           | emaj_2        | Time_id: 9                                              | postgres
+    2039 | EMAJ_START_GROUPS    | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
+    2040 | EMAJ_START_GROUPS    | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
     2041 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
     2045 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark Fixed_Mark_Name                      | postgres
     2046 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
@@ -491,10 +479,10 @@ SELECT hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_word
     2048 | DIST_EMAJ            | TIME STAMP SET | 2006          |                                                         | postgres
     2049 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                         | postgres
     2050 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                         | postgres
-    2051 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 11                                             | postgres
-    2052 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 14                                             | postgres
-    2053 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 16                      | postgres
-    2054 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 18                      | postgres
+    2051 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 13                                             | postgres
+    2052 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 10                                             | postgres
+    2053 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
+    2054 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
     2055 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
     2056 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark                                      | postgres
     2057 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
@@ -503,10 +491,10 @@ SELECT hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_word
     2060 | DIST_EMAJ            | TIME STAMP SET | 2007          |                                                         | postgres
     2061 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                         | postgres
     2062 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                         | postgres
-    2063 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 12                                             | postgres
-    2064 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 15                                             | postgres
-    2065 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 16                      | postgres
-    2066 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 18                      | postgres
+    2063 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 14                                             | postgres
+    2064 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 11                                             | postgres
+    2065 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
+    2066 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
     2067 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
     2068 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark M-%                                  | postgres
     2069 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
@@ -515,10 +503,10 @@ SELECT hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_word
     2072 | DIST_EMAJ            | TIME STAMP SET | 2008          |                                                         | postgres
     2073 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                         | postgres
     2074 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                         | postgres
-    2075 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 13                                             | postgres
-    2076 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 16                                             | postgres
-    2077 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 16                      | postgres
-    2078 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 18                      | postgres
+    2075 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 15                                             | postgres
+    2076 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 12                                             | postgres
+    2077 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
+    2078 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
     2079 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
     2081 | SYNC_MARKS_CLUSTER   | BEGIN          | empty_cluster |                                                         | postgres
     2082 | SYNC_MARKS_CLUSTER   | END            | empty_cluster | 0 distributed marks deleted                             | postgres
@@ -530,10 +518,10 @@ SELECT hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_word
     2088 | DIST_EMAJ            | TIME STAMP SET | 2009          |                                                         | postgres
     2089 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                         | postgres
     2090 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                         | postgres
-    2091 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 14                                             | postgres
-    2092 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 17                                             | postgres
-    2093 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 16                      | postgres
-    2094 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 18                      | postgres
+    2091 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 16                                             | postgres
+    2092 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 13                                             | postgres
+    2093 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
+    2094 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
     2095 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
     2096 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark DM2                                  | postgres
     2097 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
@@ -541,10 +529,10 @@ SELECT hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_word
     2099 | DIST_EMAJ            | TIME STAMP SET | 2010          |                                                         | postgres
     2100 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                         | postgres
     2101 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                         | postgres
-    2102 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 15                                             | postgres
-    2103 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 18                                             | postgres
-    2104 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 16                      | postgres
-    2105 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 18                      | postgres
+    2102 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 17                                             | postgres
+    2103 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 14                                             | postgres
+    2104 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
+    2105 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
     2106 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
     2107 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark DM3                                  | postgres
     2108 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
@@ -552,10 +540,10 @@ SELECT hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_word
     2110 | DIST_EMAJ            | TIME STAMP SET | 2011          |                                                         | postgres
     2111 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                         | postgres
     2112 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                         | postgres
-    2113 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 16                                             | postgres
-    2114 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 19                                             | postgres
-    2115 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 16                      | postgres
-    2116 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 18                      | postgres
+    2113 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 18                                             | postgres
+    2114 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 15                                             | postgres
+    2115 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
+    2116 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
     2117 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
     2118 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark DM4                                  | postgres
     2119 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
@@ -563,10 +551,10 @@ SELECT hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_word
     2121 | DIST_EMAJ            | TIME STAMP SET | 2012          |                                                         | postgres
     2122 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                         | postgres
     2123 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                         | postgres
-    2124 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 17                                             | postgres
-    2125 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 20                                             | postgres
-    2126 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 16                      | postgres
-    2127 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 18                      | postgres
+    2124 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 19                                             | postgres
+    2125 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 16                                             | postgres
+    2126 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
+    2127 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
     2128 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
     2129 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark DM5                                  | postgres
     2130 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
@@ -574,10 +562,10 @@ SELECT hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_word
     2132 | DIST_EMAJ            | TIME STAMP SET | 2013          |                                                         | postgres
     2133 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                         | postgres
     2134 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                         | postgres
-    2135 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 18                                             | postgres
-    2136 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 21                                             | postgres
-    2137 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 16                      | postgres
-    2138 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 18                      | postgres
+    2135 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 20                                             | postgres
+    2136 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 17                                             | postgres
+    2137 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
+    2138 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
     2139 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
     2140 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
     2141 | SYNC_MARKS_CLUSTER   | MARKS DELETED  | emaj_1        | Some deleted local marks => 2 distributed marks deleted | postgres
@@ -591,19 +579,19 @@ SELECT hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_word
     2152 | DIST_EMAJ            | TIME STAMP SET | 2015          |                                                         | postgres
     2153 | EMAJ_STOP_GROUPS     | INIT           | emaj_1        |                                                         | postgres
     2154 | EMAJ_STOP_GROUPS     | INIT           | emaj_2        |                                                         | postgres
-    2155 | EMAJ_STOP_GROUPS     | LOCK           | emaj_1        | Time_id: 20                                             | postgres
-    2156 | EMAJ_STOP_GROUPS     | LOCK           | emaj_2        | Time_id: 22                                             | postgres
-    2157 | EMAJ_STOP_GROUPS     | EXEC           | emaj_1        | Processed tables and sequences: 9                       | postgres
-    2158 | EMAJ_STOP_GROUPS     | EXEC           | emaj_2        | Processed tables and sequences: 18                      | postgres
+    2155 | EMAJ_STOP_GROUPS     | LOCK           | emaj_1        | Time_id: 22                                             | postgres
+    2156 | EMAJ_STOP_GROUPS     | LOCK           | emaj_2        | Time_id: 18                                             | postgres
+    2157 | EMAJ_STOP_GROUPS     | EXEC           | emaj_1        | Processed tables and sequences: 10                      | postgres
+    2158 | EMAJ_STOP_GROUPS     | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
     2159 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
     2160 | DIST_EMAJ            | BEGIN          | my_cluster    | start with mark DM1                                     | postgres
     2161 | DIST_EMAJ            | TIME STAMP SET | 2016          |                                                         | postgres
     2162 | EMAJ_START_GROUPS    | INIT           | emaj_1        |                                                         | postgres
     2163 | EMAJ_START_GROUPS    | INIT           | emaj_2        |                                                         | postgres
-    2164 | EMAJ_START_GROUPS    | LOCK           | emaj_1        | Time_id: 21                                             | postgres
-    2165 | EMAJ_START_GROUPS    | LOCK           | emaj_2        | Time_id: 23                                             | postgres
-    2166 | EMAJ_START_GROUPS    | EXEC           | emaj_1        | Processed tables and sequences: 16                      | postgres
-    2167 | EMAJ_START_GROUPS    | EXEC           | emaj_2        | Processed tables and sequences: 18                      | postgres
+    2164 | EMAJ_START_GROUPS    | LOCK           | emaj_1        | Time_id: 23                                             | postgres
+    2165 | EMAJ_START_GROUPS    | LOCK           | emaj_2        | Time_id: 19                                             | postgres
+    2166 | EMAJ_START_GROUPS    | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
+    2167 | EMAJ_START_GROUPS    | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
     2168 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
     2169 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark DM2                                  | postgres
     2170 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
@@ -611,37 +599,37 @@ SELECT hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_word
     2172 | DIST_EMAJ            | TIME STAMP SET | 2017          |                                                         | postgres
     2173 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                         | postgres
     2174 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                         | postgres
-    2175 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 22                                             | postgres
-    2176 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 24                                             | postgres
-    2177 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 16                      | postgres
-    2178 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 18                      | postgres
+    2175 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 24                                             | postgres
+    2176 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 20                                             | postgres
+    2177 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
+    2178 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
     2179 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
     2180 | DIST_EMAJ            | BEGIN          | my_cluster    | stop with mark resync_and_STOP                          | postgres
     2181 | DIST_EMAJ            | TIME STAMP SET | 2018          |                                                         | postgres
     2182 | EMAJ_STOP_GROUPS     | INIT           | emaj_1        |                                                         | postgres
     2183 | EMAJ_STOP_GROUPS     | INIT           | emaj_2        |                                                         | postgres
-    2184 | EMAJ_STOP_GROUPS     | LOCK           | emaj_1        | Time_id: 25                                             | postgres
-    2185 | EMAJ_STOP_GROUPS     | LOCK           | emaj_2        | Time_id: 25                                             | postgres
-    2186 | EMAJ_STOP_GROUPS     | EXEC           | emaj_1        | Processed tables and sequences: 16                      | postgres
-    2187 | EMAJ_STOP_GROUPS     | EXEC           | emaj_2        | Processed tables and sequences: 18                      | postgres
+    2184 | EMAJ_STOP_GROUPS     | LOCK           | emaj_1        | Time_id: 27                                             | postgres
+    2185 | EMAJ_STOP_GROUPS     | LOCK           | emaj_2        | Time_id: 21                                             | postgres
+    2186 | EMAJ_STOP_GROUPS     | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
+    2187 | EMAJ_STOP_GROUPS     | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
     2188 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
     2191 | DIST_EMAJ            | BEGIN          | my_cluster    | start with mark DM1                                     | postgres
     2192 | DIST_EMAJ            | TIME STAMP SET | 2020          |                                                         | postgres
     2193 | EMAJ_START_GROUPS    | INIT           | emaj_1        |                                                         | postgres
     2194 | EMAJ_START_GROUPS    | INIT           | emaj_2        |                                                         | postgres
-    2195 | EMAJ_START_GROUPS    | LOCK           | emaj_1        | Time_id: 27                                             | postgres
-    2196 | EMAJ_START_GROUPS    | LOCK           | emaj_2        | Time_id: 26                                             | postgres
-    2197 | EMAJ_START_GROUPS    | EXEC           | emaj_1        | Processed tables and sequences: 9                       | postgres
-    2198 | EMAJ_START_GROUPS    | EXEC           | emaj_2        | Processed tables and sequences: 18                      | postgres
+    2195 | EMAJ_START_GROUPS    | LOCK           | emaj_1        | Time_id: 29                                             | postgres
+    2196 | EMAJ_START_GROUPS    | LOCK           | emaj_2        | Time_id: 22                                             | postgres
+    2197 | EMAJ_START_GROUPS    | EXEC           | emaj_1        | Processed tables and sequences: 10                      | postgres
+    2198 | EMAJ_START_GROUPS    | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
     2199 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
     2200 | DIST_EMAJ            | BEGIN          | my_cluster    | stop with mark STOP                                     | postgres
     2201 | DIST_EMAJ            | TIME STAMP SET | 2021          |                                                         | postgres
     2202 | EMAJ_STOP_GROUPS     | INIT           | emaj_1        |                                                         | postgres
     2203 | EMAJ_STOP_GROUPS     | INIT           | emaj_2        |                                                         | postgres
-    2204 | EMAJ_STOP_GROUPS     | LOCK           | emaj_1        | Time_id: 28                                             | postgres
-    2205 | EMAJ_STOP_GROUPS     | LOCK           | emaj_2        | Time_id: 27                                             | postgres
-    2206 | EMAJ_STOP_GROUPS     | EXEC           | emaj_1        | Processed tables and sequences: 16                      | postgres
-    2207 | EMAJ_STOP_GROUPS     | EXEC           | emaj_2        | Processed tables and sequences: 18                      | postgres
+    2204 | EMAJ_STOP_GROUPS     | LOCK           | emaj_1        | Time_id: 30                                             | postgres
+    2205 | EMAJ_STOP_GROUPS     | LOCK           | emaj_2        | Time_id: 23                                             | postgres
+    2206 | EMAJ_STOP_GROUPS     | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
+    2207 | EMAJ_STOP_GROUPS     | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
     2208 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
 (194 rows)
 
@@ -657,10 +645,10 @@ SELECT mkdb_time_id, mkdb_database, mkdb_local_time_id
   FROM dist_emaj.dist_emaj_mark_database ORDER BY 1, 2, 3;
  mkdb_time_id | mkdb_database | mkdb_local_time_id 
 --------------+---------------+--------------------
-         2020 | emaj_1        |                 27
-         2020 | emaj_2        |                 26
-         2021 | emaj_1        |                 28
-         2021 | emaj_2        |                 27
+         2020 | emaj_1        |                 29
+         2020 | emaj_2        |                 22
+         2021 | emaj_1        |                 30
+         2021 | emaj_2        |                 23
 (4 rows)
 
 -- Check emaj tables.
@@ -670,12 +658,14 @@ SELECT mark_group, regexp_replace(mark_name, E'\\d\\d\.\\d\\d\\.\\d\\d\\.\\d\\d\
   FROM emaj.emaj_mark ORDER BY mark_time_id, mark_group;
  mark_group | regexp_replace | mark_time_id | mark_is_rlbk_protected | mark_comment | mark_log_rows_before_next | mark_logged_rlbk_target_mark 
 ------------+----------------+--------------+------------------------+--------------+---------------------------+------------------------------
- myGroup1   | Local_Start    |           26 | f                      |              |                         0 | 
- myGroup1   | DM1            |           27 | f                      |              |                         0 | 
- myGroup2   | DM1            |           27 | f                      |              |                         0 | 
- myGroup1   | STOP           |           28 | f                      |              |                         0 | 
- myGroup2   | STOP           |           28 | f                      |              |                         0 | 
-(5 rows)
+ myGroup1   | Local_Start    |           28 | f                      |              |                         0 | 
+ myGroup1   | DM1            |           29 | f                      |              |                         0 | 
+ myGroup2   | DM1            |           29 | f                      |              |                         0 | 
+ myGroup4   | DM1            |           29 | f                      |              |                         0 | 
+ myGroup1   | STOP           |           30 | f                      |              |                         0 | 
+ myGroup2   | STOP           |           30 | f                      |              |                         0 | 
+ myGroup4   | STOP           |           30 | f                      |              |                         0 | 
+(7 rows)
 
 SELECT hist_id, hist_function, hist_event, hist_object,
   regexp_replace(regexp_replace(hist_wording, E'\\d\\d\.\\d\\d\\.\\d\\d\\.\\d\\d\\d\\d','%','g'),E'\\[.+\\]', '(timestamp)', 'g'), hist_user
@@ -720,152 +710,162 @@ SELECT hist_id, hist_function, hist_event, hist_object,
       36 | ASSIGN_SEQUENCES   | SEQUENCE ADDED     | myschema2.myseq1             | To the idle group myGroup2                 | postgres
       37 | ASSIGN_SEQUENCES   | SEQUENCE ADDED     | myschema2.myseq2             | To the idle group myGroup2                 | postgres
       38 | ASSIGN_SEQUENCES   | END                |                              | 3 sequences assigned to the group myGroup2 | postgres
-      39 | START_GROUPS       | BEGIN              | myGroup1,myGroup2            | With logs reset                            | _regress_emaj_adm
-      40 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-      41 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
-      42 | START_GROUPS       | TIME STAMP SET     | 7                            |                                            | _regress_emaj_adm
-      43 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | START                                      | _regress_emaj_adm
-      44 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | START                                      | _regress_emaj_adm
-      45 | START_GROUPS       | END                | myGroup1,myGroup2            | 16 tables/sequences processed              | _regress_emaj_adm
-      46 | COMMENT_MARK_GROUP |                    | myGroup1                     | Mark START                                 | _regress_emaj_adm
-      47 | COMMENT_MARK_GROUP |                    | myGroup2                     | Mark START                                 | _regress_emaj_adm
-      49 | STOP_GROUPS        | BEGIN              | myGroup1,myGroup2            | Without logs reset                         | _regress_emaj_adm
-      50 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-      51 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
-      52 | STOP_GROUPS        | TIME STAMP SET     | 8                            |                                            | _regress_emaj_adm
-      53 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | STOP                                       | _regress_emaj_adm
-      54 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | STOP                                       | _regress_emaj_adm
-      55 | STOP_GROUPS        | END                | myGroup1,myGroup2            | 16 tables/sequences processed              | _regress_emaj_adm
-      56 | COMMENT_MARK_GROUP |                    | myGroup1                     | Mark STOP                                  | _regress_emaj_adm
-      57 | COMMENT_MARK_GROUP |                    | myGroup2                     | Mark STOP                                  | _regress_emaj_adm
-      59 | STOP_GROUPS        | BEGIN              | myGroup1,myGroup2            | With logs reset                            | _regress_emaj_adm
-      60 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-      61 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
-      62 | STOP_GROUPS        | TIME STAMP SET     | 9                            |                                            | _regress_emaj_adm
-      63 | STOP_GROUPS        | END                |                              | 0 tables/sequences processed               | _regress_emaj_adm
-      64 | START_GROUPS       | BEGIN              | myGroup1,myGroup2            | With logs reset                            | _regress_emaj_adm
-      65 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-      66 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
-      67 | START_GROUPS       | TIME STAMP SET     | 10                           |                                            | _regress_emaj_adm
-      68 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | RESTART                                    | _regress_emaj_adm
-      69 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | RESTART                                    | _regress_emaj_adm
-      70 | START_GROUPS       | END                | myGroup1,myGroup2            | 16 tables/sequences processed              | _regress_emaj_adm
-      71 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | Fixed_Mark_Name                            | _regress_emaj_adm
-      72 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-      73 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
-      74 | SET_MARK_GROUPS    | TIME STAMP SET     | 11                           |                                            | _regress_emaj_adm
-      75 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | Fixed_Mark_Name                            | _regress_emaj_adm
-      76 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | MARK_%                                     | _regress_emaj_adm
-      77 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-      78 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
-      79 | SET_MARK_GROUPS    | TIME STAMP SET     | 12                           |                                            | _regress_emaj_adm
-      80 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | MARK_%                                     | _regress_emaj_adm
-      81 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | M-%                                        | _regress_emaj_adm
-      82 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-      83 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+      39 | CREATE_GROUP       | BEGIN              | myGroup4                     | rollbackable                               | postgres
+      40 | CREATE_GROUP       | TIME STAMP SET     | 7                            |                                            | postgres
+      41 | CREATE_GROUP       | END                | myGroup4                     |                                            | postgres
+      42 | ASSIGN_TABLES      | BEGIN              |                              |                                            | postgres
+      43 | ASSIGN_TABLES      | TIME STAMP SET     | 8                            |                                            | postgres
+      44 | ASSIGN_TABLES      | LOG_SCHEMA CREATED | emaj_myschema4               |                                            | postgres
+      45 | ASSIGN_TABLES      | TABLE ADDED        | myschema4.mytblp             | To the idle group myGroup4                 | postgres
+      46 | ASSIGN_TABLES      | END                |                              | 1 tables assigned to the group myGroup4    | postgres
+      47 | START_GROUPS       | BEGIN              | myGroup1,myGroup2,myGroup4   | With logs reset                            | _regress_emaj_adm
+      48 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2,myGroup4   |                                            | _regress_emaj_adm
+      49 | LOCK_GROUPS        | END                | myGroup1,myGroup2,myGroup4   | 12 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+      50 | START_GROUPS       | TIME STAMP SET     | 9                            |                                            | _regress_emaj_adm
+      51 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2,myGroup4   | START                                      | _regress_emaj_adm
+      52 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2,myGroup4   | START                                      | _regress_emaj_adm
+      53 | START_GROUPS       | END                | myGroup1,myGroup2,myGroup4   | 17 tables/sequences processed              | _regress_emaj_adm
+      54 | COMMENT_MARK_GROUP |                    | myGroup1                     | Mark START                                 | _regress_emaj_adm
+      55 | COMMENT_MARK_GROUP |                    | myGroup2                     | Mark START                                 | _regress_emaj_adm
+      56 | COMMENT_MARK_GROUP |                    | myGroup4                     | Mark START                                 | _regress_emaj_adm
+      58 | STOP_GROUPS        | BEGIN              | myGroup1,myGroup2,myGroup4   | Without logs reset                         | _regress_emaj_adm
+      59 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2,myGroup4   |                                            | _regress_emaj_adm
+      60 | LOCK_GROUPS        | END                | myGroup1,myGroup2,myGroup4   | 12 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+      61 | STOP_GROUPS        | TIME STAMP SET     | 10                           |                                            | _regress_emaj_adm
+      62 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2,myGroup4   | STOP                                       | _regress_emaj_adm
+      63 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2,myGroup4   | STOP                                       | _regress_emaj_adm
+      64 | STOP_GROUPS        | END                | myGroup1,myGroup2,myGroup4   | 17 tables/sequences processed              | _regress_emaj_adm
+      65 | COMMENT_MARK_GROUP |                    | myGroup1                     | Mark STOP                                  | _regress_emaj_adm
+      66 | COMMENT_MARK_GROUP |                    | myGroup2                     | Mark STOP                                  | _regress_emaj_adm
+      67 | COMMENT_MARK_GROUP |                    | myGroup4                     | Mark STOP                                  | _regress_emaj_adm
+      69 | STOP_GROUPS        | BEGIN              | myGroup1,myGroup2,myGroup4   | With logs reset                            | _regress_emaj_adm
+      70 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2,myGroup4   |                                            | _regress_emaj_adm
+      71 | LOCK_GROUPS        | END                | myGroup1,myGroup2,myGroup4   | 12 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+      72 | STOP_GROUPS        | TIME STAMP SET     | 11                           |                                            | _regress_emaj_adm
+      73 | STOP_GROUPS        | END                |                              | 0 tables/sequences processed               | _regress_emaj_adm
+      74 | START_GROUPS       | BEGIN              | myGroup1,myGroup2,myGroup4   | With logs reset                            | _regress_emaj_adm
+      75 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2,myGroup4   |                                            | _regress_emaj_adm
+      76 | LOCK_GROUPS        | END                | myGroup1,myGroup2,myGroup4   | 12 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+      77 | START_GROUPS       | TIME STAMP SET     | 12                           |                                            | _regress_emaj_adm
+      78 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2,myGroup4   | RESTART                                    | _regress_emaj_adm
+      79 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2,myGroup4   | RESTART                                    | _regress_emaj_adm
+      80 | START_GROUPS       | END                | myGroup1,myGroup2,myGroup4   | 17 tables/sequences processed              | _regress_emaj_adm
+      81 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2,myGroup4   | Fixed_Mark_Name                            | _regress_emaj_adm
+      82 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2,myGroup4   |                                            | _regress_emaj_adm
+      83 | LOCK_GROUPS        | END                | myGroup1,myGroup2,myGroup4   | 12 tables locked, 0 deadlock(s)            | _regress_emaj_adm
       84 | SET_MARK_GROUPS    | TIME STAMP SET     | 13                           |                                            | _regress_emaj_adm
-      85 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | M-%                                        | _regress_emaj_adm
-      86 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM1                                        | _regress_emaj_adm
-      87 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-      88 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+      85 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2,myGroup4   | Fixed_Mark_Name                            | _regress_emaj_adm
+      86 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2,myGroup4   | MARK_%                                     | _regress_emaj_adm
+      87 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2,myGroup4   |                                            | _regress_emaj_adm
+      88 | LOCK_GROUPS        | END                | myGroup1,myGroup2,myGroup4   | 12 tables locked, 0 deadlock(s)            | _regress_emaj_adm
       89 | SET_MARK_GROUPS    | TIME STAMP SET     | 14                           |                                            | _regress_emaj_adm
-      90 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM1                                        | _regress_emaj_adm
-      91 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM2                                        | _regress_emaj_adm
-      92 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-      93 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+      90 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2,myGroup4   | MARK_%                                     | _regress_emaj_adm
+      91 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2,myGroup4   | M-%                                        | _regress_emaj_adm
+      92 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2,myGroup4   |                                            | _regress_emaj_adm
+      93 | LOCK_GROUPS        | END                | myGroup1,myGroup2,myGroup4   | 12 tables locked, 0 deadlock(s)            | _regress_emaj_adm
       94 | SET_MARK_GROUPS    | TIME STAMP SET     | 15                           |                                            | _regress_emaj_adm
-      95 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM2                                        | _regress_emaj_adm
-      96 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM3                                        | _regress_emaj_adm
-      97 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-      98 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+      95 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2,myGroup4   | M-%                                        | _regress_emaj_adm
+      96 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2,myGroup4   | DM1                                        | _regress_emaj_adm
+      97 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2,myGroup4   |                                            | _regress_emaj_adm
+      98 | LOCK_GROUPS        | END                | myGroup1,myGroup2,myGroup4   | 12 tables locked, 0 deadlock(s)            | _regress_emaj_adm
       99 | SET_MARK_GROUPS    | TIME STAMP SET     | 16                           |                                            | _regress_emaj_adm
-     100 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM3                                        | _regress_emaj_adm
-     101 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM4                                        | _regress_emaj_adm
-     102 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-     103 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+     100 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2,myGroup4   | DM1                                        | _regress_emaj_adm
+     101 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2,myGroup4   | DM2                                        | _regress_emaj_adm
+     102 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2,myGroup4   |                                            | _regress_emaj_adm
+     103 | LOCK_GROUPS        | END                | myGroup1,myGroup2,myGroup4   | 12 tables locked, 0 deadlock(s)            | _regress_emaj_adm
      104 | SET_MARK_GROUPS    | TIME STAMP SET     | 17                           |                                            | _regress_emaj_adm
-     105 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM4                                        | _regress_emaj_adm
-     106 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM5                                        | _regress_emaj_adm
-     107 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-     108 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+     105 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2,myGroup4   | DM2                                        | _regress_emaj_adm
+     106 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2,myGroup4   | DM3                                        | _regress_emaj_adm
+     107 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2,myGroup4   |                                            | _regress_emaj_adm
+     108 | LOCK_GROUPS        | END                | myGroup1,myGroup2,myGroup4   | 12 tables locked, 0 deadlock(s)            | _regress_emaj_adm
      109 | SET_MARK_GROUPS    | TIME STAMP SET     | 18                           |                                            | _regress_emaj_adm
-     110 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM5                                        | _regress_emaj_adm
-     111 | DELETE_MARK_GROUP  | BEGIN              | myGroup1                     | DM2                                        | postgres
-     112 | DELETE_MARK_GROUP  | END                | myGroup1                     | DM2                                        | postgres
-     113 | DELETE_MARK_GROUP  | BEGIN              | myGroup1                     | DM4                                        | postgres
-     114 | DELETE_MARK_GROUP  | END                | myGroup1                     | DM4                                        | postgres
-     115 | STOP_GROUP         | BEGIN              | myGroup1                     | Without logs reset                         | postgres
-     116 | LOCK_GROUP         | BEGIN              | myGroup1                     |                                            | postgres
-     117 | LOCK_GROUP         | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | postgres
-     118 | STOP_GROUP         | TIME STAMP SET     | 19                           |                                            | postgres
-     119 | SET_MARK_GROUP     | BEGIN              | myGroup1                     | STOP_%                                     | postgres
-     120 | SET_MARK_GROUP     | END                | myGroup1                     | STOP_%                                     | postgres
-     121 | STOP_GROUP         | END                | myGroup1                     | 7 tables/sequences processed               | postgres
-     123 | STOP_GROUPS        | BEGIN              | myGroup1,myGroup2            | Without logs reset                         | _regress_emaj_adm
-     124 | LOCK_GROUPS        | BEGIN              | myGroup2                     |                                            | _regress_emaj_adm
-     125 | LOCK_GROUPS        | END                | myGroup2                     | 6 tables locked, 0 deadlock(s)             | _regress_emaj_adm
-     126 | LOCK_GROUPS        | BEGIN              | myGroup1                     |                                            | _regress_emaj_adm
-     127 | LOCK_GROUPS        | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | _regress_emaj_adm
-     128 | STOP_GROUPS        | TIME STAMP SET     | 20                           |                                            | _regress_emaj_adm
-     129 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | MARK_%                                     | _regress_emaj_adm
-     130 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | MARK_%                                     | _regress_emaj_adm
-     131 | STOP_GROUPS        | END                | myGroup2                     | 9 tables/sequences processed               | _regress_emaj_adm
-     132 | START_GROUPS       | BEGIN              | myGroup1,myGroup2            | With logs reset                            | _regress_emaj_adm
-     133 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-     134 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
-     135 | START_GROUPS       | TIME STAMP SET     | 21                           |                                            | _regress_emaj_adm
-     136 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM1                                        | _regress_emaj_adm
-     137 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM1                                        | _regress_emaj_adm
-     138 | START_GROUPS       | END                | myGroup1,myGroup2            | 16 tables/sequences processed              | _regress_emaj_adm
-     139 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM2                                        | _regress_emaj_adm
-     140 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-     141 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
-     142 | SET_MARK_GROUPS    | TIME STAMP SET     | 22                           |                                            | _regress_emaj_adm
-     143 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM2                                        | _regress_emaj_adm
-     144 | STOP_GROUP         | BEGIN              | myGroup1                     | Without logs reset                         | postgres
-     145 | LOCK_GROUP         | BEGIN              | myGroup1                     |                                            | postgres
-     146 | LOCK_GROUP         | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | postgres
-     147 | STOP_GROUP         | TIME STAMP SET     | 23                           |                                            | postgres
-     148 | SET_MARK_GROUP     | BEGIN              | myGroup1                     | STOP_%                                     | postgres
-     149 | SET_MARK_GROUP     | END                | myGroup1                     | STOP_%                                     | postgres
-     150 | STOP_GROUP         | END                | myGroup1                     | 7 tables/sequences processed               | postgres
-     151 | START_GROUP        | BEGIN              | myGroup1                     | With logs reset                            | postgres
-     152 | LOCK_GROUP         | BEGIN              | myGroup1                     |                                            | postgres
-     153 | LOCK_GROUP         | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | postgres
-     154 | START_GROUP        | TIME STAMP SET     | 24                           |                                            | postgres
-     155 | SET_MARK_GROUP     | BEGIN              | myGroup1                     | START_%                                    | postgres
-     156 | SET_MARK_GROUP     | END                | myGroup1                     | START_%                                    | postgres
-     157 | START_GROUP        | END                | myGroup1                     | 7 tables/sequences processed               | postgres
-     158 | STOP_GROUPS        | BEGIN              | myGroup1,myGroup2            | Without logs reset                         | _regress_emaj_adm
-     159 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-     160 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
-     161 | STOP_GROUPS        | TIME STAMP SET     | 25                           |                                            | _regress_emaj_adm
-     162 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | resync_and_STOP                            | _regress_emaj_adm
-     163 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | resync_and_STOP                            | _regress_emaj_adm
-     164 | STOP_GROUPS        | END                | myGroup1,myGroup2            | 16 tables/sequences processed              | _regress_emaj_adm
-     165 | START_GROUP        | BEGIN              | myGroup1                     | With logs reset                            | postgres
-     166 | LOCK_GROUP         | BEGIN              | myGroup1                     |                                            | postgres
-     167 | LOCK_GROUP         | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | postgres
-     168 | START_GROUP        | TIME STAMP SET     | 26                           |                                            | postgres
-     169 | SET_MARK_GROUP     | BEGIN              | myGroup1                     | Local_Start                                | postgres
-     170 | SET_MARK_GROUP     | END                | myGroup1                     | Local_Start                                | postgres
-     171 | START_GROUP        | END                | myGroup1                     | 7 tables/sequences processed               | postgres
-     173 | START_GROUPS       | BEGIN              | myGroup1,myGroup2            | With logs reset                            | _regress_emaj_adm
-     174 | LOCK_GROUPS        | BEGIN              | myGroup2                     |                                            | _regress_emaj_adm
-     175 | LOCK_GROUPS        | END                | myGroup2                     | 6 tables locked, 0 deadlock(s)             | _regress_emaj_adm
-     176 | LOCK_GROUPS        | BEGIN              | myGroup1                     |                                            | _regress_emaj_adm
-     177 | LOCK_GROUPS        | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | _regress_emaj_adm
-     178 | START_GROUPS       | TIME STAMP SET     | 27                           |                                            | _regress_emaj_adm
-     179 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | DM1                                        | _regress_emaj_adm
-     180 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | DM1                                        | _regress_emaj_adm
-     181 | START_GROUPS       | END                | myGroup2                     | 9 tables/sequences processed               | _regress_emaj_adm
-     182 | STOP_GROUPS        | BEGIN              | myGroup1,myGroup2            | Without logs reset                         | _regress_emaj_adm
-     183 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2            |                                            | _regress_emaj_adm
-     184 | LOCK_GROUPS        | END                | myGroup1,myGroup2            | 11 tables locked, 0 deadlock(s)            | _regress_emaj_adm
-     185 | STOP_GROUPS        | TIME STAMP SET     | 28                           |                                            | _regress_emaj_adm
-     186 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2            | STOP                                       | _regress_emaj_adm
-     187 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2            | STOP                                       | _regress_emaj_adm
-     188 | STOP_GROUPS        | END                | myGroup1,myGroup2            | 16 tables/sequences processed              | _regress_emaj_adm
-(184 rows)
+     110 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2,myGroup4   | DM3                                        | _regress_emaj_adm
+     111 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2,myGroup4   | DM4                                        | _regress_emaj_adm
+     112 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2,myGroup4   |                                            | _regress_emaj_adm
+     113 | LOCK_GROUPS        | END                | myGroup1,myGroup2,myGroup4   | 12 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+     114 | SET_MARK_GROUPS    | TIME STAMP SET     | 19                           |                                            | _regress_emaj_adm
+     115 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2,myGroup4   | DM4                                        | _regress_emaj_adm
+     116 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2,myGroup4   | DM5                                        | _regress_emaj_adm
+     117 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2,myGroup4   |                                            | _regress_emaj_adm
+     118 | LOCK_GROUPS        | END                | myGroup1,myGroup2,myGroup4   | 12 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+     119 | SET_MARK_GROUPS    | TIME STAMP SET     | 20                           |                                            | _regress_emaj_adm
+     120 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2,myGroup4   | DM5                                        | _regress_emaj_adm
+     121 | DELETE_MARK_GROUP  | BEGIN              | myGroup1                     | DM2                                        | postgres
+     122 | DELETE_MARK_GROUP  | END                | myGroup1                     | DM2                                        | postgres
+     123 | DELETE_MARK_GROUP  | BEGIN              | myGroup1                     | DM4                                        | postgres
+     124 | DELETE_MARK_GROUP  | END                | myGroup1                     | DM4                                        | postgres
+     125 | STOP_GROUP         | BEGIN              | myGroup1                     | Without logs reset                         | postgres
+     126 | LOCK_GROUP         | BEGIN              | myGroup1                     |                                            | postgres
+     127 | LOCK_GROUP         | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | postgres
+     128 | STOP_GROUP         | TIME STAMP SET     | 21                           |                                            | postgres
+     129 | SET_MARK_GROUP     | BEGIN              | myGroup1                     | STOP_%                                     | postgres
+     130 | SET_MARK_GROUP     | END                | myGroup1                     | STOP_%                                     | postgres
+     131 | STOP_GROUP         | END                | myGroup1                     | 7 tables/sequences processed               | postgres
+     133 | STOP_GROUPS        | BEGIN              | myGroup1,myGroup2,myGroup4   | Without logs reset                         | _regress_emaj_adm
+     134 | LOCK_GROUPS        | BEGIN              | myGroup2,myGroup4            |                                            | _regress_emaj_adm
+     135 | LOCK_GROUPS        | END                | myGroup2,myGroup4            | 7 tables locked, 0 deadlock(s)             | _regress_emaj_adm
+     136 | LOCK_GROUPS        | BEGIN              | myGroup1                     |                                            | _regress_emaj_adm
+     137 | LOCK_GROUPS        | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | _regress_emaj_adm
+     138 | STOP_GROUPS        | TIME STAMP SET     | 22                           |                                            | _regress_emaj_adm
+     139 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2,myGroup4   | MARK_%                                     | _regress_emaj_adm
+     140 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2,myGroup4   | MARK_%                                     | _regress_emaj_adm
+     141 | STOP_GROUPS        | END                | myGroup2,myGroup4            | 10 tables/sequences processed              | _regress_emaj_adm
+     142 | START_GROUPS       | BEGIN              | myGroup1,myGroup2,myGroup4   | With logs reset                            | _regress_emaj_adm
+     143 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2,myGroup4   |                                            | _regress_emaj_adm
+     144 | LOCK_GROUPS        | END                | myGroup1,myGroup2,myGroup4   | 12 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+     145 | START_GROUPS       | TIME STAMP SET     | 23                           |                                            | _regress_emaj_adm
+     146 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2,myGroup4   | DM1                                        | _regress_emaj_adm
+     147 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2,myGroup4   | DM1                                        | _regress_emaj_adm
+     148 | START_GROUPS       | END                | myGroup1,myGroup2,myGroup4   | 17 tables/sequences processed              | _regress_emaj_adm
+     149 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2,myGroup4   | DM2                                        | _regress_emaj_adm
+     150 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2,myGroup4   |                                            | _regress_emaj_adm
+     151 | LOCK_GROUPS        | END                | myGroup1,myGroup2,myGroup4   | 12 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+     152 | SET_MARK_GROUPS    | TIME STAMP SET     | 24                           |                                            | _regress_emaj_adm
+     153 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2,myGroup4   | DM2                                        | _regress_emaj_adm
+     154 | STOP_GROUP         | BEGIN              | myGroup1                     | Without logs reset                         | postgres
+     155 | LOCK_GROUP         | BEGIN              | myGroup1                     |                                            | postgres
+     156 | LOCK_GROUP         | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | postgres
+     157 | STOP_GROUP         | TIME STAMP SET     | 25                           |                                            | postgres
+     158 | SET_MARK_GROUP     | BEGIN              | myGroup1                     | STOP_%                                     | postgres
+     159 | SET_MARK_GROUP     | END                | myGroup1                     | STOP_%                                     | postgres
+     160 | STOP_GROUP         | END                | myGroup1                     | 7 tables/sequences processed               | postgres
+     161 | START_GROUP        | BEGIN              | myGroup1                     | With logs reset                            | postgres
+     162 | LOCK_GROUP         | BEGIN              | myGroup1                     |                                            | postgres
+     163 | LOCK_GROUP         | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | postgres
+     164 | START_GROUP        | TIME STAMP SET     | 26                           |                                            | postgres
+     165 | SET_MARK_GROUP     | BEGIN              | myGroup1                     | START_%                                    | postgres
+     166 | SET_MARK_GROUP     | END                | myGroup1                     | START_%                                    | postgres
+     167 | START_GROUP        | END                | myGroup1                     | 7 tables/sequences processed               | postgres
+     168 | STOP_GROUPS        | BEGIN              | myGroup1,myGroup2,myGroup4   | Without logs reset                         | _regress_emaj_adm
+     169 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2,myGroup4   |                                            | _regress_emaj_adm
+     170 | LOCK_GROUPS        | END                | myGroup1,myGroup2,myGroup4   | 12 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+     171 | STOP_GROUPS        | TIME STAMP SET     | 27                           |                                            | _regress_emaj_adm
+     172 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2,myGroup4   | resync_and_STOP                            | _regress_emaj_adm
+     173 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2,myGroup4   | resync_and_STOP                            | _regress_emaj_adm
+     174 | STOP_GROUPS        | END                | myGroup1,myGroup2,myGroup4   | 17 tables/sequences processed              | _regress_emaj_adm
+     175 | START_GROUP        | BEGIN              | myGroup1                     | With logs reset                            | postgres
+     176 | LOCK_GROUP         | BEGIN              | myGroup1                     |                                            | postgres
+     177 | LOCK_GROUP         | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | postgres
+     178 | START_GROUP        | TIME STAMP SET     | 28                           |                                            | postgres
+     179 | SET_MARK_GROUP     | BEGIN              | myGroup1                     | Local_Start                                | postgres
+     180 | SET_MARK_GROUP     | END                | myGroup1                     | Local_Start                                | postgres
+     181 | START_GROUP        | END                | myGroup1                     | 7 tables/sequences processed               | postgres
+     183 | START_GROUPS       | BEGIN              | myGroup1,myGroup2,myGroup4   | With logs reset                            | _regress_emaj_adm
+     184 | LOCK_GROUPS        | BEGIN              | myGroup2,myGroup4            |                                            | _regress_emaj_adm
+     185 | LOCK_GROUPS        | END                | myGroup2,myGroup4            | 7 tables locked, 0 deadlock(s)             | _regress_emaj_adm
+     186 | LOCK_GROUPS        | BEGIN              | myGroup1                     |                                            | _regress_emaj_adm
+     187 | LOCK_GROUPS        | END                | myGroup1                     | 5 tables locked, 0 deadlock(s)             | _regress_emaj_adm
+     188 | START_GROUPS       | TIME STAMP SET     | 29                           |                                            | _regress_emaj_adm
+     189 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2,myGroup4   | DM1                                        | _regress_emaj_adm
+     190 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2,myGroup4   | DM1                                        | _regress_emaj_adm
+     191 | START_GROUPS       | END                | myGroup2,myGroup4            | 10 tables/sequences processed              | _regress_emaj_adm
+     192 | STOP_GROUPS        | BEGIN              | myGroup1,myGroup2,myGroup4   | Without logs reset                         | _regress_emaj_adm
+     193 | LOCK_GROUPS        | BEGIN              | myGroup1,myGroup2,myGroup4   |                                            | _regress_emaj_adm
+     194 | LOCK_GROUPS        | END                | myGroup1,myGroup2,myGroup4   | 12 tables locked, 0 deadlock(s)            | _regress_emaj_adm
+     195 | STOP_GROUPS        | TIME STAMP SET     | 30                           |                                            | _regress_emaj_adm
+     196 | SET_MARK_GROUPS    | BEGIN              | myGroup1,myGroup2,myGroup4   | STOP                                       | _regress_emaj_adm
+     197 | SET_MARK_GROUPS    | END                | myGroup1,myGroup2,myGroup4   | STOP                                       | _regress_emaj_adm
+     198 | STOP_GROUPS        | END                | myGroup1,myGroup2,myGroup4   | 17 tables/sequences processed              | _regress_emaj_adm
+(194 rows)
 
 \c regression
