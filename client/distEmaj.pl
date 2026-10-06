@@ -439,7 +439,7 @@ foreach my $db (@$databasesArray) {
 		traceIfVerbose("    => time_id = $db->{time_id}");
 
 		$sth[$db->{session}]->finish;
-		$sth_trace->execute($emajAction, 'LOCK', $db->{name}, 'Time_id: ' . $db->{time_id})
+		$sth_trace->execute($emajAction, 'LOCK', $db->{name}, 'Local time_id: ' . $db->{time_id})
 			or die "Error while inserting an operation lock step into dist_emaj_hist.\n$DBI::errstr\n\n";
 	}
 }
@@ -591,19 +591,21 @@ $sth_trace->execute('DIST_EMAJ', 'END', $cluster, undef)
 # This ensure that all sessions can either be commited or rolled back in a single transaction.
 # Phase 1 : Prepare transaction
 foreach my $db (@$databasesArray) {
-	traceIfVerbose("Prepare transaction #$db->{session}...");
+	traceIfVerbose("Prepare transaction on session #$db->{session}...");
 	$dbh[$db->{session}]->do("PREPARE TRANSACTION 'emajtx$db->{session}'")
 		or die "Prepare transaction #$db->{session} failed.\n$DBI::errstr\n\n";
 }
+traceIfVerbose("Prepare transaction on dist_emaj session...");
 $dbh->do("PREPARE TRANSACTION 'distemajtx'")
 	or die "Prepare transaction on dist_emaj failed.\n$DBI::errstr\n\n";
 
 # Phase 2 : Commit
 foreach my $db (@$databasesArray) {
-	traceIfVerbose("Commit transaction #$db->{session}...");
+	traceIfVerbose("Commit transaction on session #$db->{session}...");
 	$dbh[$db->{session}]->do("COMMIT PREPARED 'emajtx$db->{session}'")
 		or die "Commit prepared #$db->{session} failed.\n$DBI::errstr\n\n";
 }
+traceIfVerbose("Commit transaction on dist_emaj session...");
 $dbh->do("COMMIT PREPARED 'distemajtx'")
 	or die "Commit prepared on dist_emaj failed.\n$DBI::errstr\n\n";
 

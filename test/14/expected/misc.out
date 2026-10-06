@@ -235,8 +235,8 @@ SELECT hist_id, hist_function, hist_event, hist_object, hist_wording
   FROM dist_emaj.dist_emaj_hist
   WHERE hist_id >= 4000 AND hist_function in ('DELETE_BEFORE_MARK_CLUSTER', 'SYNC_MARKS_CLUSTER', 'PURGE_HISTORIES')
   ORDER BY 1;
- hist_id |       hist_function        |  hist_event   | hist_object |                      hist_wording                       
----------+----------------------------+---------------+-------------+---------------------------------------------------------
+ hist_id |       hist_function        |  hist_event   | hist_object |                         hist_wording                          
+---------+----------------------------+---------------+-------------+---------------------------------------------------------------
     4017 | SYNC_MARKS_CLUSTER         | BEGIN         | my_cluster  | 
     4018 | SYNC_MARKS_CLUSTER         | END           | my_cluster  | 0 distributed marks deleted
     4028 | SYNC_MARKS_CLUSTER         | BEGIN         | my_cluster  | 
@@ -257,7 +257,7 @@ SELECT hist_id, hist_function, hist_event, hist_object, hist_wording
     4060 | DELETE_BEFORE_MARK_CLUSTER | END           | my_cluster  | 0 distributed marks deleted ; 0 local marks deleted
     4065 | DELETE_BEFORE_MARK_CLUSTER | BEGIN         | my_cluster  | DM3
     4066 | SYNC_MARKS_CLUSTER         | BEGIN         | my_cluster  | 
-    4067 | SYNC_MARKS_CLUSTER         | MARKS DELETED | emaj_1      | Some deleted local marks => 1 distributed marks deleted
+    4067 | SYNC_MARKS_CLUSTER         | MARKS DELETED | emaj_1      | Some deleted local marks => 1 distributed marks deleted (DM2)
     4068 | SYNC_MARKS_CLUSTER         | END           | my_cluster  | 1 distributed marks deleted
     4069 | DELETE_BEFORE_MARK_CLUSTER | END           | my_cluster  | 1 distributed marks deleted ; 9 local marks deleted
 (23 rows)

@@ -99,10 +99,12 @@ dd/mm/yyyy - hh:mn:ss Action start - Comment the mark for database emaj_1...
 dd/mm/yyyy - hh:mn:ss Action start - Comment the mark for database emaj_2...
 dd/mm/yyyy - hh:mn:ss Action start - Delete old marks in the distributed emaj database...
 dd/mm/yyyy - hh:mn:ss Action start - Register the mark in the distributed emaj database...
-dd/mm/yyyy - hh:mn:ss Prepare transaction #1...
-dd/mm/yyyy - hh:mn:ss Prepare transaction #2...
-dd/mm/yyyy - hh:mn:ss Commit transaction #1...
-dd/mm/yyyy - hh:mn:ss Commit transaction #2...
+dd/mm/yyyy - hh:mn:ss Prepare transaction on session #1...
+dd/mm/yyyy - hh:mn:ss Prepare transaction on session #2...
+dd/mm/yyyy - hh:mn:ss Prepare transaction on dist_emaj session...
+dd/mm/yyyy - hh:mn:ss Commit transaction on session #1...
+dd/mm/yyyy - hh:mn:ss Commit transaction on session #2...
+dd/mm/yyyy - hh:mn:ss Commit transaction on dist_emaj session...
 dd/mm/yyyy - hh:mn:ss Close all sessions...
 The 'start' action on cluster 'my_cluster' is completed.
 It has processed 5 groups spread into 2 databases.
@@ -209,10 +211,12 @@ dd/mm/yyyy - hh:mn:ss     => processed tables and sequences = 17
 dd/mm/yyyy - hh:mn:ss Action set_mark - Get result of the exec function call for database emaj_2...
 dd/mm/yyyy - hh:mn:ss     => processed tables and sequences = 5
 dd/mm/yyyy - hh:mn:ss Action set_mark - Register the mark in the distributed emaj database...
-dd/mm/yyyy - hh:mn:ss Prepare transaction #1...
-dd/mm/yyyy - hh:mn:ss Prepare transaction #2...
-dd/mm/yyyy - hh:mn:ss Commit transaction #1...
-dd/mm/yyyy - hh:mn:ss Commit transaction #2...
+dd/mm/yyyy - hh:mn:ss Prepare transaction on session #1...
+dd/mm/yyyy - hh:mn:ss Prepare transaction on session #2...
+dd/mm/yyyy - hh:mn:ss Prepare transaction on dist_emaj session...
+dd/mm/yyyy - hh:mn:ss Commit transaction on session #1...
+dd/mm/yyyy - hh:mn:ss Commit transaction on session #2...
+dd/mm/yyyy - hh:mn:ss Commit transaction on dist_emaj session...
 dd/mm/yyyy - hh:mn:ss Close all sessions...
 The 'set_mark' action on cluster 'my_cluster' is completed.
 It has processed 5 groups spread into 2 databases.
@@ -231,7 +235,7 @@ It has processed 5 groups spread into 2 databases.
 --
 SELECT dist_emaj.dist_emaj_sync_marks_cluster('dummy');
 ERROR:  dist_emaj_sync_marks_cluster: The cluster "dummy" is unknown.
-CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_sync_marks_cluster(text) line 28 at RAISE
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_sync_marks_cluster(text) line 29 at RAISE
 SELECT dist_emaj.dist_emaj_sync_marks_cluster('empty_cluster');
  dist_emaj_sync_marks_cluster 
 ------------------------------
@@ -391,10 +395,12 @@ dd/mm/yyyy - hh:mn:ss     => processed tables and sequences = 17
 dd/mm/yyyy - hh:mn:ss Action stop - Get result of the exec function call for database emaj_2...
 dd/mm/yyyy - hh:mn:ss     => processed tables and sequences = 5
 dd/mm/yyyy - hh:mn:ss Action stop - Register the mark in the distributed emaj database...
-dd/mm/yyyy - hh:mn:ss Prepare transaction #1...
-dd/mm/yyyy - hh:mn:ss Prepare transaction #2...
-dd/mm/yyyy - hh:mn:ss Commit transaction #1...
-dd/mm/yyyy - hh:mn:ss Commit transaction #2...
+dd/mm/yyyy - hh:mn:ss Prepare transaction on session #1...
+dd/mm/yyyy - hh:mn:ss Prepare transaction on session #2...
+dd/mm/yyyy - hh:mn:ss Prepare transaction on dist_emaj session...
+dd/mm/yyyy - hh:mn:ss Commit transaction on session #1...
+dd/mm/yyyy - hh:mn:ss Commit transaction on session #2...
+dd/mm/yyyy - hh:mn:ss Commit transaction on dist_emaj session...
 dd/mm/yyyy - hh:mn:ss Close all sessions...
 The 'stop' action on cluster 'my_cluster' is completed.
 It has processed 5 groups spread into 2 databases.
@@ -439,202 +445,202 @@ It has processed 5 groups spread into 2 databases.
 -- Check dist_emaj tables content.
 SELECT hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_wording, E'\\d\\d\.\\d\\d\\.\\d\\d\\.\\d\\d\\d\\d', '%', 'g'), hist_user
   FROM dist_emaj.dist_emaj_hist WHERE hist_id >= 2000 ORDER BY 1;
- hist_id |    hist_function     |   hist_event   |  hist_object  |                     regexp_replace                      | hist_user 
----------+----------------------+----------------+---------------+---------------------------------------------------------+-----------
-    2000 | DIST_EMAJ            | BEGIN          | my_cluster    | start with mark START                                   | postgres
-    2001 | DIST_EMAJ            | TIME STAMP SET | 2000          |                                                         | postgres
-    2002 | EMAJ_START_GROUPS    | INIT           | emaj_1        |                                                         | postgres
-    2003 | EMAJ_START_GROUPS    | INIT           | emaj_2        |                                                         | postgres
-    2004 | EMAJ_START_GROUPS    | LOCK           | emaj_1        | Time_id: 9                                              | postgres
-    2005 | EMAJ_START_GROUPS    | LOCK           | emaj_2        | Time_id: 6                                              | postgres
-    2006 | EMAJ_START_GROUPS    | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
-    2007 | EMAJ_START_GROUPS    | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
-    2008 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
-    2012 | DIST_EMAJ            | BEGIN          | my_cluster    | stop with mark STOP                                     | postgres
-    2013 | DIST_EMAJ            | TIME STAMP SET | 2002          |                                                         | postgres
-    2014 | EMAJ_STOP_GROUPS     | INIT           | emaj_1        |                                                         | postgres
-    2015 | EMAJ_STOP_GROUPS     | INIT           | emaj_2        |                                                         | postgres
-    2016 | EMAJ_STOP_GROUPS     | LOCK           | emaj_1        | Time_id: 10                                             | postgres
-    2017 | EMAJ_STOP_GROUPS     | LOCK           | emaj_2        | Time_id: 7                                              | postgres
-    2018 | EMAJ_STOP_GROUPS     | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
-    2019 | EMAJ_STOP_GROUPS     | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
-    2020 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
-    2024 | DIST_EMAJ            | BEGIN          | my_cluster    | stop with mark START                                    | postgres
-    2025 | DIST_EMAJ            | TIME STAMP SET | 2004          |                                                         | postgres
-    2026 | EMAJ_STOP_GROUPS     | INIT           | emaj_1        |                                                         | postgres
-    2027 | EMAJ_STOP_GROUPS     | INIT           | emaj_2        |                                                         | postgres
-    2028 | EMAJ_STOP_GROUPS     | LOCK           | emaj_1        | Time_id: 11                                             | postgres
-    2029 | EMAJ_STOP_GROUPS     | LOCK           | emaj_2        | Time_id: 8                                              | postgres
-    2030 | EMAJ_STOP_GROUPS     | EXEC           | emaj_1        | Processed tables and sequences: 0                       | postgres
-    2031 | EMAJ_STOP_GROUPS     | EXEC           | emaj_2        | Processed tables and sequences: 0                       | postgres
-    2032 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
-    2033 | DIST_EMAJ            | BEGIN          | my_cluster    | start with mark RESTART                                 | postgres
-    2034 | DIST_EMAJ            | TIME STAMP SET | 2005          |                                                         | postgres
-    2035 | EMAJ_START_GROUPS    | INIT           | emaj_1        |                                                         | postgres
-    2036 | EMAJ_START_GROUPS    | INIT           | emaj_2        |                                                         | postgres
-    2037 | EMAJ_START_GROUPS    | LOCK           | emaj_1        | Time_id: 12                                             | postgres
-    2038 | EMAJ_START_GROUPS    | LOCK           | emaj_2        | Time_id: 9                                              | postgres
-    2039 | EMAJ_START_GROUPS    | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
-    2040 | EMAJ_START_GROUPS    | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
-    2041 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
-    2045 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark Fixed_Mark_Name                      | postgres
-    2046 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
-    2047 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 0 distributed marks deleted                             | postgres
-    2048 | DIST_EMAJ            | TIME STAMP SET | 2006          |                                                         | postgres
-    2049 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                         | postgres
-    2050 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                         | postgres
-    2051 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 13                                             | postgres
-    2052 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 10                                             | postgres
-    2053 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
-    2054 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
-    2055 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
-    2056 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark                                      | postgres
-    2057 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
-    2058 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 0 distributed marks deleted                             | postgres
-    2059 | DIST_EMAJ            | RESOLVE_MARK   |               | MARK_%                                                  | postgres
-    2060 | DIST_EMAJ            | TIME STAMP SET | 2007          |                                                         | postgres
-    2061 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                         | postgres
-    2062 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                         | postgres
-    2063 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 14                                             | postgres
-    2064 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 11                                             | postgres
-    2065 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
-    2066 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
-    2067 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
-    2068 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark M-%                                  | postgres
-    2069 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
-    2070 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 0 distributed marks deleted                             | postgres
-    2071 | DIST_EMAJ            | RESOLVE_MARK   | M-%           | M-%                                                     | postgres
-    2072 | DIST_EMAJ            | TIME STAMP SET | 2008          |                                                         | postgres
-    2073 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                         | postgres
-    2074 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                         | postgres
-    2075 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 15                                             | postgres
-    2076 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 12                                             | postgres
-    2077 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
-    2078 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
-    2079 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
-    2081 | SYNC_MARKS_CLUSTER   | BEGIN          | empty_cluster |                                                         | postgres
-    2082 | SYNC_MARKS_CLUSTER   | END            | empty_cluster | 0 distributed marks deleted                             | postgres
-    2083 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
-    2084 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 0 distributed marks deleted                             | postgres
-    2085 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark DM1                                  | postgres
-    2086 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
-    2087 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 0 distributed marks deleted                             | postgres
-    2088 | DIST_EMAJ            | TIME STAMP SET | 2009          |                                                         | postgres
-    2089 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                         | postgres
-    2090 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                         | postgres
-    2091 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 16                                             | postgres
-    2092 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 13                                             | postgres
-    2093 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
-    2094 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
-    2095 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
-    2096 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark DM2                                  | postgres
-    2097 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
-    2098 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 0 distributed marks deleted                             | postgres
-    2099 | DIST_EMAJ            | TIME STAMP SET | 2010          |                                                         | postgres
-    2100 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                         | postgres
-    2101 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                         | postgres
-    2102 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 17                                             | postgres
-    2103 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 14                                             | postgres
-    2104 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
-    2105 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
-    2106 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
-    2107 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark DM3                                  | postgres
-    2108 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
-    2109 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 0 distributed marks deleted                             | postgres
-    2110 | DIST_EMAJ            | TIME STAMP SET | 2011          |                                                         | postgres
-    2111 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                         | postgres
-    2112 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                         | postgres
-    2113 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 18                                             | postgres
-    2114 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 15                                             | postgres
-    2115 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
-    2116 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
-    2117 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
-    2118 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark DM4                                  | postgres
-    2119 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
-    2120 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 0 distributed marks deleted                             | postgres
-    2121 | DIST_EMAJ            | TIME STAMP SET | 2012          |                                                         | postgres
-    2122 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                         | postgres
-    2123 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                         | postgres
-    2124 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 19                                             | postgres
-    2125 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 16                                             | postgres
-    2126 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
-    2127 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
-    2128 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
-    2129 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark DM5                                  | postgres
-    2130 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
-    2131 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 0 distributed marks deleted                             | postgres
-    2132 | DIST_EMAJ            | TIME STAMP SET | 2013          |                                                         | postgres
-    2133 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                         | postgres
-    2134 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                         | postgres
-    2135 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 20                                             | postgres
-    2136 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 17                                             | postgres
-    2137 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
-    2138 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
-    2139 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
-    2140 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
-    2141 | SYNC_MARKS_CLUSTER   | MARKS DELETED  | emaj_1        | Some deleted local marks => 2 distributed marks deleted | postgres
-    2142 | SYNC_MARKS_CLUSTER   | MARKS DELETED  | emaj_2        | Some deleted local marks => 5 distributed marks deleted | postgres
-    2143 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 7 distributed marks deleted                             | postgres
-    2144 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
-    2145 | SYNC_MARKS_CLUSTER   | MARKS DELETED  | emaj_1        | 1 stopped groups => all distributed marks deleted       | postgres
-    2146 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 2 distributed marks deleted                             | postgres
-    2150 | DIST_EMAJ            | BEGIN          | my_cluster    | stop with mark                                          | postgres
-    2151 | DIST_EMAJ            | RESOLVE_MARK   |               | MARK_%                                                  | postgres
-    2152 | DIST_EMAJ            | TIME STAMP SET | 2015          |                                                         | postgres
-    2153 | EMAJ_STOP_GROUPS     | INIT           | emaj_1        |                                                         | postgres
-    2154 | EMAJ_STOP_GROUPS     | INIT           | emaj_2        |                                                         | postgres
-    2155 | EMAJ_STOP_GROUPS     | LOCK           | emaj_1        | Time_id: 22                                             | postgres
-    2156 | EMAJ_STOP_GROUPS     | LOCK           | emaj_2        | Time_id: 18                                             | postgres
-    2157 | EMAJ_STOP_GROUPS     | EXEC           | emaj_1        | Processed tables and sequences: 10                      | postgres
-    2158 | EMAJ_STOP_GROUPS     | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
-    2159 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
-    2160 | DIST_EMAJ            | BEGIN          | my_cluster    | start with mark DM1                                     | postgres
-    2161 | DIST_EMAJ            | TIME STAMP SET | 2016          |                                                         | postgres
-    2162 | EMAJ_START_GROUPS    | INIT           | emaj_1        |                                                         | postgres
-    2163 | EMAJ_START_GROUPS    | INIT           | emaj_2        |                                                         | postgres
-    2164 | EMAJ_START_GROUPS    | LOCK           | emaj_1        | Time_id: 23                                             | postgres
-    2165 | EMAJ_START_GROUPS    | LOCK           | emaj_2        | Time_id: 19                                             | postgres
-    2166 | EMAJ_START_GROUPS    | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
-    2167 | EMAJ_START_GROUPS    | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
-    2168 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
-    2169 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark DM2                                  | postgres
-    2170 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                         | postgres
-    2171 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 0 distributed marks deleted                             | postgres
-    2172 | DIST_EMAJ            | TIME STAMP SET | 2017          |                                                         | postgres
-    2173 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                         | postgres
-    2174 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                         | postgres
-    2175 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Time_id: 24                                             | postgres
-    2176 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Time_id: 20                                             | postgres
-    2177 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
-    2178 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
-    2179 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
-    2180 | DIST_EMAJ            | BEGIN          | my_cluster    | stop with mark resync_and_STOP                          | postgres
-    2181 | DIST_EMAJ            | TIME STAMP SET | 2018          |                                                         | postgres
-    2182 | EMAJ_STOP_GROUPS     | INIT           | emaj_1        |                                                         | postgres
-    2183 | EMAJ_STOP_GROUPS     | INIT           | emaj_2        |                                                         | postgres
-    2184 | EMAJ_STOP_GROUPS     | LOCK           | emaj_1        | Time_id: 27                                             | postgres
-    2185 | EMAJ_STOP_GROUPS     | LOCK           | emaj_2        | Time_id: 21                                             | postgres
-    2186 | EMAJ_STOP_GROUPS     | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
-    2187 | EMAJ_STOP_GROUPS     | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
-    2188 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
-    2191 | DIST_EMAJ            | BEGIN          | my_cluster    | start with mark DM1                                     | postgres
-    2192 | DIST_EMAJ            | TIME STAMP SET | 2020          |                                                         | postgres
-    2193 | EMAJ_START_GROUPS    | INIT           | emaj_1        |                                                         | postgres
-    2194 | EMAJ_START_GROUPS    | INIT           | emaj_2        |                                                         | postgres
-    2195 | EMAJ_START_GROUPS    | LOCK           | emaj_1        | Time_id: 29                                             | postgres
-    2196 | EMAJ_START_GROUPS    | LOCK           | emaj_2        | Time_id: 22                                             | postgres
-    2197 | EMAJ_START_GROUPS    | EXEC           | emaj_1        | Processed tables and sequences: 10                      | postgres
-    2198 | EMAJ_START_GROUPS    | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
-    2199 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
-    2200 | DIST_EMAJ            | BEGIN          | my_cluster    | stop with mark STOP                                     | postgres
-    2201 | DIST_EMAJ            | TIME STAMP SET | 2021          |                                                         | postgres
-    2202 | EMAJ_STOP_GROUPS     | INIT           | emaj_1        |                                                         | postgres
-    2203 | EMAJ_STOP_GROUPS     | INIT           | emaj_2        |                                                         | postgres
-    2204 | EMAJ_STOP_GROUPS     | LOCK           | emaj_1        | Time_id: 30                                             | postgres
-    2205 | EMAJ_STOP_GROUPS     | LOCK           | emaj_2        | Time_id: 23                                             | postgres
-    2206 | EMAJ_STOP_GROUPS     | EXEC           | emaj_1        | Processed tables and sequences: 17                      | postgres
-    2207 | EMAJ_STOP_GROUPS     | EXEC           | emaj_2        | Processed tables and sequences: 5                       | postgres
-    2208 | DIST_EMAJ            | END            | my_cluster    |                                                         | postgres
+ hist_id |    hist_function     |   hist_event   |  hist_object  |                                            regexp_replace                                            | hist_user 
+---------+----------------------+----------------+---------------+------------------------------------------------------------------------------------------------------+-----------
+    2000 | DIST_EMAJ            | BEGIN          | my_cluster    | start with mark START                                                                                | postgres
+    2001 | DIST_EMAJ            | TIME STAMP SET | 2000          |                                                                                                      | postgres
+    2002 | EMAJ_START_GROUPS    | INIT           | emaj_1        |                                                                                                      | postgres
+    2003 | EMAJ_START_GROUPS    | INIT           | emaj_2        |                                                                                                      | postgres
+    2004 | EMAJ_START_GROUPS    | LOCK           | emaj_1        | Local time_id: 9                                                                                     | postgres
+    2005 | EMAJ_START_GROUPS    | LOCK           | emaj_2        | Local time_id: 6                                                                                     | postgres
+    2006 | EMAJ_START_GROUPS    | EXEC           | emaj_1        | Processed tables and sequences: 17                                                                   | postgres
+    2007 | EMAJ_START_GROUPS    | EXEC           | emaj_2        | Processed tables and sequences: 5                                                                    | postgres
+    2008 | DIST_EMAJ            | END            | my_cluster    |                                                                                                      | postgres
+    2012 | DIST_EMAJ            | BEGIN          | my_cluster    | stop with mark STOP                                                                                  | postgres
+    2013 | DIST_EMAJ            | TIME STAMP SET | 2002          |                                                                                                      | postgres
+    2014 | EMAJ_STOP_GROUPS     | INIT           | emaj_1        |                                                                                                      | postgres
+    2015 | EMAJ_STOP_GROUPS     | INIT           | emaj_2        |                                                                                                      | postgres
+    2016 | EMAJ_STOP_GROUPS     | LOCK           | emaj_1        | Local time_id: 10                                                                                    | postgres
+    2017 | EMAJ_STOP_GROUPS     | LOCK           | emaj_2        | Local time_id: 7                                                                                     | postgres
+    2018 | EMAJ_STOP_GROUPS     | EXEC           | emaj_1        | Processed tables and sequences: 17                                                                   | postgres
+    2019 | EMAJ_STOP_GROUPS     | EXEC           | emaj_2        | Processed tables and sequences: 5                                                                    | postgres
+    2020 | DIST_EMAJ            | END            | my_cluster    |                                                                                                      | postgres
+    2024 | DIST_EMAJ            | BEGIN          | my_cluster    | stop with mark START                                                                                 | postgres
+    2025 | DIST_EMAJ            | TIME STAMP SET | 2004          |                                                                                                      | postgres
+    2026 | EMAJ_STOP_GROUPS     | INIT           | emaj_1        |                                                                                                      | postgres
+    2027 | EMAJ_STOP_GROUPS     | INIT           | emaj_2        |                                                                                                      | postgres
+    2028 | EMAJ_STOP_GROUPS     | LOCK           | emaj_1        | Local time_id: 11                                                                                    | postgres
+    2029 | EMAJ_STOP_GROUPS     | LOCK           | emaj_2        | Local time_id: 8                                                                                     | postgres
+    2030 | EMAJ_STOP_GROUPS     | EXEC           | emaj_1        | Processed tables and sequences: 0                                                                    | postgres
+    2031 | EMAJ_STOP_GROUPS     | EXEC           | emaj_2        | Processed tables and sequences: 0                                                                    | postgres
+    2032 | DIST_EMAJ            | END            | my_cluster    |                                                                                                      | postgres
+    2033 | DIST_EMAJ            | BEGIN          | my_cluster    | start with mark RESTART                                                                              | postgres
+    2034 | DIST_EMAJ            | TIME STAMP SET | 2005          |                                                                                                      | postgres
+    2035 | EMAJ_START_GROUPS    | INIT           | emaj_1        |                                                                                                      | postgres
+    2036 | EMAJ_START_GROUPS    | INIT           | emaj_2        |                                                                                                      | postgres
+    2037 | EMAJ_START_GROUPS    | LOCK           | emaj_1        | Local time_id: 12                                                                                    | postgres
+    2038 | EMAJ_START_GROUPS    | LOCK           | emaj_2        | Local time_id: 9                                                                                     | postgres
+    2039 | EMAJ_START_GROUPS    | EXEC           | emaj_1        | Processed tables and sequences: 17                                                                   | postgres
+    2040 | EMAJ_START_GROUPS    | EXEC           | emaj_2        | Processed tables and sequences: 5                                                                    | postgres
+    2041 | DIST_EMAJ            | END            | my_cluster    |                                                                                                      | postgres
+    2045 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark Fixed_Mark_Name                                                                   | postgres
+    2046 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                                                                      | postgres
+    2047 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 0 distributed marks deleted                                                                          | postgres
+    2048 | DIST_EMAJ            | TIME STAMP SET | 2006          |                                                                                                      | postgres
+    2049 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                                                                      | postgres
+    2050 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                                                                      | postgres
+    2051 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Local time_id: 13                                                                                    | postgres
+    2052 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Local time_id: 10                                                                                    | postgres
+    2053 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                                                                   | postgres
+    2054 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                                                                    | postgres
+    2055 | DIST_EMAJ            | END            | my_cluster    |                                                                                                      | postgres
+    2056 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark                                                                                   | postgres
+    2057 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                                                                      | postgres
+    2058 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 0 distributed marks deleted                                                                          | postgres
+    2059 | DIST_EMAJ            | RESOLVE_MARK   |               | MARK_%                                                                                               | postgres
+    2060 | DIST_EMAJ            | TIME STAMP SET | 2007          |                                                                                                      | postgres
+    2061 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                                                                      | postgres
+    2062 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                                                                      | postgres
+    2063 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Local time_id: 14                                                                                    | postgres
+    2064 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Local time_id: 11                                                                                    | postgres
+    2065 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                                                                   | postgres
+    2066 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                                                                    | postgres
+    2067 | DIST_EMAJ            | END            | my_cluster    |                                                                                                      | postgres
+    2068 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark M-%                                                                               | postgres
+    2069 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                                                                      | postgres
+    2070 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 0 distributed marks deleted                                                                          | postgres
+    2071 | DIST_EMAJ            | RESOLVE_MARK   | M-%           | M-%                                                                                                  | postgres
+    2072 | DIST_EMAJ            | TIME STAMP SET | 2008          |                                                                                                      | postgres
+    2073 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                                                                      | postgres
+    2074 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                                                                      | postgres
+    2075 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Local time_id: 15                                                                                    | postgres
+    2076 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Local time_id: 12                                                                                    | postgres
+    2077 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                                                                   | postgres
+    2078 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                                                                    | postgres
+    2079 | DIST_EMAJ            | END            | my_cluster    |                                                                                                      | postgres
+    2081 | SYNC_MARKS_CLUSTER   | BEGIN          | empty_cluster |                                                                                                      | postgres
+    2082 | SYNC_MARKS_CLUSTER   | END            | empty_cluster | 0 distributed marks deleted                                                                          | postgres
+    2083 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                                                                      | postgres
+    2084 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 0 distributed marks deleted                                                                          | postgres
+    2085 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark DM1                                                                               | postgres
+    2086 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                                                                      | postgres
+    2087 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 0 distributed marks deleted                                                                          | postgres
+    2088 | DIST_EMAJ            | TIME STAMP SET | 2009          |                                                                                                      | postgres
+    2089 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                                                                      | postgres
+    2090 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                                                                      | postgres
+    2091 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Local time_id: 16                                                                                    | postgres
+    2092 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Local time_id: 13                                                                                    | postgres
+    2093 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                                                                   | postgres
+    2094 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                                                                    | postgres
+    2095 | DIST_EMAJ            | END            | my_cluster    |                                                                                                      | postgres
+    2096 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark DM2                                                                               | postgres
+    2097 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                                                                      | postgres
+    2098 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 0 distributed marks deleted                                                                          | postgres
+    2099 | DIST_EMAJ            | TIME STAMP SET | 2010          |                                                                                                      | postgres
+    2100 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                                                                      | postgres
+    2101 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                                                                      | postgres
+    2102 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Local time_id: 17                                                                                    | postgres
+    2103 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Local time_id: 14                                                                                    | postgres
+    2104 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                                                                   | postgres
+    2105 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                                                                    | postgres
+    2106 | DIST_EMAJ            | END            | my_cluster    |                                                                                                      | postgres
+    2107 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark DM3                                                                               | postgres
+    2108 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                                                                      | postgres
+    2109 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 0 distributed marks deleted                                                                          | postgres
+    2110 | DIST_EMAJ            | TIME STAMP SET | 2011          |                                                                                                      | postgres
+    2111 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                                                                      | postgres
+    2112 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                                                                      | postgres
+    2113 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Local time_id: 18                                                                                    | postgres
+    2114 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Local time_id: 15                                                                                    | postgres
+    2115 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                                                                   | postgres
+    2116 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                                                                    | postgres
+    2117 | DIST_EMAJ            | END            | my_cluster    |                                                                                                      | postgres
+    2118 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark DM4                                                                               | postgres
+    2119 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                                                                      | postgres
+    2120 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 0 distributed marks deleted                                                                          | postgres
+    2121 | DIST_EMAJ            | TIME STAMP SET | 2012          |                                                                                                      | postgres
+    2122 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                                                                      | postgres
+    2123 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                                                                      | postgres
+    2124 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Local time_id: 19                                                                                    | postgres
+    2125 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Local time_id: 16                                                                                    | postgres
+    2126 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                                                                   | postgres
+    2127 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                                                                    | postgres
+    2128 | DIST_EMAJ            | END            | my_cluster    |                                                                                                      | postgres
+    2129 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark DM5                                                                               | postgres
+    2130 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                                                                      | postgres
+    2131 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 0 distributed marks deleted                                                                          | postgres
+    2132 | DIST_EMAJ            | TIME STAMP SET | 2013          |                                                                                                      | postgres
+    2133 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                                                                      | postgres
+    2134 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                                                                      | postgres
+    2135 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Local time_id: 20                                                                                    | postgres
+    2136 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Local time_id: 17                                                                                    | postgres
+    2137 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                                                                   | postgres
+    2138 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                                                                    | postgres
+    2139 | DIST_EMAJ            | END            | my_cluster    |                                                                                                      | postgres
+    2140 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                                                                      | postgres
+    2141 | SYNC_MARKS_CLUSTER   | MARKS DELETED  | emaj_1        | Some deleted local marks => 2 distributed marks deleted (DM2, DM4)                                   | postgres
+    2142 | SYNC_MARKS_CLUSTER   | MARKS DELETED  | emaj_2        | Some deleted local marks => 5 distributed marks deleted (RESTART, Fixed_Mark_Name, MARK_%, M-%, DM1) | postgres
+    2143 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 7 distributed marks deleted                                                                          | postgres
+    2144 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                                                                      | postgres
+    2145 | SYNC_MARKS_CLUSTER   | MARKS DELETED  | emaj_1        | 1 stopped groups => all (2) distributed marks deleted                                                | postgres
+    2146 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 2 distributed marks deleted                                                                          | postgres
+    2150 | DIST_EMAJ            | BEGIN          | my_cluster    | stop with mark                                                                                       | postgres
+    2151 | DIST_EMAJ            | RESOLVE_MARK   |               | MARK_%                                                                                               | postgres
+    2152 | DIST_EMAJ            | TIME STAMP SET | 2015          |                                                                                                      | postgres
+    2153 | EMAJ_STOP_GROUPS     | INIT           | emaj_1        |                                                                                                      | postgres
+    2154 | EMAJ_STOP_GROUPS     | INIT           | emaj_2        |                                                                                                      | postgres
+    2155 | EMAJ_STOP_GROUPS     | LOCK           | emaj_1        | Local time_id: 22                                                                                    | postgres
+    2156 | EMAJ_STOP_GROUPS     | LOCK           | emaj_2        | Local time_id: 18                                                                                    | postgres
+    2157 | EMAJ_STOP_GROUPS     | EXEC           | emaj_1        | Processed tables and sequences: 10                                                                   | postgres
+    2158 | EMAJ_STOP_GROUPS     | EXEC           | emaj_2        | Processed tables and sequences: 5                                                                    | postgres
+    2159 | DIST_EMAJ            | END            | my_cluster    |                                                                                                      | postgres
+    2160 | DIST_EMAJ            | BEGIN          | my_cluster    | start with mark DM1                                                                                  | postgres
+    2161 | DIST_EMAJ            | TIME STAMP SET | 2016          |                                                                                                      | postgres
+    2162 | EMAJ_START_GROUPS    | INIT           | emaj_1        |                                                                                                      | postgres
+    2163 | EMAJ_START_GROUPS    | INIT           | emaj_2        |                                                                                                      | postgres
+    2164 | EMAJ_START_GROUPS    | LOCK           | emaj_1        | Local time_id: 23                                                                                    | postgres
+    2165 | EMAJ_START_GROUPS    | LOCK           | emaj_2        | Local time_id: 19                                                                                    | postgres
+    2166 | EMAJ_START_GROUPS    | EXEC           | emaj_1        | Processed tables and sequences: 17                                                                   | postgres
+    2167 | EMAJ_START_GROUPS    | EXEC           | emaj_2        | Processed tables and sequences: 5                                                                    | postgres
+    2168 | DIST_EMAJ            | END            | my_cluster    |                                                                                                      | postgres
+    2169 | DIST_EMAJ            | BEGIN          | my_cluster    | set_mark with mark DM2                                                                               | postgres
+    2170 | SYNC_MARKS_CLUSTER   | BEGIN          | my_cluster    |                                                                                                      | postgres
+    2171 | SYNC_MARKS_CLUSTER   | END            | my_cluster    | 0 distributed marks deleted                                                                          | postgres
+    2172 | DIST_EMAJ            | TIME STAMP SET | 2017          |                                                                                                      | postgres
+    2173 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_1        |                                                                                                      | postgres
+    2174 | EMAJ_SET_MARK_GROUPS | INIT           | emaj_2        |                                                                                                      | postgres
+    2175 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_1        | Local time_id: 24                                                                                    | postgres
+    2176 | EMAJ_SET_MARK_GROUPS | LOCK           | emaj_2        | Local time_id: 20                                                                                    | postgres
+    2177 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_1        | Processed tables and sequences: 17                                                                   | postgres
+    2178 | EMAJ_SET_MARK_GROUPS | EXEC           | emaj_2        | Processed tables and sequences: 5                                                                    | postgres
+    2179 | DIST_EMAJ            | END            | my_cluster    |                                                                                                      | postgres
+    2180 | DIST_EMAJ            | BEGIN          | my_cluster    | stop with mark resync_and_STOP                                                                       | postgres
+    2181 | DIST_EMAJ            | TIME STAMP SET | 2018          |                                                                                                      | postgres
+    2182 | EMAJ_STOP_GROUPS     | INIT           | emaj_1        |                                                                                                      | postgres
+    2183 | EMAJ_STOP_GROUPS     | INIT           | emaj_2        |                                                                                                      | postgres
+    2184 | EMAJ_STOP_GROUPS     | LOCK           | emaj_1        | Local time_id: 27                                                                                    | postgres
+    2185 | EMAJ_STOP_GROUPS     | LOCK           | emaj_2        | Local time_id: 21                                                                                    | postgres
+    2186 | EMAJ_STOP_GROUPS     | EXEC           | emaj_1        | Processed tables and sequences: 17                                                                   | postgres
+    2187 | EMAJ_STOP_GROUPS     | EXEC           | emaj_2        | Processed tables and sequences: 5                                                                    | postgres
+    2188 | DIST_EMAJ            | END            | my_cluster    |                                                                                                      | postgres
+    2191 | DIST_EMAJ            | BEGIN          | my_cluster    | start with mark DM1                                                                                  | postgres
+    2192 | DIST_EMAJ            | TIME STAMP SET | 2020          |                                                                                                      | postgres
+    2193 | EMAJ_START_GROUPS    | INIT           | emaj_1        |                                                                                                      | postgres
+    2194 | EMAJ_START_GROUPS    | INIT           | emaj_2        |                                                                                                      | postgres
+    2195 | EMAJ_START_GROUPS    | LOCK           | emaj_1        | Local time_id: 29                                                                                    | postgres
+    2196 | EMAJ_START_GROUPS    | LOCK           | emaj_2        | Local time_id: 22                                                                                    | postgres
+    2197 | EMAJ_START_GROUPS    | EXEC           | emaj_1        | Processed tables and sequences: 10                                                                   | postgres
+    2198 | EMAJ_START_GROUPS    | EXEC           | emaj_2        | Processed tables and sequences: 5                                                                    | postgres
+    2199 | DIST_EMAJ            | END            | my_cluster    |                                                                                                      | postgres
+    2200 | DIST_EMAJ            | BEGIN          | my_cluster    | stop with mark STOP                                                                                  | postgres
+    2201 | DIST_EMAJ            | TIME STAMP SET | 2021          |                                                                                                      | postgres
+    2202 | EMAJ_STOP_GROUPS     | INIT           | emaj_1        |                                                                                                      | postgres
+    2203 | EMAJ_STOP_GROUPS     | INIT           | emaj_2        |                                                                                                      | postgres
+    2204 | EMAJ_STOP_GROUPS     | LOCK           | emaj_1        | Local time_id: 30                                                                                    | postgres
+    2205 | EMAJ_STOP_GROUPS     | LOCK           | emaj_2        | Local time_id: 23                                                                                    | postgres
+    2206 | EMAJ_STOP_GROUPS     | EXEC           | emaj_1        | Processed tables and sequences: 17                                                                   | postgres
+    2207 | EMAJ_STOP_GROUPS     | EXEC           | emaj_2        | Processed tables and sequences: 5                                                                    | postgres
+    2208 | DIST_EMAJ            | END            | my_cluster    |                                                                                                      | postgres
 (194 rows)
 
 SELECT mark_cluster, regexp_replace(mark_name,E'\\d\\d\.\\d\\d\\.\\d\\d\\.\\d\\d\\d\\d', '%', 'g'), mark_time_id

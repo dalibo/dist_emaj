@@ -577,6 +577,7 @@ for (my $i = 1 ; $i <= $nbSession; $i++) {
 	$dbh[$i]->do("PREPARE TRANSACTION 'emajtx$i'")
 		or traceDie("Prepare transaction on session #$i failed.\n$DBI::errstr\n\n");
 }
+traceIfVerbose("Prepare transaction on dist_emaj session...");
 $dbh2->do("PREPARE TRANSACTION 'distemajtx'")
 		or traceDie("Prepare transaction on dist_emaj session failed.\n$DBI::errstr\n\n");
 
@@ -586,6 +587,7 @@ for (my $i = 1 ; $i <= $nbSession; $i++) {
 	$dbh[$i]->do("COMMIT PREPARED 'emajtx$i'")
 		or traceDie("Commit prepared #$i failed.\n$DBI::errstr\n\n");
 }
+traceIfVerbose("Commit transaction on dist_emaj session...");
 $dbh2->do("COMMIT PREPARED 'distemajtx'")
 		or traceDie("Commit prepared on dist_emaj session failed.\n$DBI::errstr\n\n");
 

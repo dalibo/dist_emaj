@@ -138,15 +138,15 @@ UPDATE mySchema.myTbl2 SET col23 = col23 + INTERVAL '1 MONTHS';
 \c regression
 -- Check dist_emaj tables content.
 SELECT hist_function, hist_event, hist_object, hist_wording FROM dist_emaj.dist_emaj_hist WHERE hist_id >= 6000 ORDER BY hist_id;
-    hist_function     |     hist_event     |       hist_object       |                      hist_wording                       
-----------------------+--------------------+-------------------------+---------------------------------------------------------
+    hist_function     |     hist_event     |       hist_object       |            hist_wording            
+----------------------+--------------------+-------------------------+------------------------------------
  SET_PARAM            | INSERTED PARAMETER | history_retention       | From: 1 year to: 1 MONTHS
  DIST_EMAJ            | BEGIN              | my_cluster              | stop with mark STOP
  DIST_EMAJ            | TIME STAMP SET     | 6000                    | 
  EMAJ_STOP_GROUPS     | INIT               | emaj_1                  | 
  EMAJ_STOP_GROUPS     | INIT               | emaj_2                  | 
- EMAJ_STOP_GROUPS     | LOCK               | emaj_1                  | Time_id: 44
- EMAJ_STOP_GROUPS     | LOCK               | emaj_2                  | Time_id: 35
+ EMAJ_STOP_GROUPS     | LOCK               | emaj_1                  | Local time_id: 44
+ EMAJ_STOP_GROUPS     | LOCK               | emaj_2                  | Local time_id: 35
  EMAJ_STOP_GROUPS     | EXEC               | emaj_1                  | Processed tables and sequences: 17
  EMAJ_STOP_GROUPS     | EXEC               | emaj_2                  | Processed tables and sequences: 5
  DIST_EMAJ            | END                | my_cluster              | 
@@ -179,9 +179,9 @@ SELECT hist_function, hist_event, hist_object, hist_wording FROM dist_emaj.dist_
  EMAJ_START_GROUPS    | INIT               | emaj                    | 
  EMAJ_START_GROUPS    | INIT               | emaj_1                  | 
  EMAJ_START_GROUPS    | INIT               | emaj_2                  | 
- EMAJ_START_GROUPS    | LOCK               | emaj                    | Time_id: 4
- EMAJ_START_GROUPS    | LOCK               | emaj_1                  | Time_id: 45
- EMAJ_START_GROUPS    | LOCK               | emaj_2                  | Time_id: 36
+ EMAJ_START_GROUPS    | LOCK               | emaj                    | Local time_id: 4
+ EMAJ_START_GROUPS    | LOCK               | emaj_1                  | Local time_id: 45
+ EMAJ_START_GROUPS    | LOCK               | emaj_2                  | Local time_id: 36
  EMAJ_START_GROUPS    | EXEC               | emaj                    | Processed tables and sequences: 4
  EMAJ_START_GROUPS    | EXEC               | emaj_1                  | Processed tables and sequences: 8
  EMAJ_START_GROUPS    | EXEC               | emaj_2                  | Processed tables and sequences: 1
@@ -190,44 +190,40 @@ SELECT hist_function, hist_event, hist_object, hist_wording FROM dist_emaj.dist_
  DIST_EMAJ            | TIME STAMP SET     | 6012                    | 
  EMAJ_START_GROUPS    | INIT               | emaj_1                  | 
  EMAJ_START_GROUPS    | INIT               | emaj_2                  | 
- EMAJ_START_GROUPS    | LOCK               | emaj_1                  | Time_id: 46
- EMAJ_START_GROUPS    | LOCK               | emaj_2                  | Time_id: 37
+ EMAJ_START_GROUPS    | LOCK               | emaj_1                  | Local time_id: 46
+ EMAJ_START_GROUPS    | LOCK               | emaj_2                  | Local time_id: 37
  EMAJ_START_GROUPS    | EXEC               | emaj_1                  | Processed tables and sequences: 0
  EMAJ_START_GROUPS    | EXEC               | emaj_2                  | Processed tables and sequences: 4
  DIST_EMAJ            | END                | cluster_2               | 
  DIST_EMAJ            | BEGIN              | cluster_1               | set_mark with mark 1_M1
  SYNC_MARKS_CLUSTER   | BEGIN              | cluster_1               | 
- SYNC_MARKS_CLUSTER   | MARKS DELETED      | emaj_1                  | Some deleted local marks => 3 distributed marks deleted
- SYNC_MARKS_CLUSTER   | MARKS DELETED      | emaj_2                  | Some deleted local marks => 3 distributed marks deleted
- SYNC_MARKS_CLUSTER   | END                | cluster_1               | 6 distributed marks deleted
+ SYNC_MARKS_CLUSTER   | END                | cluster_1               | 0 distributed marks deleted
  DIST_EMAJ            | TIME STAMP SET     | 6013                    | 
  EMAJ_SET_MARK_GROUPS | INIT               | emaj                    | 
  EMAJ_SET_MARK_GROUPS | INIT               | emaj_1                  | 
  EMAJ_SET_MARK_GROUPS | INIT               | emaj_2                  | 
- EMAJ_SET_MARK_GROUPS | LOCK               | emaj                    | Time_id: 5
- EMAJ_SET_MARK_GROUPS | LOCK               | emaj_1                  | Time_id: 47
- EMAJ_SET_MARK_GROUPS | LOCK               | emaj_2                  | Time_id: 38
+ EMAJ_SET_MARK_GROUPS | LOCK               | emaj                    | Local time_id: 5
+ EMAJ_SET_MARK_GROUPS | LOCK               | emaj_1                  | Local time_id: 47
+ EMAJ_SET_MARK_GROUPS | LOCK               | emaj_2                  | Local time_id: 38
  EMAJ_SET_MARK_GROUPS | EXEC               | emaj                    | Processed tables and sequences: 4
  EMAJ_SET_MARK_GROUPS | EXEC               | emaj_1                  | Processed tables and sequences: 8
  EMAJ_SET_MARK_GROUPS | EXEC               | emaj_2                  | Processed tables and sequences: 1
  DIST_EMAJ            | END                | cluster_1               | 
  DIST_EMAJ            | BEGIN              | cluster_1               | set_mark with mark 1_M2
  SYNC_MARKS_CLUSTER   | BEGIN              | cluster_1               | 
- SYNC_MARKS_CLUSTER   | MARKS DELETED      | emaj_1                  | Some deleted local marks => 3 distributed marks deleted
- SYNC_MARKS_CLUSTER   | MARKS DELETED      | emaj_2                  | Some deleted local marks => 3 distributed marks deleted
- SYNC_MARKS_CLUSTER   | END                | cluster_1               | 6 distributed marks deleted
+ SYNC_MARKS_CLUSTER   | END                | cluster_1               | 0 distributed marks deleted
  DIST_EMAJ            | TIME STAMP SET     | 6014                    | 
  EMAJ_SET_MARK_GROUPS | INIT               | emaj                    | 
  EMAJ_SET_MARK_GROUPS | INIT               | emaj_1                  | 
  EMAJ_SET_MARK_GROUPS | INIT               | emaj_2                  | 
- EMAJ_SET_MARK_GROUPS | LOCK               | emaj                    | Time_id: 6
- EMAJ_SET_MARK_GROUPS | LOCK               | emaj_1                  | Time_id: 48
- EMAJ_SET_MARK_GROUPS | LOCK               | emaj_2                  | Time_id: 39
+ EMAJ_SET_MARK_GROUPS | LOCK               | emaj                    | Local time_id: 6
+ EMAJ_SET_MARK_GROUPS | LOCK               | emaj_1                  | Local time_id: 48
+ EMAJ_SET_MARK_GROUPS | LOCK               | emaj_2                  | Local time_id: 39
  EMAJ_SET_MARK_GROUPS | EXEC               | emaj                    | Processed tables and sequences: 4
  EMAJ_SET_MARK_GROUPS | EXEC               | emaj_1                  | Processed tables and sequences: 8
  EMAJ_SET_MARK_GROUPS | EXEC               | emaj_2                  | Processed tables and sequences: 1
  DIST_EMAJ            | END                | cluster_1               | 
-(87 rows)
+(83 rows)
 
 --
 RESET session_authorization;
