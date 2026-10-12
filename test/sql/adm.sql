@@ -72,6 +72,13 @@ RESET session_authorization;
 UPDATE mySchema.myTblP SET col3 = 'a a a' WHERE col2 = 'A';
 UPDATE mySchema.myTbl2 SET col23 = col23 + INTERVAL '1 MONTHS';
 
+--
+-- Perform a distributed logged rollback on cluster_1 to an intermediate mark.
+--
+
+SET session_authorization TO _regress_dist_emaj_adm;
+\! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U _regress_dist_emaj_adm -W adm --cluster cluster_1 --mark '1_M2' --logged
+RESET session_authorization;
 
 --
 -- Final checks.

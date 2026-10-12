@@ -15,9 +15,9 @@ SELECT public.handle_dist_emaj_sequences(3000);
 \! ${DIST_EMAJ_DIR}/client/distEmaj.pl -d regression -U postgres --action start --cluster my_cluster --mark 'START'
  Distributed E-Maj (version <devel>) - launching parallel actions
 ----------------------------------------------------------------
-WARNING:  _check_fk_groups: The foreign key "mytbl6_col61_fkey" on the table "myschema2.mytbl6" references the table "myschema2.mytbl7" that is outside the groups (myGroup1,myGroup2,myGroup4).
-WARNING:  _check_fk_groups: The table "myschema2.mytbl6" is referenced by the foreign key "mytbl8_col81_fkey" on the table "myschema2.mytbl8" that is outside the groups (myGroup1,myGroup2,myGroup4).
-WARNING:  _check_fk_groups: The table "phil's schema"3.my"tbl4" is referenced by the foreign key "mytbl2_col21_fkey_nv" on the table "phil's schema"3.myTbl2\" that is outside the groups (myGroup4,phil's group#3",).
+WARNING:  _check_fk_groups: The foreign key "mytbl6_col61_fkey" on the table "myschema2.mytbl6" references the table "myschema2.mytbl7" that is outside the groups (myGroup1, myGroup2, myGroup4).
+WARNING:  _check_fk_groups: The table "myschema2.mytbl6" is referenced by the foreign key "mytbl8_col81_fkey" on the table "myschema2.mytbl8" that is outside the groups (myGroup1, myGroup2, myGroup4).
+WARNING:  _check_fk_groups: The table "phil's schema"3.my"tbl4" is referenced by the foreign key "mytbl2_col21_fkey_nv" on the table "phil's schema"3.myTbl2\" that is outside the groups (myGroup4, phil's group#3",).
 The 'start' action on cluster 'my_cluster' is completed.
 It has processed 5 groups spread into 2 databases.
 -- Save a few identifiers.

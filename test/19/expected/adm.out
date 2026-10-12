@@ -133,6 +133,30 @@ RESET session_authorization;
 UPDATE mySchema.myTblP SET col3 = 'a a a' WHERE col2 = 'A';
 UPDATE mySchema.myTbl2 SET col23 = col23 + INTERVAL '1 MONTHS';
 --
+-- Perform a distributed logged rollback on cluster_1 to an intermediate mark.
+--
+SET session_authorization TO _regress_dist_emaj_adm;
+\! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U _regress_dist_emaj_adm -W adm --cluster cluster_1 --mark '1_M2' --logged
+ Distributed E-Maj Rollback (version <devel>)
+--------------------------------------------
+On database 'emaj', Logged rollback of tables groups 'myGroup' to mark '1_M2' is now in progress, using 1 corridors, with local rollback identifier 1.
+On database 'emaj_1', Logged rollback of tables groups 'myGroup1', 'myGroup4' to mark '1_M2' is now in progress, using 2 corridors, with local rollback identifier 4.
+On database 'emaj_2', Logged rollback of tables groups 'myGroup4' to mark '1_M2' is now in progress, using 2 corridors, with local rollback identifier 4.
+Logged rollback on cluster 'cluster_1' completed.
+It has processed 4 groups spread into 3 databases.
+  database 'emaj':
+    Notice: Rollback id = 1.
+    Notice: 1 / 1 tables effectively processed.
+    Notice: 0 / 3 sequences effectively processed.
+  database 'emaj_1':
+    Notice: Rollback id = 4.
+    Notice: 1 / 6 tables effectively processed.
+    Notice: 0 / 2 sequences effectively processed.
+  database 'emaj_2':
+    Notice: Rollback id = 4.
+    Notice: 1 / 1 tables effectively processed.
+RESET session_authorization;
+--
 -- Final checks.
 --
 \c regression
@@ -223,7 +247,30 @@ SELECT hist_function, hist_event, hist_object, hist_wording FROM dist_emaj.dist_
  EMAJ_SET_MARK_GROUPS | EXEC               | emaj_1                  | Processed tables and sequences: 8
  EMAJ_SET_MARK_GROUPS | EXEC               | emaj_2                  | Processed tables and sequences: 1
  DIST_EMAJ            | END                | cluster_1               | 
-(83 rows)
+ ROLLBACK_GROUPS      | BEGIN              | cluster_1               | Logged rollback to mark 1_M2
+ ROLLBACK_GROUPS      | TIME STAMP SET     | 6015                    | 
+ ROLLBACK_GROUPS      | INIT               | emaj                    | Mark name = 1_M2 ; Rollback Id = 1
+ ROLLBACK_GROUPS      | INIT               | emaj_1                  | Mark name = 1_M2 ; Rollback Id = 4
+ ROLLBACK_GROUPS      | INIT               | emaj_2                  | Mark name = 1_M2 ; Rollback Id = 4
+ ROLLBACK_GROUPS      | LOCK               | emaj                    | Corridor: 1
+ ROLLBACK_GROUPS      | LOCK               | emaj_1                  | Corridor: 1
+ ROLLBACK_GROUPS      | LOCK               | emaj_1                  | Corridor: 2
+ ROLLBACK_GROUPS      | LOCK               | emaj_2                  | Corridor: 1
+ ROLLBACK_GROUPS      | LOCK               | emaj_2                  | Corridor: 2
+ ROLLBACK_GROUPS      | START              | emaj                    | 
+ ROLLBACK_GROUPS      | START              | emaj_1                  | 
+ ROLLBACK_GROUPS      | START              | emaj_2                  | 
+ ROLLBACK_GROUPS      | EXEC               | emaj                    | Corridor: 1
+ ROLLBACK_GROUPS      | EXEC               | emaj_1                  | Corridor: 1
+ ROLLBACK_GROUPS      | EXEC               | emaj_1                  | Corridor: 2
+ ROLLBACK_GROUPS      | EXEC               | emaj_2                  | Corridor: 1
+ ROLLBACK_GROUPS      | EXEC               | emaj_2                  | Corridor: 2
+ ROLLBACK_GROUPS      | END                | emaj                    | 
+ ROLLBACK_GROUPS      | END                | emaj_1                  | 
+ ROLLBACK_GROUPS      | END                | emaj_2                  | 
+ ROLLBACK_GROUPS      | TIME STAMP SET     | 6016                    | 
+ DIST_EMAJ            | END                | cluster_1               | 
+(106 rows)
 
 --
 RESET session_authorization;
