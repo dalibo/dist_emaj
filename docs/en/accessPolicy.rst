@@ -8,17 +8,16 @@ Distributed E-Maj Roles
 
 To use Distributed E-Maj, you can connect as a *SUPERUSER*. However, for security reasons, it is preferable to use the two roles created during the installation process:
 
-* ``dist_emaj_adm``: The Distributed E-Maj administration role:
+* ``dist_emaj_adm``: The Distributed E-Maj administration role.
 
-   * It can execute all functions and access all tables in the *dist_emaj* schema, both for reading and updating.
+   * It owns the ``dist_emaj`` schema and its content (except functions).
+   * It can execute all Distributed E-Maj functions.
 
-* ``dist_emaj_viewer``: The read-only access role:
+* ``dist_emaj_viewer``: The read-only access role.
 
    * It can read all tables in the *dist_emaj* schema, except for the column in the *dist_emaj_database* table that contains the database connection strings.
 
-All rights granted to *dist_emaj_viewer* are also granted to *dist_emaj_adm*.
-
-When created, these two roles were not granted login capabilities (no password and *NOLOGIN* option specified). It is **recommended NOT to grant them login capabilities**. Instead, you can assign their permissions to other roles using SQL *GRANT* commands.
+At creation time, these roles have **no login capability** (*NOLOGIN* attribute and no password). It is **recommended NOT to grant them login capabilities**. Instead, grant the privileges they own to other roles using SQL *GRANT* commands.
 
 ----
 

@@ -3071,11 +3071,39 @@ REVOKE ALL ON ALL FUNCTIONS IN SCHEMA dist_emaj FROM PUBLIC;
 
 -- Rights given to dist_emaj_adm.
 --
--- dist_emaj_adm can execute all dist_emaj functions and access all dist_emaj tables without any restrictions.
+-- dist_emaj_adm becomes the owner of the dist_emaj schema and all contained objects.
+ALTER SCHEMA dist_emaj OWNER TO dist_emaj_adm;
+DO LANGUAGE plpgsql
+$do$
+  DECLARE
+    r_object                 RECORD;
+  BEGIN
+-- All tables, views and composite types.
+    FOR r_object IN
+      SELECT relname, CASE relkind WHEN 'r' THEN 'TABLE' WHEN 'v' THEN 'VIEW' WHEN 'c' THEN 'TYPE' END AS object
+        FROM pg_catalog.pg_class
+             JOIN pg_catalog.pg_namespace ON (pg_namespace.oid = relnamespace)
+        WHERE nspname = 'dist_emaj'
+          AND relkind IN ('r', 'v', 'c')
+    LOOP
+      EXECUTE format('ALTER %s dist_emaj.%s OWNER TO dist_emaj_adm',
+                         r_object.object, r_object.relname);
+    END LOOP;
+-- All enum types.
+    FOR r_object IN
+      SELECT typname
+        FROM pg_catalog.pg_type
+             JOIN pg_catalog.pg_namespace ON (pg_namespace.oid = typnamespace)
+        WHERE nspname = 'dist_emaj'
+          AND typtype = 'e'
+    LOOP
+      EXECUTE format('ALTER type dist_emaj.%s OWNER TO dist_emaj_adm',
+                         r_object.typname);
+    END LOOP;
+  END;
+$do$;
 
-GRANT ALL ON SCHEMA dist_emaj TO dist_emaj_adm;
-GRANT ALL ON ALL TABLES IN SCHEMA dist_emaj TO dist_emaj_adm;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA dist_emaj TO dist_emaj_adm;
+-- Grant execute rights on all functions.
 GRANT EXECUTE ON ALL FUNCTIONS IN SCHEMA dist_emaj TO dist_emaj_adm;
 
 -- Rights given to dist_emaj_viewer.
