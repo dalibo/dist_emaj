@@ -69,6 +69,8 @@ CREATE TYPE dist_emaj._rlbk_status_enum AS ENUM (
   'COMMITTED',               -- the distributed emaj rollback transaction is known as committed
   'ABORTED'                  -- the distributed emaj rollback transaction is known as aborted
   );
+COMMENT ON TYPE dist_emaj._rlbk_status_enum IS
+$$Possible values for rollback status.$$;
 
 ----------------------------------------------------------------
 --                                                            --
@@ -311,7 +313,7 @@ CREATE TYPE dist_emaj._report_message_type AS (
   rpt_message                  TEXT                        -- the english formatted error message
   );
 COMMENT ON TYPE dist_emaj._report_message_type IS
-$$Represents a generic notice, warning or error message structure that can be translated by external clients.$$;
+$$Generic notice, warning or error message structure that can be translated by external clients.$$;
 
 ----------------------------------------------------------------
 --                                                            --
