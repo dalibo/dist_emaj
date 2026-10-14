@@ -8,6 +8,8 @@ Préalables
 
 L’outil est codé en *Perl*. Il nécessite que le logiciel **Perl** avec les modules *DBI* et *DBD::Pg* soient installés sur le serveur qui exécute cette commande.
 
+Le rollback de chaque *database emaj* au sein d'une unique transaction implique l'utilisation de commit à deux phases. En conséquence, le paramètre **max_prepared_transactions** de toutes les instances PostgreSQL concernées, y compris celle hébergeant la base de données contenant l'extension *dist_emaj*, :ref:`doit être ajusté<postgres_conf_changes>`.
+
 ----
 
 Syntaxe

@@ -8,6 +8,8 @@ Prerequisites
 
 The tool is written in *Perl*. It requires that **Perl** software with the *DBI* and *DBD::Pg* modules be installed on the server executing this command.
 
+Rolling back each *emaj database* within a single transaction implies the use of two-phase commit. As a consequence, the **max_prepared_transactions** parameter of all concerned instances, including the instance that hosts the database containing the *dist_emaj* extension, :ref:`must be adjusted<postgres_conf_changes>`.
+
 ----
 
 Syntax

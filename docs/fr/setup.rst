@@ -22,6 +22,20 @@ S'ils n'existent pas déjà, les 2 rôles *dist_emaj_adm* et *dist_emaj_viewer* 
 
 ----
 
+.. _postgres_conf_changes:
+
+Adaptation de la configuration des instances PostgreSQL
+-------------------------------------------------------
+
+Les instances PostgreSQL hébergeant des *databases emaj* ou la base de données contenant l'extension *dist_emaj* doivent supporter les transactions distribuées (avec commit à 2 phases).
+
+Concrétement, le paramètre ``max_prepared_transactions`` de chaque instance doit avoir une valeur au moins égale à la somme du nombre de sessions ouvertes en parallèle pour l'ensemble des bases de données de l'instance lors de l'exécution des :doc:`rollbacks distribués<distEmajRollbackClient>`. La valeur par défaut, 0, bloque l’utilisation de transactions préparées.
+
+.. note::
+   La modification du paramètre nécessite un **arrêt-relance des instances**.
+
+----
+
 Paramétrage de Distributed E-Maj
 --------------------------------
 
