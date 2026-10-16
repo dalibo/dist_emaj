@@ -74,8 +74,9 @@ my $sql;
 my $emajAction;
 my $emajEvent;
 my $realMarkName;
-my $globalTimeId;
 my $nbDeletedMark;
+my $globalTimeId;
+my $prepTxBaseName;
 my $historiesPurgeMsg;
 
 ###############################################################################
@@ -309,6 +310,8 @@ $sql = qq(
 		);
 ($globalTimeId) = $dbh->selectrow_array($sql, undef, 'DIST_EMAJ', $emajEvent)
 	or die "Error while setting the global time _id.\n$DBI::errstr\n\n";		
+
+$prepTxBaseName = "${APPNAME}_${globalTimeId}_tx";
 traceIfVerbose("Global time id = $globalTimeId.");
 
 # For each session, start a transaction.
@@ -592,21 +595,21 @@ $sth_trace->execute('DIST_EMAJ', 'END', $cluster, undef)
 # Phase 1 : Prepare transaction
 foreach my $db (@$databasesArray) {
 	traceIfVerbose("Prepare transaction on session #$db->{session}...");
-	$dbh[$db->{session}]->do("PREPARE TRANSACTION 'emajtx$db->{session}'")
-		or die "Prepare transaction #$db->{session} failed.\n$DBI::errstr\n\n";
+	$dbh[$db->{session}]->do("PREPARE TRANSACTION '${prepTxBaseName}_$db->{session}'")
+		or die "Prepare transaction on emaj session #$db->{session} failed.\n$DBI::errstr\n\n";
 }
 traceIfVerbose("Prepare transaction on dist_emaj session...");
-$dbh->do("PREPARE TRANSACTION 'distemajtx'")
+$dbh->do("PREPARE TRANSACTION '${prepTxBaseName}_0'")
 	or die "Prepare transaction on dist_emaj failed.\n$DBI::errstr\n\n";
 
 # Phase 2 : Commit
 foreach my $db (@$databasesArray) {
 	traceIfVerbose("Commit transaction on session #$db->{session}...");
-	$dbh[$db->{session}]->do("COMMIT PREPARED 'emajtx$db->{session}'")
-		or die "Commit prepared #$db->{session} failed.\n$DBI::errstr\n\n";
+	$dbh[$db->{session}]->do("COMMIT PREPARED '${prepTxBaseName}_$db->{session}'")
+		or die "Commit prepared on emaj session #$db->{session} failed.\n$DBI::errstr\n\n";
 }
 traceIfVerbose("Commit transaction on dist_emaj session...");
-$dbh->do("COMMIT PREPARED 'distemajtx'")
+$dbh->do("COMMIT PREPARED '${prepTxBaseName}_0'")
 	or die "Commit prepared on dist_emaj failed.\n$DBI::errstr\n\n";
 
 # Close the sessions.

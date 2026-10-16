@@ -74,6 +74,7 @@ my $verbose = 0;						# --verbose flag for verbose mode
 my $sql;
 my $targetMarkTimeId;
 my $globalTimeId;
+my $prepTxBaseName;
 my $globalEndTimeId;
 my $distRlbkId;
 my $msgRlbk;
@@ -267,6 +268,7 @@ $sql = qq(
 									$isLogged ? 'TRUE' : 'FALSE', $isAlterGroupAllowed ? 'TRUE' : 'FALSE', $comment, 'PLANNING')
 	or traceDie("Error while inserting into dist_emaj_dlbk.\n$DBI::errstr\n\n");
 
+$prepTxBaseName = "${APPNAME}_${globalTimeId}_tx";
 traceIfVerbose("Distributed rollback id = $distRlbkId ; Global time id = $globalTimeId ; Rollback target mark time id = $targetMarkTimeId.");
 
 # For each session, start a transaction.
@@ -574,21 +576,21 @@ $sthUpdateStatus->execute('COMPLETED', $distRlbkId)
 # Phase 1 : Prepare transaction
 for (my $i = 1 ; $i <= $nbSession; $i++) {
 	traceIfVerbose("Prepare transaction on session #$i...");
-	$dbh[$i]->do("PREPARE TRANSACTION 'emajtx$i'")
+	$dbh[$i]->do("PREPARE TRANSACTION '${prepTxBaseName}_$i'")
 		or traceDie("Prepare transaction on session #$i failed.\n$DBI::errstr\n\n");
 }
 traceIfVerbose("Prepare transaction on dist_emaj session...");
-$dbh2->do("PREPARE TRANSACTION 'distemajtx'")
+$dbh2->do("PREPARE TRANSACTION '${prepTxBaseName}_0'")
 		or traceDie("Prepare transaction on dist_emaj session failed.\n$DBI::errstr\n\n");
 
 # Phase 2 : Commit
 for (my $i = 1 ; $i <= $nbSession; $i++) {
 	traceIfVerbose("Commit transaction on session #$i...");
-	$dbh[$i]->do("COMMIT PREPARED 'emajtx$i'")
+	$dbh[$i]->do("COMMIT PREPARED '${prepTxBaseName}_$i'")
 		or traceDie("Commit prepared #$i failed.\n$DBI::errstr\n\n");
 }
 traceIfVerbose("Commit transaction on dist_emaj session...");
-$dbh2->do("COMMIT PREPARED 'distemajtx'")
+$dbh2->do("COMMIT PREPARED '${prepTxBaseName}_0'")
 		or traceDie("Commit prepared on dist_emaj session failed.\n$DBI::errstr\n\n");
 
 # Call the emaj_cleanup_rollback_state() function on each database to set the rollback event as committed.
