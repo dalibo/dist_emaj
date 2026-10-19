@@ -268,7 +268,7 @@ $sql = qq(
 									$isLogged ? 'TRUE' : 'FALSE', $isAlterGroupAllowed ? 'TRUE' : 'FALSE', $comment, 'PLANNING')
 	or traceDie("Error while inserting into dist_emaj_dlbk.\n$DBI::errstr\n\n");
 
-$prepTxBaseName = "${APPNAME}_${globalTimeId}_tx";
+$prepTxBaseName = "${APPNAME}_${globalTimeId}";
 traceIfVerbose("Distributed rollback id = $distRlbkId ; Global time id = $globalTimeId ; Rollback target mark time id = $targetMarkTimeId.");
 
 # For each session, start a transaction.
@@ -574,24 +574,26 @@ $sthUpdateStatus->execute('COMPLETED', $distRlbkId)
 # COMMIT transactions on all emaj databases and the second dist_emaj connection, with 2PC to be sure that all sessions
 #   can either commit or rollback in a single transaction.
 # Phase 1 : Prepare transaction
-for (my $i = 1 ; $i <= $nbSession; $i++) {
-	traceIfVerbose("Prepare transaction on session #$i...");
-	$dbh[$i]->do("PREPARE TRANSACTION '${prepTxBaseName}_$i'")
-		or traceDie("Prepare transaction on session #$i failed.\n$DBI::errstr\n\n");
-}
 traceIfVerbose("Prepare transaction on dist_emaj session...");
 $dbh2->do("PREPARE TRANSACTION '${prepTxBaseName}_0'")
 		or traceDie("Prepare transaction on dist_emaj session failed.\n$DBI::errstr\n\n");
 
+for (my $i = 1 ; $i <= $nbSession; $i++) {
+	traceIfVerbose("Prepare transaction on session #$i...");
+	$dbh[$i]->do("PREPARE TRANSACTION '${prepTxBaseName}_$i'")
+		or rlbkPrepTraceDie($i, "Prepare transaction on session #$i failed.\n$DBI::errstr\n\n");
+}
+
 # Phase 2 : Commit
+traceIfVerbose("Commit transaction on dist_emaj session...");
+$dbh2->do("COMMIT PREPARED '${prepTxBaseName}_0'")
+		or traceDie("Commit prepared on dist_emaj session failed.\n$DBI::errstr\n\n");
+
 for (my $i = 1 ; $i <= $nbSession; $i++) {
 	traceIfVerbose("Commit transaction on session #$i...");
 	$dbh[$i]->do("COMMIT PREPARED '${prepTxBaseName}_$i'")
 		or traceDie("Commit prepared #$i failed.\n$DBI::errstr\n\n");
 }
-traceIfVerbose("Commit transaction on dist_emaj session...");
-$dbh2->do("COMMIT PREPARED '${prepTxBaseName}_0'")
-		or traceDie("Commit prepared on dist_emaj session failed.\n$DBI::errstr\n\n");
 
 # Call the emaj_cleanup_rollback_state() function on each database to set the rollback event as committed.
 foreach my $db (@$databasesArray) {
@@ -682,6 +684,23 @@ sub traceDie {
 	}
 
 	die $errMsg;
+}
+
+sub rlbkPrepTraceDie {
+	my ($failedSession, $errMsg) = @_;
+
+# Rollback the prepared tx on the second dist_emaj session.
+	traceIfVerbose("Rollback the prepared transaction on dist_emaj session...");
+	$dbh2->do("ROLLBACK PREPARED '${prepTxBaseName}_0'")
+		or traceDie("ROLLBACK PREPARED on dist _emaj session failed.\n$DBI::errstr\n\n");
+# Rollback the transactions already prepared on emaj databases.
+	for (my $i = 1 ; $i < $failedSession; $i++) {
+		traceIfVerbose("Rollback the prepared transaction on session #$i...");
+		$dbh[$i]->do("ROLLBACK PREPARED '${prepTxBaseName}_$i'")
+			or traceDie("ROLLBACK PREPARED on session #$i failed.\n$DBI::errstr\n\n");
+	}
+# And die with the error message display.
+	traceDie($errMsg);
 }
 
 sub printHelp {

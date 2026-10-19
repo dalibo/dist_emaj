@@ -140,8 +140,8 @@ SET session_authorization TO _regress_dist_emaj_adm;
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
 On database 'emaj', Logged rollback of tables groups 'myGroup' to mark '1_M2' is now in progress, using 1 corridors, with local rollback identifier 1.
-On database 'emaj_1', Logged rollback of tables groups 'myGroup1', 'myGroup4' to mark '1_M2' is now in progress, using 2 corridors, with local rollback identifier 4.
-On database 'emaj_2', Logged rollback of tables groups 'myGroup4' to mark '1_M2' is now in progress, using 2 corridors, with local rollback identifier 4.
+On database 'emaj_1', Logged rollback of tables groups 'myGroup1', 'myGroup4' to mark '1_M2' is now in progress, using 2 corridors, with local rollback identifier 5.
+On database 'emaj_2', Logged rollback of tables groups 'myGroup4' to mark '1_M2' is now in progress, using 2 corridors, with local rollback identifier 5.
 Logged rollback on cluster 'cluster_1' completed.
 It has processed 4 groups spread into 3 databases.
   database 'emaj':
@@ -149,11 +149,11 @@ It has processed 4 groups spread into 3 databases.
     Notice: 1 / 1 tables effectively processed.
     Notice: 0 / 3 sequences effectively processed.
   database 'emaj_1':
-    Notice: Rollback id = 4.
+    Notice: Rollback id = 5.
     Notice: 1 / 6 tables effectively processed.
     Notice: 0 / 2 sequences effectively processed.
   database 'emaj_2':
-    Notice: Rollback id = 4.
+    Notice: Rollback id = 5.
     Notice: 1 / 1 tables effectively processed.
 RESET session_authorization;
 --
@@ -169,8 +169,8 @@ SELECT hist_function, hist_event, hist_object, hist_wording FROM dist_emaj.dist_
  DIST_EMAJ            | TIME STAMP SET     | 6000                    | 
  EMAJ_STOP_GROUPS     | INIT               | emaj_1                  | 
  EMAJ_STOP_GROUPS     | INIT               | emaj_2                  | 
- EMAJ_STOP_GROUPS     | LOCK               | emaj_1                  | Local time_id: 44
- EMAJ_STOP_GROUPS     | LOCK               | emaj_2                  | Local time_id: 35
+ EMAJ_STOP_GROUPS     | LOCK               | emaj_1                  | Local time_id: 46
+ EMAJ_STOP_GROUPS     | LOCK               | emaj_2                  | Local time_id: 37
  EMAJ_STOP_GROUPS     | EXEC               | emaj_1                  | Processed tables and sequences: 17
  EMAJ_STOP_GROUPS     | EXEC               | emaj_2                  | Processed tables and sequences: 5
  DIST_EMAJ            | END                | my_cluster              | 
@@ -204,8 +204,8 @@ SELECT hist_function, hist_event, hist_object, hist_wording FROM dist_emaj.dist_
  EMAJ_START_GROUPS    | INIT               | emaj_1                  | 
  EMAJ_START_GROUPS    | INIT               | emaj_2                  | 
  EMAJ_START_GROUPS    | LOCK               | emaj                    | Local time_id: 4
- EMAJ_START_GROUPS    | LOCK               | emaj_1                  | Local time_id: 45
- EMAJ_START_GROUPS    | LOCK               | emaj_2                  | Local time_id: 36
+ EMAJ_START_GROUPS    | LOCK               | emaj_1                  | Local time_id: 47
+ EMAJ_START_GROUPS    | LOCK               | emaj_2                  | Local time_id: 38
  EMAJ_START_GROUPS    | EXEC               | emaj                    | Processed tables and sequences: 4
  EMAJ_START_GROUPS    | EXEC               | emaj_1                  | Processed tables and sequences: 8
  EMAJ_START_GROUPS    | EXEC               | emaj_2                  | Processed tables and sequences: 1
@@ -214,8 +214,8 @@ SELECT hist_function, hist_event, hist_object, hist_wording FROM dist_emaj.dist_
  DIST_EMAJ            | TIME STAMP SET     | 6012                    | 
  EMAJ_START_GROUPS    | INIT               | emaj_1                  | 
  EMAJ_START_GROUPS    | INIT               | emaj_2                  | 
- EMAJ_START_GROUPS    | LOCK               | emaj_1                  | Local time_id: 46
- EMAJ_START_GROUPS    | LOCK               | emaj_2                  | Local time_id: 37
+ EMAJ_START_GROUPS    | LOCK               | emaj_1                  | Local time_id: 48
+ EMAJ_START_GROUPS    | LOCK               | emaj_2                  | Local time_id: 39
  EMAJ_START_GROUPS    | EXEC               | emaj_1                  | Processed tables and sequences: 0
  EMAJ_START_GROUPS    | EXEC               | emaj_2                  | Processed tables and sequences: 4
  DIST_EMAJ            | END                | cluster_2               | 
@@ -227,8 +227,8 @@ SELECT hist_function, hist_event, hist_object, hist_wording FROM dist_emaj.dist_
  EMAJ_SET_MARK_GROUPS | INIT               | emaj_1                  | 
  EMAJ_SET_MARK_GROUPS | INIT               | emaj_2                  | 
  EMAJ_SET_MARK_GROUPS | LOCK               | emaj                    | Local time_id: 5
- EMAJ_SET_MARK_GROUPS | LOCK               | emaj_1                  | Local time_id: 47
- EMAJ_SET_MARK_GROUPS | LOCK               | emaj_2                  | Local time_id: 38
+ EMAJ_SET_MARK_GROUPS | LOCK               | emaj_1                  | Local time_id: 49
+ EMAJ_SET_MARK_GROUPS | LOCK               | emaj_2                  | Local time_id: 40
  EMAJ_SET_MARK_GROUPS | EXEC               | emaj                    | Processed tables and sequences: 4
  EMAJ_SET_MARK_GROUPS | EXEC               | emaj_1                  | Processed tables and sequences: 8
  EMAJ_SET_MARK_GROUPS | EXEC               | emaj_2                  | Processed tables and sequences: 1
@@ -241,8 +241,8 @@ SELECT hist_function, hist_event, hist_object, hist_wording FROM dist_emaj.dist_
  EMAJ_SET_MARK_GROUPS | INIT               | emaj_1                  | 
  EMAJ_SET_MARK_GROUPS | INIT               | emaj_2                  | 
  EMAJ_SET_MARK_GROUPS | LOCK               | emaj                    | Local time_id: 6
- EMAJ_SET_MARK_GROUPS | LOCK               | emaj_1                  | Local time_id: 48
- EMAJ_SET_MARK_GROUPS | LOCK               | emaj_2                  | Local time_id: 39
+ EMAJ_SET_MARK_GROUPS | LOCK               | emaj_1                  | Local time_id: 50
+ EMAJ_SET_MARK_GROUPS | LOCK               | emaj_2                  | Local time_id: 41
  EMAJ_SET_MARK_GROUPS | EXEC               | emaj                    | Processed tables and sequences: 4
  EMAJ_SET_MARK_GROUPS | EXEC               | emaj_1                  | Processed tables and sequences: 8
  EMAJ_SET_MARK_GROUPS | EXEC               | emaj_2                  | Processed tables and sequences: 1
@@ -250,8 +250,8 @@ SELECT hist_function, hist_event, hist_object, hist_wording FROM dist_emaj.dist_
  ROLLBACK_GROUPS      | BEGIN              | cluster_1               | Logged rollback to mark 1_M2
  ROLLBACK_GROUPS      | TIME STAMP SET     | 6015                    | 
  ROLLBACK_GROUPS      | INIT               | emaj                    | Mark name = 1_M2 ; Rollback Id = 1
- ROLLBACK_GROUPS      | INIT               | emaj_1                  | Mark name = 1_M2 ; Rollback Id = 4
- ROLLBACK_GROUPS      | INIT               | emaj_2                  | Mark name = 1_M2 ; Rollback Id = 4
+ ROLLBACK_GROUPS      | INIT               | emaj_1                  | Mark name = 1_M2 ; Rollback Id = 5
+ ROLLBACK_GROUPS      | INIT               | emaj_2                  | Mark name = 1_M2 ; Rollback Id = 5
  ROLLBACK_GROUPS      | LOCK               | emaj                    | Corridor: 1
  ROLLBACK_GROUPS      | LOCK               | emaj_1                  | Corridor: 1
  ROLLBACK_GROUPS      | LOCK               | emaj_1                  | Corridor: 2

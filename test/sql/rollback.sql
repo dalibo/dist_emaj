@@ -62,13 +62,22 @@ SELECT emaj.emaj_delete_mark_group('myGroup1', 'A_Mark_Name');
 SELECT emaj.emaj_set_mark_group('myGroup1', 'A_Mark_Name');
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark A_Mark_Name
 
--- Should be OK.
+-- Test an error occuring at PREPARE TRANSACTION time to be sure that no pending prepared transaction remain.
 
+\c regression
+UPDATE dist_emaj.dist_emaj_database SET db_rlbk_parallel_session = current_setting('max_prepared_transactions')::INT
+  WHERE db_name = 'emaj_2';
+\! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark START --logged
+UPDATE dist_emaj.dist_emaj_database SET db_rlbk_parallel_session = 2
+  WHERE db_name = 'emaj_2';
+
+-- Should be OK.
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark START --logged --verbose --rt
 
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark START
 
 -- Rollback with a tables group structure change.
+\c regression_1
 SELECT emaj.emaj_modify_table('myschema1', 'mytbl1', '{"priority":1}'::JSONB, 'Priority_changed');
 --   --alter-groups-allowed option is missing.
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark START
