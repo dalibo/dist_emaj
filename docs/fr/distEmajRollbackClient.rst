@@ -76,14 +76,16 @@ exécute un rollback tracé du cluster 'monCluster' en ciblant la marque distrib
 Notes
 -----
 
+La marque cible du rollback doit correspondre à un **même point dans le temps** pour l'ensemble des groupes de tables du *cluster*. Le nom de la marque doit correspondre à celui cité lors de la pose de la marque avec distEmaj.pl. Néanmoins, cette marque peut avoir été renommée localement pour l'un des groupes de tables.
+
+Si le rollback distribué est tracé, deux marques distribuées encadrent l'opération.
+
 Le rollback du *cluster* est effectué au sein d'une **transaction globale** et les groupes de tables sont **verrouillés** pour l'occasion. Ceci garantit ainsi :
 
 - que le rollback est correctement réalisé pour **tous les groupes de tables** des différentes databases ou qu'il n'est réalisé pour aucun des groupes, en cas d'anomalie,
 - en fin de rollback, tous les groupes de tables du *cluster* sont dans un **état cohérent**, correspondant à la marque distribuée ciblée.
 
-La marque cible du rollback doit correspondre à un même point dans le temps pour l'ensemble des groupes de tables du *cluster*. Le nom de la marque doit correspondre à celui cité lors de la pose de la marque avec distEmaj.pl. Néanmoins, cette marque peut avoir été renommée localement pour l'un des groupes de tables.
-
-Si le rollback distribué est tracé, deux marques distribuées encadrent l'opération.
+Durant l'exécution du *rollback distribué*, deux sessions sont ouvertes sur la base hébergeant l'extension *dist_emaj*. L'une est utilisée pour la pose des *marques distribuées* et est insérée dans la transaction globale. L'autre effectue tous les autres accès à *dist_emaj* (contrôles, pilotage, trace de l'avancement), et est indépendante de la transaction globale.
 
 **Déroulement**
 
@@ -98,7 +100,7 @@ Ensuite, l'opération de rollback est découpée en **6 étapes** :
 5. **finalisation** : chaque *database* est accédée en séquence sur sa première connexion ouverte pour qu'il finalise son rollback. Si le rollback est tracé, la marque de fin de rollback est posée.
 6. **validation** : une fois toutes les étapes de finalisation terminées, les éventuelles marques distribuées sont enregistrées et la transaction globale est validée par un *COMMIT à deux phases*.
 
-Durant l'exécution du *rollback distribué*, toute opération lancée en parallèle sur le *cluster* (modification de configuration, pose de marque, etc) est mise en attente jusqu'à la fin du *rollback distribué*.
+Durant l'exécution du *rollback distribué*, toute autre opération lancée en parallèle sur le *cluster* (modification de configuration, pose de marque, etc) est mise en attente jusqu'à la fin du *rollback distribué*.
 
 Les rollback distribués sont enregistrés dans la base de l'extension *dist_emaj*. L'opération est également tracée dans la table dist_emaj.dist_emaj_hist.
 

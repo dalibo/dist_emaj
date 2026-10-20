@@ -76,14 +76,16 @@ executes a logged rollback of the *cluster* 'myCluster', targeting the distribut
 Notes
 -----
 
+The target mark for the rollback must correspond to the **same point in time** for all table groups in the *cluster*. The mark name must match the one specified when setting the mark with ``distEmaj.pl``. However, this mark may have been renamed locally for one of the table groups.
+
+If the distributed rollback is logged, two distributed marks frame the operation.
+
 The rollback of the *cluster* is performed within a **global transaction**, and the table groups are **locked** for the occasion. This ensures:
 
 - That the rollback is correctly performed for **all table groups** across the different *databases*, or not performed for any of the groups in case of an anomaly,
 - That at the end of the rollback, all table groups in the *cluster* are in a **consistent state**, corresponding to the targeted distributed mark.
 
-The target mark for the rollback must correspond to the same point in time for all table groups in the *cluster*. The mark name must match the one specified when setting the mark with ``distEmaj.pl``. However, this mark may have been renamed locally for one of the table groups.
-
-If the distributed rollback is logged, two distributed marks frame the operation.
+During the execution of a *distributed rollback*, two sessions are opened on the database hosting the *dist_emaj* extension. One is used to set *distributed marks* and is included in the global transaction. The other performs all other accesses to *dist_emaj* (checks, scheduling, tracing) and remains independant from the global transaction.
 
 **Process**
 
