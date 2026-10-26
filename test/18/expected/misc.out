@@ -150,6 +150,64 @@ SELECT * FROM dist_emaj.dist_emaj_verify_all();
  No error detected
 (3 rows)
 
+-- Simulate too low "max_prepared_transactions" instance parameter by directly calling _verify_instance()
+-- ok for all actions
+SELECT dist_emaj._verify_instance('my_cluster', NULL);   -- simulate call by dist_emaj_verify_all()
+ _verify_instance 
+------------------
+(0 rows)
+
+SELECT dist_emaj._verify_instance('my_cluster', FALSE);  -- simulate call by distEmaj.pl
+ _verify_instance 
+------------------
+(0 rows)
+
+SELECT dist_emaj._verify_instance('my_cluster', TRUE);   -- simulate call by distEmajRollback.pl
+ _verify_instance 
+------------------
+(0 rows)
+
+-- too low for start/stop/set_mark actions
+UPDATE dist_emaj.dist_emaj_database SET db_pg_instance_max_prep_tx = 0;
+SELECT dist_emaj._verify_instance('my_cluster', NULL);   -- simulate call by dist_emaj_verify_all()
+                                                                                                                                        _verify_instance                                                                                                                                        
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Warning: On the postgres instance hosting "dist_emaj", "emaj_1", "emaj_2" databases, the current "max_prepared_transactions" value (0) is two low to handle the 3 connections needed to perform usual actions on cluster "my_cluster" and the 5 connections requested to rollback the cluster.
+(1 row)
+
+SELECT dist_emaj._verify_instance('my_cluster', FALSE);  -- simulate call by distEmaj.pl
+                                                                                                                                       _verify_instance                                                                                                                                       
+----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Error: On the postgres instance hosting "dist_emaj", "emaj_1", "emaj_2" databases, the current "max_prepared_transactions" value (0) is two low to handle the 3 connections needed to perform usual actions on cluster "my_cluster" and the 5 connections requested to rollback the cluster.
+(1 row)
+
+SELECT dist_emaj._verify_instance('my_cluster', TRUE);   -- simulate call by distEmajRollback.pl
+                                                                                                      _verify_instance                                                                                                       
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Error: On the postgres instance hosting "dist_emaj", "emaj_1", "emaj_2" databases, the current "max_prepared_transactions" value (0) is two low to handle the 5 requested connections to rollback the cluster "my_cluster".
+(1 row)
+
+-- ok for start/stop/set_mark actions but too low for rollback
+UPDATE dist_emaj.dist_emaj_database SET db_pg_instance_max_prep_tx = 4;
+SELECT dist_emaj._verify_instance('my_cluster', NULL);   -- simulate call by dist_emaj_verify_all()
+                                                                                                       _verify_instance                                                                                                        
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Warning: On the postgres instance hosting "dist_emaj", "emaj_1", "emaj_2" databases, the current "max_prepared_transactions" value (4) is two low to handle the 5 requested connections to rollback the cluster "my_cluster".
+(1 row)
+
+SELECT dist_emaj._verify_instance('my_cluster', FALSE);  -- simulate call by distEmaj.pl
+                                                                                                       _verify_instance                                                                                                        
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Warning: On the postgres instance hosting "dist_emaj", "emaj_1", "emaj_2" databases, the current "max_prepared_transactions" value (4) is two low to handle the 5 requested connections to rollback the cluster "my_cluster".
+(1 row)
+
+SELECT dist_emaj._verify_instance('my_cluster', TRUE);   -- simulate call by distEmajRollback.pl
+                                                                                                      _verify_instance                                                                                                       
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ Error: On the postgres instance hosting "dist_emaj", "emaj_1", "emaj_2" databases, the current "max_prepared_transactions" value (4) is two low to handle the 5 requested connections to rollback the cluster "my_cluster".
+(1 row)
+
+-- (the next call to emaj_verify_cluster() will reset the correct values of db_pg_instance_max_prep_tx columns
 -----------------------------
 -- Dist_emaj_delete_before_mark_cluster() tests.
 -----------------------------
@@ -506,7 +564,7 @@ SELECT dist_emaj.dist_emaj_set_param('history_retention', '1 second');
 SELECT dist_emaj.dist_emaj_purge_histories();
                         dist_emaj_purge_histories                        
 -------------------------------------------------------------------------
- 435 dist_emaj_hist rows deleted ; 8 distributed rollback events deleted
+ 402 dist_emaj_hist rows deleted ; 7 distributed rollback events deleted
 (1 row)
 
 SELECT dist_emaj.dist_emaj_set_param('history_retention', NULL);

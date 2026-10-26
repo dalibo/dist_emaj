@@ -163,7 +163,9 @@ SELECT dist_emaj.dist_emaj_verify_cluster('my_cluster');
 SELECT hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_wording, E'\\d\\d\.\\d\\d\\.\\d\\d\\.\\d\\d\\d\\d', '%', 'g'), hist_user
   FROM dist_emaj.dist_emaj_hist WHERE hist_id >= 1000 ORDER BY 1;
 SELECT * FROM dist_emaj.dist_emaj_cluster ORDER BY 1;
-SELECT * FROM dist_emaj.dist_emaj_database ORDER BY 1;
+SELECT db_name, db_connect_string, db_rlbk_parallel_session, db_creation_time_id, db_last_alter_time_id,
+       db_pg_instance_id IS NOT NULL AS pg_instance_known, db_pg_instance_max_prep_tx IS NOT NULL AS pg_max_prep_tx_known
+  FROM dist_emaj.dist_emaj_database ORDER BY 1;
 SELECT * FROM dist_emaj.dist_emaj_cluster_group ORDER BY 1,2,3;
 
 -----------------------------

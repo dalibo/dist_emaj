@@ -75,6 +75,24 @@ SELECT dist_emaj.dist_emaj_drop_database('no_emaj');
 
 SELECT * FROM dist_emaj.dist_emaj_verify_all();
 
+-- Simulate too low "max_prepared_transactions" instance parameter by directly calling _verify_instance()
+-- ok for all actions
+SELECT dist_emaj._verify_instance('my_cluster', NULL);   -- simulate call by dist_emaj_verify_all()
+SELECT dist_emaj._verify_instance('my_cluster', FALSE);  -- simulate call by distEmaj.pl
+SELECT dist_emaj._verify_instance('my_cluster', TRUE);   -- simulate call by distEmajRollback.pl
+-- too low for start/stop/set_mark actions
+UPDATE dist_emaj.dist_emaj_database SET db_pg_instance_max_prep_tx = 0;
+SELECT dist_emaj._verify_instance('my_cluster', NULL);   -- simulate call by dist_emaj_verify_all()
+SELECT dist_emaj._verify_instance('my_cluster', FALSE);  -- simulate call by distEmaj.pl
+SELECT dist_emaj._verify_instance('my_cluster', TRUE);   -- simulate call by distEmajRollback.pl
+-- ok for start/stop/set_mark actions but too low for rollback
+UPDATE dist_emaj.dist_emaj_database SET db_pg_instance_max_prep_tx = 4;
+SELECT dist_emaj._verify_instance('my_cluster', NULL);   -- simulate call by dist_emaj_verify_all()
+SELECT dist_emaj._verify_instance('my_cluster', FALSE);  -- simulate call by distEmaj.pl
+SELECT dist_emaj._verify_instance('my_cluster', TRUE);   -- simulate call by distEmajRollback.pl
+-- (the next call to emaj_verify_cluster() will reset the correct values of db_pg_instance_max_prep_tx columns
+
+
 -----------------------------
 -- Dist_emaj_delete_before_mark_cluster() tests.
 -----------------------------

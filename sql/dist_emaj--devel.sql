@@ -156,8 +156,10 @@ CREATE TABLE dist_emaj.dist_emaj_database (
   db_rlbk_parallel_session     SMALLINT NOT NULL           -- maximum number of sessions a rollback may use on this database
                                CHECK (db_rlbk_parallel_session > 0),
   db_creation_time_id          BIGINT,                     -- time stamp at database create time
-  db_last_alter_time_id        BIGINT,                     -- time stamp of the latest database properties change
+  db_last_alter_time_id        BIGINT,                     -- time stamp of the latest database configuration change
                                                            --   (NULL at database creation time)
+  db_pg_instance_id            BIGINT,                     -- last known internal postgres instance identifier
+  db_pg_instance_max_prep_tx   INT,                        -- last known max_prepared_transactions of the postgres instance
   PRIMARY KEY (db_name)
   );
 COMMENT ON TABLE dist_emaj.dist_emaj_database IS
@@ -1190,7 +1192,7 @@ $dist_emaj_export_clusters_configuration$
   END;
 $dist_emaj_export_clusters_configuration$;
 COMMENT ON FUNCTION dist_emaj.dist_emaj_export_clusters_configuration(TEXT, TEXT[]) IS
-$$Stores in a file a JSON structure describing configured clusters annd databases.$$;
+$$Stores in a file a JSON structure describing configured clusters and databases.$$;
 
 CREATE OR REPLACE FUNCTION dist_emaj._export_clusters_conf(p_clusters TEXT[] DEFAULT NULL)
 RETURNS JSON LANGUAGE plpgsql AS
@@ -1964,26 +1966,29 @@ $dist_emaj_delete_before_mark_cluster$;
 COMMENT ON FUNCTION dist_emaj.dist_emaj_delete_before_mark_cluster(TEXT, TEXT) IS
 $$Deletes all distributed marks set before a given mark.$$;
 
-CREATE OR REPLACE FUNCTION dist_emaj._verify_database(p_database TEXT, p_connectString TEXT, p_groupsList TEXT,
-                                                    p_dblinkSchema TEXT, p_onErrorStop BOOLEAN)
+CREATE OR REPLACE FUNCTION dist_emaj._verify_database(p_database TEXT, p_connectString TEXT, p_latestPgSystemId BIGINT,
+                                                      p_latestPgMaxPrepTx INT, p_groupsList TEXT, p_dblinkSchema TEXT,
+                                                      p_onErrorStop BOOLEAN)
 RETURNS SETOF TEXT LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS
 $_verify_database$
 -- This function verifies a database health.
 -- It checks that the database:
 --   is reachable by dblink,
---   contains an emaj extension in a valid version
---   can handle global transactions,
+--   contains an emaj extension in a valid version,
 --   effectively owns all assiged table groups.
+-- It also records the instance id and "max_prepared_transactions" parameter for future checks.
 -- Input: database name,
 --        connect string to reach the database,
+--        last known pg instance id,
+--        last known pg instance max_prepared_transactions GUC value
 --        list of groups owned by the database,
---        schema holding the dblinnk extension,
+--        schema holding the dblink extension,
 --        flag indicating whether an error is reported as a warning or an exception.
 -- Output: set of error messages
 -- The function is defined as SECURITY DEFINER to allow the function to use the dblink_connect() function.
   DECLARE
-    v_checkStep              INT = 0;
+    v_checkStep              INT = 0;    -- 1 = dblink connection OK ; 2 = emaj schema exists ; 3 = the role has enough rights
     v_errDetail              TEXT;
     v_msg                    TEXT;
     v_stmt                   TEXT;
@@ -1993,6 +1998,7 @@ $_verify_database$
     v_emajVersion            TEXT;
     v_emajVersionArray       TEXT[];
     v_emajVersionNum         INT;
+    v_pgSystemId             BIGINT;
     v_maxPreparedTx          INT;
     v_missingGroupsList      TEXT;
   BEGIN
@@ -2089,24 +2095,22 @@ $_verify_database$
         END IF;
       END IF;
     END IF;
--- Then check that the max_prepared_transactions GUC has a nonzero value.
+-- Then get some pg instance properties,
     IF v_checkStep >= 3 THEN
-      v_stmt = 'SELECT pg_catalog.current_setting(''max_prepared_transactions'')::INT AS max_prepared_tx';
-      EXECUTE format('SELECT max_prepared_tx FROM %I.dblink(%L) AS (max_prepared_tx INT)',
+      v_stmt = 'SELECT system_identifier, pg_catalog.current_setting(''max_prepared_transactions'')::INT AS max_prepared_tx '
+                  'FROM pg_control_system()';
+      EXECUTE format('SELECT system_identifier, max_prepared_tx FROM %I.dblink(%L) AS (system_identifier BIGINT, max_prepared_tx INT)',
                      p_dblinkSchema, v_stmt)
-        INTO v_maxPreparedTx;
-      IF v_maxPreparedTx <= 1 THEN
-        v_msg = format('Error on database "%s", the postgres instance max_prepared_transactions parameter (%s) is too low '
-                          'to launch distributed operations.',
-                          p_database, v_maxPreparedTx);
-        IF p_onErrorStop THEN
-          EXECUTE format('SELECT %I.dblink_disconnect()', p_dblinkSchema);
-          RAISE EXCEPTION '_verify_database (6): %', v_msg;
-        END IF;
-        RETURN NEXT v_msg;
+        INTO v_pgSystemId, v_maxPreparedTx;
+-- ... and record them if any change.
+      IF p_latestPgSystemId IS NULL OR p_latestPgMaxPrepTx IS NULL OR
+         p_latestPgSystemId <> v_pgSystemId OR p_latestPgMaxPrepTx <> v_maxPreparedTx THEN
+        UPDATE dist_emaj.dist_emaj_database
+          SET db_pg_instance_id = v_pgSystemId, db_pg_instance_max_prep_tx = v_maxPreparedTx
+          WHERE db_name = p_database;
       END IF;
     END IF;
--- Annd check that the all groups assigned to the cluster exist.
+-- And check that the all groups assigned to the cluster exist.
     IF v_checkStep >= 3 THEN
       v_stmt = 'SELECT string_agg(grp, '', '') AS missing_groups_list '
                  'FROM ( '
@@ -2137,7 +2141,61 @@ $_verify_database$
   END;
 $_verify_database$;
 
-CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_verify_cluster(p_cluster TEXT, p_checkEmptyCluster BOOLEAN DEFAULT FALSE)
+CREATE OR REPLACE FUNCTION dist_emaj._verify_instance(p_cluster TEXT, p_isRollbackAction BOOLEAN DEFAULT NULL)
+RETURNS SETOF TEXT LANGUAGE plpgsql AS
+$_verify_instance$
+-- This function verifies the configuration of each instance reached by a cluster.
+-- It checks that the "max_prepared_transactions" GUC value is compatible with the requested distributed actions.
+-- It is called by dist_emaj_verify_cluster() and dist_emaj_verify_all() functions.
+-- These calling functions already check that the cluster exists and collect the instance ids and "max_prepared_transactions" values.
+-- Input: cluster name,
+--        flag indicating whether the check concerns the distEmajRollback (TRUE) or distEmaj (FALSE) clients. Remains NULL otherwise.
+-- Output: Error or warning messages.
+  DECLARE
+    v_severity               TEXT;
+    r_instance               RECORD;
+  BEGIN
+-- Aggregate the needed connections on emaj databases and the dist_emaj database.
+    FOR r_instance IN
+      WITH db AS (
+          SELECT db_name, db_rlbk_parallel_session, db_pg_instance_id, db_pg_instance_max_prep_tx
+            FROM dist_emaj.dist_emaj_database
+                 JOIN dist_emaj.dist_emaj_cluster_group ON (dist_emaj_cluster_group.clgrp_database = dist_emaj_database.db_name)
+            WHERE clgrp_cluster = p_cluster
+        UNION
+          SELECT 'dist_emaj', 1, system_identifier, current_setting('max_prepared_transactions')::INT
+            FROM pg_control_system()
+        ORDER BY db_name
+        )
+      SELECT db_pg_instance_id, string_agg('"' || db_name || '"', ', ') AS db_list,
+             min(db_pg_instance_max_prep_tx)::INT AS max_prepared_transactions,
+             count(db_rlbk_parallel_session) AS nb_session,
+             sum(db_rlbk_parallel_session) AS nb_rlbk_session
+        FROM db
+        GROUP BY db_pg_instance_id
+    LOOP
+-- Check the number of sessions for start/st/set_mark actions.
+      IF (p_isRollbackAction IS NULL OR NOT p_isRollbackAction) AND r_instance.max_prepared_transactions < r_instance.nb_session THEN
+        v_severity = CASE WHEN p_isRollbackAction IS NULL THEN 'Warning' ELSE 'Error' END;
+        RETURN NEXT format('%s: On the postgres instance hosting %s databases, the current "max_prepared_transactions"'
+                           ' value (%s) is two low to handle the %s connections needed to perform usual actions on cluster "%s"'
+                           ' and the %s connections requested to rollback the cluster.',
+                           v_severity, r_instance.db_list, r_instance.max_prepared_transactions, r_instance.nb_session, p_cluster,
+                           r_instance.nb_rlbk_session);
+-- Check the number of sessions for rollback actions.
+      ELSIF r_instance.max_prepared_transactions < r_instance.nb_rlbk_session THEN
+        v_severity = CASE WHEN p_isRollbackAction IS NULL OR NOT p_isRollbackAction THEN 'Warning' ELSE 'Error' END;
+        RETURN NEXT format('%s: On the postgres instance hosting %s databases, the current "max_prepared_transactions"'
+                           ' value (%s) is two low to handle the %s requested connections to rollback the cluster "%s".',
+                           v_severity, r_instance.db_list, r_instance.max_prepared_transactions, r_instance.nb_rlbk_session, p_cluster);
+      END IF;
+    END LOOP;
+    RETURN;
+  END;
+$_verify_instance$;
+
+CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_verify_cluster(p_cluster TEXT, p_checkEmptyCluster BOOLEAN DEFAULT FALSE,
+                                                              p_isRollbackAction BOOLEAN DEFAULT NULL)
 RETURNS VOID LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS
 $dist_emaj_verify_cluster$
@@ -2146,15 +2204,19 @@ $dist_emaj_verify_cluster$
 --   the cluster exists,
 --   the cluster has at least 1 assigned table group (on request),
 --   all databases are reachable by dblink, contain a emaj extension in a valid version and can handle global transactions,
---   all table groups assigned to the cluster exist.
+--   all table groups assigned to the cluster exist,
+--   all postgres instances have a large enough "max_prepared_transactions" parameter.
 -- It also cleans up the state of rollback operations that are known as in-progress.
 -- Input: cluster name.
 --        flag indicating whether empty cluster has to be checked (no check by default),
+--        flag indicating whether the check concerns the distEmajRollback (TRUE) or distEmaj (FALSE) clients. NULL by default.
 -- The function is defined as SECURITY DEFINER to look at all PG processes in pg_stat_activity.
 -- It is called by both distEmaj.pl and distEmajRollback.pl clients (with empty cluster detection).
 -- It may also be called manualy.
   DECLARE
     v_dblinkSchema           TEXT;
+    v_errorFound             BOOLEAN = FALSE;
+    r_instance               RECORD;
     r_rlbk                   RECORD;
   BEGIN
 -- Check that the cluster exists and lock it.
@@ -2177,9 +2239,10 @@ $dist_emaj_verify_cluster$
       WHERE proname = 'dblink_connect'
       LIMIT 1;
 -- Check each database involved in the cluster, using the _verify_database() function.
-    PERFORM dist_emaj._verify_database(db_name, db_connect_string, groups_list, v_dblinkSchema, TRUE)
+    PERFORM dist_emaj._verify_database(db_name, db_connect_string, db_pg_instance_id, db_pg_instance_max_prep_tx,
+                                       groups_list, v_dblinkSchema, TRUE)
       FROM (
-        SELECT db_name, db_connect_string,
+        SELECT db_name, db_connect_string, db_pg_instance_id, db_pg_instance_max_prep_tx,
                string_agg(quote_literal(clgrp_group), ',' ORDER BY clgrp_group) AS groups_list
           FROM dist_emaj.dist_emaj_cluster_group
                JOIN dist_emaj.dist_emaj_database ON (dist_emaj_database.db_name = dist_emaj_cluster_group.clgrp_database)
@@ -2187,6 +2250,19 @@ $dist_emaj_verify_cluster$
           GROUP BY db_name, db_connect_string
           ORDER BY db_name
         ) AS databases;
+-- Check the "max_prepared_transactions" parameter of postgres instances used by the cluster.
+    FOR r_instance IN
+      SELECT msg
+        FROM dist_emaj._verify_instance(p_cluster, p_isRollbackAction) msg
+    LOOP
+      RAISE WARNING 'dist_emaj_verify_cluster: %', r_instance.msg;
+      IF r_instance.msg LIKE 'Error%' THEN
+        v_errorFound = TRUE;
+      END IF;
+    END LOOP;
+    IF v_errorFound THEN
+      RAISE EXCEPTION 'dist_emaj_verify_cluster: At least one postgres instance has a too low "max_prepared_transactions" parameter';
+    END IF;
 -- Cleanup the rollback states.
 -- Look at each distributed rollback operation known as in-progress, i.e. not yet commited or aborted.
     FOR r_rlbk IN
@@ -2214,7 +2290,7 @@ $dist_emaj_verify_cluster$
     END LOOP;
   END;
 $dist_emaj_verify_cluster$;
-COMMENT ON FUNCTION dist_emaj.dist_emaj_verify_cluster(TEXT, BOOLEAN) IS
+COMMENT ON FUNCTION dist_emaj.dist_emaj_verify_cluster(TEXT, BOOLEAN, BOOLEAN) IS
 $$Performs a health check of a cluster.$$;
 
 CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_sync_marks_cluster(p_cluster TEXT)
@@ -2616,15 +2692,30 @@ $dist_emaj_verify_all$
       LIMIT 1;
 -- Check all configured databases, using the _verify_database() function.
     FOR r_message IN
-      SELECT dist_emaj._verify_database(db_name, db_connect_string, groups_list, v_dblinkSchema, FALSE) AS msg
+      SELECT dist_emaj._verify_database(db_name, db_connect_string, db_pg_instance_id, db_pg_instance_max_prep_tx,
+                                        groups_list, v_dblinkSchema, FALSE) AS msg
         FROM (
-          SELECT db_name, db_connect_string,
+          SELECT db_name, db_connect_string, db_pg_instance_id, db_pg_instance_max_prep_tx,
                  string_agg(quote_literal(clgrp_group), ',' ORDER BY clgrp_group) AS groups_list
             FROM dist_emaj.dist_emaj_database
                  LEFT OUTER JOIN dist_emaj.dist_emaj_cluster_group ON (dist_emaj_cluster_group.clgrp_database = dist_emaj_database.db_name)
             GROUP BY db_name, db_connect_string
             ORDER BY db_name
           ) AS databases
+    LOOP
+      RETURN NEXT r_message.msg;
+      IF r_message.msg LIKE 'Error%' THEN
+        v_errorFound = TRUE;
+      END IF;
+    END LOOP;
+-- Check the max_prepared_transactions of all postgres instances.
+    FOR r_message IN
+      SELECT dist_emaj._verify_instance(clst_name, NULL) AS msg
+        FROM (
+          SELECT clst_name
+            FROM dist_emaj.dist_emaj_cluster
+            ORDER BY clst_name
+          ) AS instances
     LOOP
       RETURN NEXT r_message.msg;
       IF r_message.msg LIKE 'Error%' THEN

@@ -42,9 +42,9 @@ SELECT dist_emaj.dist_emaj_create_database('first_database', 'a connect string',
 (1 row)
 
 SELECT * FROM dist_emaj.dist_emaj_database WHERE db_name = 'first_database';
-    db_name     | db_connect_string | db_rlbk_parallel_session | db_creation_time_id | db_last_alter_time_id 
-----------------+-------------------+--------------------------+---------------------+-----------------------
- first_database | a connect string  |                        2 |                1000 |                      
+    db_name     | db_connect_string | db_rlbk_parallel_session | db_creation_time_id | db_last_alter_time_id | db_pg_instance_id | db_pg_instance_max_prep_tx 
+----------------+-------------------+--------------------------+---------------------+-----------------------+-------------------+----------------------------
+ first_database | a connect string  |                        2 |                1000 |                       |                   |                           
 (1 row)
 
 -- Already created.
@@ -58,9 +58,9 @@ SELECT dist_emaj.dist_emaj_create_database('first_database', 'another connect st
 (1 row)
 
 SELECT * FROM dist_emaj.dist_emaj_database WHERE db_name = 'first_database';
-    db_name     |   db_connect_string    | db_rlbk_parallel_session | db_creation_time_id | db_last_alter_time_id 
-----------------+------------------------+--------------------------+---------------------+-----------------------
- first_database | another connect string |                        3 |                1000 |                  1001
+    db_name     |   db_connect_string    | db_rlbk_parallel_session | db_creation_time_id | db_last_alter_time_id | db_pg_instance_id | db_pg_instance_max_prep_tx 
+----------------+------------------------+--------------------------+---------------------+-----------------------+-------------------+----------------------------
+ first_database | another connect string |                        3 |                1000 |                  1001 |                   |                           
 (1 row)
 
 --
@@ -271,7 +271,7 @@ SELECT dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_2', 'myGroup4');
 -- Unknown cluster.
 SELECT dist_emaj.dist_emaj_verify_cluster('dummy');
 ERROR:  dist_emaj_verify_cluster: The cluster "dummy" is unknown.
-CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 20 at RAISE
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean,boolean) line 24 at RAISE
 -- Empty cluster.
 SELECT dist_emaj.dist_emaj_verify_cluster('empty_cluster');
  dist_emaj_verify_cluster 
@@ -281,7 +281,7 @@ SELECT dist_emaj.dist_emaj_verify_cluster('empty_cluster');
 
 SELECT dist_emaj.dist_emaj_verify_cluster('empty_cluster', TRUE);
 ERROR:  dist_emaj_verify_cluster: The cluster "empty_cluster" is empty.
-CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 28 at RAISE
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean,boolean) line 32 at RAISE
 -- emaj is missing in a database (use template1).
 SELECT dist_emaj.dist_emaj_create_database('no_emaj', 'host=localhost port=' || pg_catalog.current_setting('port') || ' dbname=template1 user=_regress_emaj_adm password=adm', 1);
  dist_emaj_create_database 
@@ -304,10 +304,11 @@ BEGIN;
 
   SELECT dist_emaj.dist_emaj_verify_cluster('buggy_cluster');
 ERROR:  _verify_database (2): Error on database "no_emaj", the emaj extension is not installed in the database.
-CONTEXT:  PL/pgSQL function dist_emaj._verify_database(text,text,text,text,boolean) line 56 at RAISE
-SQL statement "SELECT dist_emaj._verify_database(db_name, db_connect_string, groups_list, v_dblinkSchema, TRUE)
+CONTEXT:  PL/pgSQL function dist_emaj._verify_database(text,text,bigint,integer,text,text,boolean) line 59 at RAISE
+SQL statement "SELECT dist_emaj._verify_database(db_name, db_connect_string, db_pg_instance_id, db_pg_instance_max_prep_tx,
+                                       groups_list, v_dblinkSchema, TRUE)
       FROM (
-        SELECT db_name, db_connect_string,
+        SELECT db_name, db_connect_string, db_pg_instance_id, db_pg_instance_max_prep_tx,
                string_agg(quote_literal(clgrp_group), ',' ORDER BY clgrp_group) AS groups_list
           FROM dist_emaj.dist_emaj_cluster_group
                JOIN dist_emaj.dist_emaj_database ON (dist_emaj_database.db_name = dist_emaj_cluster_group.clgrp_database)
@@ -315,7 +316,7 @@ SQL statement "SELECT dist_emaj._verify_database(db_name, db_connect_string, gro
           GROUP BY db_name, db_connect_string
           ORDER BY db_name
         ) AS databases"
-PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 38 at PERFORM
+PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean,boolean) line 42 at PERFORM
 ROLLBACK;
 -- Keep the database for dist_emaj_verify_all() tests in misc.sql.
 -- Should be OK.
@@ -405,13 +406,15 @@ SELECT * FROM dist_emaj.dist_emaj_cluster ORDER BY 1;
  my_cluster    |                  1012 |                    1018
 (2 rows)
 
-SELECT * FROM dist_emaj.dist_emaj_database ORDER BY 1;
- db_name |                                db_connect_string                                 | db_rlbk_parallel_session | db_creation_time_id | db_last_alter_time_id 
----------+----------------------------------------------------------------------------------+--------------------------+---------------------+-----------------------
- emaj    | host=localhost port=5414 dbname=regression user=_regress_emaj_adm password=adm   |                        1 |                1009 |                      
- emaj_1  | host=localhost port=5414 dbname=regression_1 user=_regress_emaj_adm password=adm |                        2 |                1010 |                      
- emaj_2  | postgresql://_regress_emaj_adm:adm@localhost:5414/regression_2                   |                        2 |                1011 |                      
- no_emaj | host=localhost port=5414 dbname=template1 user=_regress_emaj_adm password=adm    |                        1 |                1019 |                      
+SELECT db_name, db_connect_string, db_rlbk_parallel_session, db_creation_time_id, db_last_alter_time_id,
+       db_pg_instance_id IS NOT NULL AS pg_instance_known, db_pg_instance_max_prep_tx IS NOT NULL AS pg_max_prep_tx_known
+  FROM dist_emaj.dist_emaj_database ORDER BY 1;
+ db_name |                                db_connect_string                                 | db_rlbk_parallel_session | db_creation_time_id | db_last_alter_time_id | pg_instance_known | pg_max_prep_tx_known 
+---------+----------------------------------------------------------------------------------+--------------------------+---------------------+-----------------------+-------------------+----------------------
+ emaj    | host=localhost port=5414 dbname=regression user=_regress_emaj_adm password=adm   |                        1 |                1009 |                       | f                 | f
+ emaj_1  | host=localhost port=5414 dbname=regression_1 user=_regress_emaj_adm password=adm |                        2 |                1010 |                       | t                 | t
+ emaj_2  | postgresql://_regress_emaj_adm:adm@localhost:5414/regression_2                   |                        2 |                1011 |                       | t                 | t
+ no_emaj | host=localhost port=5414 dbname=template1 user=_regress_emaj_adm password=adm    |                        1 |                1019 |                       | f                 | f
 (4 rows)
 
 SELECT * FROM dist_emaj.dist_emaj_cluster_group ORDER BY 1,2,3;

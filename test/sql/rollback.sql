@@ -62,8 +62,7 @@ SELECT emaj.emaj_delete_mark_group('myGroup1', 'A_Mark_Name');
 SELECT emaj.emaj_set_mark_group('myGroup1', 'A_Mark_Name');
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark A_Mark_Name
 
--- Test an error occuring at PREPARE TRANSACTION time to be sure that no pending prepared transaction remain.
-
+-- Too low "max_prepared_transactions" parameter on the postgres instance.
 \c regression
 UPDATE dist_emaj.dist_emaj_database SET db_rlbk_parallel_session = current_setting('max_prepared_transactions')::INT
   WHERE db_name = 'emaj_2';

@@ -68,7 +68,7 @@ Error: the user is not allowed to access the dist_emaj database.
 --------------------------------------------
 Error while checking the cluster.
 ERROR:  dist_emaj_verify_cluster: The cluster "empty_cluster" is empty.
-CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 28 at RAISE
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean,boolean) line 32 at RAISE
 
 -- Errors in rollback target mark.
 --   Unknown mark.
@@ -89,10 +89,11 @@ INSERT INTO dist_emaj.dist_emaj_cluster_group VALUES
 --------------------------------------------
 Error while checking the cluster.
 ERROR:  _verify_database (7): Error on database "emaj_1", some table groups (extraGroup_1, extraGroup_2) are missing.
-CONTEXT:  PL/pgSQL function dist_emaj._verify_database(text,text,text,text,boolean) line 155 at RAISE
-SQL statement "SELECT dist_emaj._verify_database(db_name, db_connect_string, groups_list, v_dblinkSchema, TRUE)
+CONTEXT:  PL/pgSQL function dist_emaj._verify_database(text,text,bigint,integer,text,text,boolean) line 156 at RAISE
+SQL statement "SELECT dist_emaj._verify_database(db_name, db_connect_string, db_pg_instance_id, db_pg_instance_max_prep_tx,
+                                       groups_list, v_dblinkSchema, TRUE)
       FROM (
-        SELECT db_name, db_connect_string,
+        SELECT db_name, db_connect_string, db_pg_instance_id, db_pg_instance_max_prep_tx,
                string_agg(quote_literal(clgrp_group), ',' ORDER BY clgrp_group) AS groups_list
           FROM dist_emaj.dist_emaj_cluster_group
                JOIN dist_emaj.dist_emaj_database ON (dist_emaj_database.db_name = dist_emaj_cluster_group.clgrp_database)
@@ -100,7 +101,7 @@ SQL statement "SELECT dist_emaj._verify_database(db_name, db_connect_string, gro
           GROUP BY db_name, db_connect_string
           ORDER BY db_name
         ) AS databases"
-PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean) line 38 at PERFORM
+PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean,boolean) line 42 at PERFORM
 
 DELETE FROM dist_emaj.dist_emaj_cluster_group WHERE clgrp_group LIKE 'extraGroup%';
 \c regression_1
@@ -143,18 +144,17 @@ SELECT emaj.emaj_set_mark_group('myGroup1', 'A_Mark_Name');
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
 Error: the target mark is missing (or has not the expected time_id) for 1 tables groups on database emaj_1 (time_id 32).
--- Test an error occuring at PREPARE TRANSACTION time to be sure that no pending prepared transaction remain.
+-- Too low "max_prepared_transactions" parameter on the postgres instance.
 \c regression
 UPDATE dist_emaj.dist_emaj_database SET db_rlbk_parallel_session = current_setting('max_prepared_transactions')::INT
   WHERE db_name = 'emaj_2';
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark START --logged
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
-On database 'emaj_1', Logged rollback of tables groups 'myGroup1', 'myGroup2', 'myGroup4' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 1.
-On database 'emaj_2', Logged rollback of tables groups 'myGroup4', 'phil''s group#3",' to mark 'START' is now in progress, using 10 corridors, with local rollback identifier 1.
-Prepare transaction on session #10 failed.
-ERROR:  maximum number of prepared transactions reached
-HINT:  Increase "max_prepared_transactions" (currently 10).
+WARNING:  dist_emaj_verify_cluster: Error: On the postgres instance hosting "dist_emaj", "emaj_1", "emaj_2" databases, the current "max_prepared_transactions" value (10) is two low to handle the 13 requested connections to rollback the cluster "my_cluster".
+Error while checking the cluster.
+ERROR:  dist_emaj_verify_cluster: At least one postgres instance has a too low "max_prepared_transactions" parameter
+CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean,boolean) line 64 at RAISE
 
 UPDATE dist_emaj.dist_emaj_database SET db_rlbk_parallel_session = 2
   WHERE db_name = 'emaj_2';
@@ -168,15 +168,15 @@ dd/mm/yyyy - hh:mn:ss database emaj_1: open session #1...
 dd/mm/yyyy - hh:mn:ss database emaj_1: open session #2...
 dd/mm/yyyy - hh:mn:ss database emaj_2: open session #3...
 dd/mm/yyyy - hh:mn:ss database emaj_2: open session #4...
-dd/mm/yyyy - hh:mn:ss Distributed rollback id = 3004 ; Global time id = 3007 ; Rollback target mark time id = 3000.
+dd/mm/yyyy - hh:mn:ss Distributed rollback id = 3003 ; Global time id = 3005 ; Rollback target mark time id = 3000.
 dd/mm/yyyy - hh:mn:ss Start transaction on session #1...
 dd/mm/yyyy - hh:mn:ss Start transaction on session #2...
 dd/mm/yyyy - hh:mn:ss Start transaction on session #3...
 dd/mm/yyyy - hh:mn:ss Start transaction on session #4...
 dd/mm/yyyy - hh:mn:ss database emaj_1: call _rlbk_init()...
-On database 'emaj_1', Logged rollback of tables groups 'myGroup1', 'myGroup2', 'myGroup4' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 2.
+On database 'emaj_1', Logged rollback of tables groups 'myGroup1', 'myGroup2', 'myGroup4' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 1.
 dd/mm/yyyy - hh:mn:ss database emaj_2: call _rlbk_init()...
-On database 'emaj_2', Logged rollback of tables groups 'myGroup4', 'phil''s group#3",' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 2.
+On database 'emaj_2', Logged rollback of tables groups 'myGroup4', 'phil''s group#3",' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 1.
 dd/mm/yyyy - hh:mn:ss database emaj_1 - corridor #1: call _rlbk_lock() asynchronously...
 dd/mm/yyyy - hh:mn:ss database emaj_1 - corridor #2: call _rlbk_lock() asynchronously...
 dd/mm/yyyy - hh:mn:ss database emaj_2 - corridor #1: call _rlbk_lock() asynchronously...
@@ -215,26 +215,26 @@ dd/mm/yyyy - hh:mn:ss Close all sessions...
 Logged rollback on cluster 'my_cluster' completed.
 It has processed 5 groups spread into 2 databases.
   database 'emaj_1':
-    Notice: Rollback id = 2.
+    Notice: Rollback id = 1.
     Notice: 0 / 12 tables effectively processed.
     Notice: 0 / 5 sequences effectively processed.
   database 'emaj_2':
-    Notice: Rollback id = 2.
+    Notice: Rollback id = 1.
     Notice: 0 / 3 tables effectively processed.
     Notice: 0 / 2 sequences effectively processed.
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark START
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
-On database 'emaj_1', Rollback of tables groups 'myGroup1', 'myGroup2', 'myGroup4' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 3.
-On database 'emaj_2', Rollback of tables groups 'myGroup4', 'phil''s group#3",' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 3.
+On database 'emaj_1', Rollback of tables groups 'myGroup1', 'myGroup2', 'myGroup4' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 2.
+On database 'emaj_2', Rollback of tables groups 'myGroup4', 'phil''s group#3",' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 2.
 Rollback on cluster 'my_cluster' completed.
 It has processed 5 groups spread into 2 databases.
   database 'emaj_1':
-    Notice: Rollback id = 3.
+    Notice: Rollback id = 2.
     Notice: 0 / 12 tables effectively processed.
     Notice: 0 / 5 sequences effectively processed.
   database 'emaj_2':
-    Notice: Rollback id = 3.
+    Notice: Rollback id = 2.
     Notice: 0 / 3 tables effectively processed.
     Notice: 0 / 2 sequences effectively processed.
 -- Rollback with a tables group structure change.
@@ -259,17 +259,17 @@ PL/pgSQL function emaj._rlbk_init(text[],text,boolean,integer,boolean,boolean,te
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark START --alter-groups-allowed
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
-On database 'emaj_1', Rollback of tables groups 'myGroup1', 'myGroup2', 'myGroup4' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 4.
-On database 'emaj_2', Rollback of tables groups 'myGroup4', 'phil''s group#3",' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 4.
+On database 'emaj_1', Rollback of tables groups 'myGroup1', 'myGroup2', 'myGroup4' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 3.
+On database 'emaj_2', Rollback of tables groups 'myGroup4', 'phil''s group#3",' to mark 'START' is now in progress, using 2 corridors, with local rollback identifier 3.
 Rollback on cluster 'my_cluster' completed.
 It has processed 5 groups spread into 2 databases.
   database 'emaj_1':
-    Notice: Rollback id = 4.
+    Notice: Rollback id = 3.
     Notice: 0 / 12 tables effectively processed.
     Notice: 0 / 5 sequences effectively processed.
     Warning: Table group change not rolled back: E-Maj priority for myschema1.mytbl1
   database 'emaj_2':
-    Notice: Rollback id = 4.
+    Notice: Rollback id = 3.
     Notice: 0 / 3 tables effectively processed.
     Notice: 0 / 2 sequences effectively processed.
 --
@@ -343,94 +343,59 @@ SELECT hist_id, hist_function, hist_event, hist_object, regexp_replace(hist_word
     3034 | ROLLBACK_GROUPS      | LOCK               | emaj_1         | Corridor: 2                                                                                                                                                        | postgres
     3035 | ROLLBACK_GROUPS      | LOCK               | emaj_2         | Corridor: 1                                                                                                                                                        | postgres
     3036 | ROLLBACK_GROUPS      | LOCK               | emaj_2         | Corridor: 2                                                                                                                                                        | postgres
-    3037 | ROLLBACK_GROUPS      | LOCK               | emaj_2         | Corridor: 3                                                                                                                                                        | postgres
-    3038 | ROLLBACK_GROUPS      | LOCK               | emaj_2         | Corridor: 4                                                                                                                                                        | postgres
-    3039 | ROLLBACK_GROUPS      | LOCK               | emaj_2         | Corridor: 5                                                                                                                                                        | postgres
-    3040 | ROLLBACK_GROUPS      | LOCK               | emaj_2         | Corridor: 6                                                                                                                                                        | postgres
-    3041 | ROLLBACK_GROUPS      | LOCK               | emaj_2         | Corridor: 7                                                                                                                                                        | postgres
-    3042 | ROLLBACK_GROUPS      | LOCK               | emaj_2         | Corridor: 8                                                                                                                                                        | postgres
-    3043 | ROLLBACK_GROUPS      | LOCK               | emaj_2         | Corridor: 9                                                                                                                                                        | postgres
-    3044 | ROLLBACK_GROUPS      | LOCK               | emaj_2         | Corridor: 10                                                                                                                                                       | postgres
-    3045 | ROLLBACK_GROUPS      | START              | emaj_1         |                                                                                                                                                                    | postgres
-    3046 | ROLLBACK_GROUPS      | START              | emaj_2         |                                                                                                                                                                    | postgres
-    3047 | ROLLBACK_GROUPS      | EXEC               | emaj_1         | Corridor: 1                                                                                                                                                        | postgres
-    3048 | ROLLBACK_GROUPS      | EXEC               | emaj_1         | Corridor: 2                                                                                                                                                        | postgres
-    3049 | ROLLBACK_GROUPS      | EXEC               | emaj_2         | Corridor: 1                                                                                                                                                        | postgres
-    3050 | ROLLBACK_GROUPS      | EXEC               | emaj_2         | Corridor: 2                                                                                                                                                        | postgres
-    3051 | ROLLBACK_GROUPS      | EXEC               | emaj_2         | Corridor: 3                                                                                                                                                        | postgres
-    3052 | ROLLBACK_GROUPS      | EXEC               | emaj_2         | Corridor: 4                                                                                                                                                        | postgres
-    3053 | ROLLBACK_GROUPS      | EXEC               | emaj_2         | Corridor: 5                                                                                                                                                        | postgres
-    3054 | ROLLBACK_GROUPS      | EXEC               | emaj_2         | Corridor: 6                                                                                                                                                        | postgres
-    3055 | ROLLBACK_GROUPS      | EXEC               | emaj_2         | Corridor: 7                                                                                                                                                        | postgres
-    3056 | ROLLBACK_GROUPS      | EXEC               | emaj_2         | Corridor: 8                                                                                                                                                        | postgres
-    3057 | ROLLBACK_GROUPS      | EXEC               | emaj_2         | Corridor: 9                                                                                                                                                        | postgres
-    3058 | ROLLBACK_GROUPS      | EXEC               | emaj_2         | Corridor: 10                                                                                                                                                       | postgres
-    3059 | ROLLBACK_GROUPS      | END                | emaj_1         |                                                                                                                                                                    | postgres
-    3060 | ROLLBACK_GROUPS      | END                | emaj_2         |                                                                                                                                                                    | postgres
-    3062 | ROLLBACK_GROUPS      | END                | my_cluster     | Prepare transaction on session #10 failed.                                                                                                                        +| postgres
-         |                      |                    |                | ERROR:  maximum number of prepared transactions reached                                                                                                           +| 
-         |                      |                    |                | HINT:  Increase "max_prepared_transactions" (currently 10).                                                                                                        | 
-    3063 | ROLLBACK_GROUPS      | BEGIN              | my_cluster     | Logged rollback to mark START                                                                                                                                      | postgres
-    3064 | ROLLBACK_GROUPS      | TIME STAMP SET     | 3007           |                                                                                                                                                                    | postgres
-    3065 | ROLLBACK_GROUPS      | INIT               | emaj_1         | Mark name = START ; Rollback Id = 2                                                                                                                                | postgres
-    3066 | ROLLBACK_GROUPS      | INIT               | emaj_2         | Mark name = START ; Rollback Id = 2                                                                                                                                | postgres
-    3067 | ROLLBACK_GROUPS      | LOCK               | emaj_1         | Corridor: 1                                                                                                                                                        | postgres
-    3068 | ROLLBACK_GROUPS      | LOCK               | emaj_1         | Corridor: 2                                                                                                                                                        | postgres
-    3069 | ROLLBACK_GROUPS      | LOCK               | emaj_2         | Corridor: 1                                                                                                                                                        | postgres
-    3070 | ROLLBACK_GROUPS      | LOCK               | emaj_2         | Corridor: 2                                                                                                                                                        | postgres
-    3071 | ROLLBACK_GROUPS      | START              | emaj_1         |                                                                                                                                                                    | postgres
-    3072 | ROLLBACK_GROUPS      | START              | emaj_2         |                                                                                                                                                                    | postgres
-    3073 | ROLLBACK_GROUPS      | EXEC               | emaj_1         | Corridor: 1                                                                                                                                                        | postgres
-    3074 | ROLLBACK_GROUPS      | EXEC               | emaj_1         | Corridor: 2                                                                                                                                                        | postgres
-    3075 | ROLLBACK_GROUPS      | EXEC               | emaj_2         | Corridor: 1                                                                                                                                                        | postgres
-    3076 | ROLLBACK_GROUPS      | EXEC               | emaj_2         | Corridor: 2                                                                                                                                                        | postgres
-    3077 | ROLLBACK_GROUPS      | END                | emaj_1         |                                                                                                                                                                    | postgres
-    3078 | ROLLBACK_GROUPS      | END                | emaj_2         |                                                                                                                                                                    | postgres
-    3079 | ROLLBACK_GROUPS      | TIME STAMP SET     | 3008           |                                                                                                                                                                    | postgres
-    3080 | DIST_EMAJ            | END                | my_cluster     |                                                                                                                                                                    | postgres
-    3081 | ROLLBACK_GROUPS      | BEGIN              | my_cluster     | Rollback to mark START                                                                                                                                             | postgres
-    3082 | ROLLBACK_GROUPS      | TIME STAMP SET     | 3009           |                                                                                                                                                                    | postgres
-    3083 | ROLLBACK_GROUPS      | INIT               | emaj_1         | Mark name = START ; Rollback Id = 3                                                                                                                                | postgres
-    3084 | ROLLBACK_GROUPS      | INIT               | emaj_2         | Mark name = START ; Rollback Id = 3                                                                                                                                | postgres
-    3085 | ROLLBACK_GROUPS      | LOCK               | emaj_1         | Corridor: 1                                                                                                                                                        | postgres
-    3086 | ROLLBACK_GROUPS      | LOCK               | emaj_1         | Corridor: 2                                                                                                                                                        | postgres
-    3087 | ROLLBACK_GROUPS      | LOCK               | emaj_2         | Corridor: 1                                                                                                                                                        | postgres
-    3088 | ROLLBACK_GROUPS      | LOCK               | emaj_2         | Corridor: 2                                                                                                                                                        | postgres
-    3089 | ROLLBACK_GROUPS      | START              | emaj_1         |                                                                                                                                                                    | postgres
-    3090 | ROLLBACK_GROUPS      | START              | emaj_2         |                                                                                                                                                                    | postgres
-    3091 | ROLLBACK_GROUPS      | EXEC               | emaj_1         | Corridor: 1                                                                                                                                                        | postgres
-    3092 | ROLLBACK_GROUPS      | EXEC               | emaj_1         | Corridor: 2                                                                                                                                                        | postgres
-    3093 | ROLLBACK_GROUPS      | EXEC               | emaj_2         | Corridor: 1                                                                                                                                                        | postgres
-    3094 | ROLLBACK_GROUPS      | EXEC               | emaj_2         | Corridor: 2                                                                                                                                                        | postgres
-    3095 | ROLLBACK_GROUPS      | END                | emaj_1         |                                                                                                                                                                    | postgres
-    3096 | ROLLBACK_GROUPS      | END                | emaj_2         |                                                                                                                                                                    | postgres
-    3097 | DIST_EMAJ            | END                | my_cluster     |                                                                                                                                                                    | postgres
-    3098 | ROLLBACK_GROUPS      | BEGIN              | my_cluster     | Rollback to mark START                                                                                                                                             | postgres
-    3099 | ROLLBACK_GROUPS      | TIME STAMP SET     | 3010           |                                                                                                                                                                    | postgres
-    3100 | ROLLBACK_GROUPS      | END                | my_cluster     | Error while calling the _rlbk_init() function for database emaj_1.                                                                                                +| postgres
+    3037 | ROLLBACK_GROUPS      | START              | emaj_1         |                                                                                                                                                                    | postgres
+    3038 | ROLLBACK_GROUPS      | START              | emaj_2         |                                                                                                                                                                    | postgres
+    3039 | ROLLBACK_GROUPS      | EXEC               | emaj_1         | Corridor: 1                                                                                                                                                        | postgres
+    3040 | ROLLBACK_GROUPS      | EXEC               | emaj_1         | Corridor: 2                                                                                                                                                        | postgres
+    3041 | ROLLBACK_GROUPS      | EXEC               | emaj_2         | Corridor: 1                                                                                                                                                        | postgres
+    3042 | ROLLBACK_GROUPS      | EXEC               | emaj_2         | Corridor: 2                                                                                                                                                        | postgres
+    3043 | ROLLBACK_GROUPS      | END                | emaj_1         |                                                                                                                                                                    | postgres
+    3044 | ROLLBACK_GROUPS      | END                | emaj_2         |                                                                                                                                                                    | postgres
+    3045 | ROLLBACK_GROUPS      | TIME STAMP SET     | 3006           |                                                                                                                                                                    | postgres
+    3046 | DIST_EMAJ            | END                | my_cluster     |                                                                                                                                                                    | postgres
+    3047 | ROLLBACK_GROUPS      | BEGIN              | my_cluster     | Rollback to mark START                                                                                                                                             | postgres
+    3048 | ROLLBACK_GROUPS      | TIME STAMP SET     | 3007           |                                                                                                                                                                    | postgres
+    3049 | ROLLBACK_GROUPS      | INIT               | emaj_1         | Mark name = START ; Rollback Id = 2                                                                                                                                | postgres
+    3050 | ROLLBACK_GROUPS      | INIT               | emaj_2         | Mark name = START ; Rollback Id = 2                                                                                                                                | postgres
+    3051 | ROLLBACK_GROUPS      | LOCK               | emaj_1         | Corridor: 1                                                                                                                                                        | postgres
+    3052 | ROLLBACK_GROUPS      | LOCK               | emaj_1         | Corridor: 2                                                                                                                                                        | postgres
+    3053 | ROLLBACK_GROUPS      | LOCK               | emaj_2         | Corridor: 1                                                                                                                                                        | postgres
+    3054 | ROLLBACK_GROUPS      | LOCK               | emaj_2         | Corridor: 2                                                                                                                                                        | postgres
+    3055 | ROLLBACK_GROUPS      | START              | emaj_1         |                                                                                                                                                                    | postgres
+    3056 | ROLLBACK_GROUPS      | START              | emaj_2         |                                                                                                                                                                    | postgres
+    3057 | ROLLBACK_GROUPS      | EXEC               | emaj_1         | Corridor: 1                                                                                                                                                        | postgres
+    3058 | ROLLBACK_GROUPS      | EXEC               | emaj_1         | Corridor: 2                                                                                                                                                        | postgres
+    3059 | ROLLBACK_GROUPS      | EXEC               | emaj_2         | Corridor: 1                                                                                                                                                        | postgres
+    3060 | ROLLBACK_GROUPS      | EXEC               | emaj_2         | Corridor: 2                                                                                                                                                        | postgres
+    3061 | ROLLBACK_GROUPS      | END                | emaj_1         |                                                                                                                                                                    | postgres
+    3062 | ROLLBACK_GROUPS      | END                | emaj_2         |                                                                                                                                                                    | postgres
+    3063 | DIST_EMAJ            | END                | my_cluster     |                                                                                                                                                                    | postgres
+    3064 | ROLLBACK_GROUPS      | BEGIN              | my_cluster     | Rollback to mark START                                                                                                                                             | postgres
+    3065 | ROLLBACK_GROUPS      | TIME STAMP SET     | 3008           |                                                                                                                                                                    | postgres
+    3066 | ROLLBACK_GROUPS      | END                | my_cluster     | Error while calling the _rlbk_init() function for database emaj_1.                                                                                                +| postgres
          |                      |                    |                | ERROR:  _rlbk_check: This rollback operation would cross some previous structure group change operations, which is not allowed by the current function parameters.+| 
          |                      |                    |                | CONTEXT:  PL/pgSQL function emaj._rlbk_check(text[],text,boolean,boolean) line 59 at RAISE                                                                        +| 
          |                      |                    |                | SQL statement "SELECT emaj._rlbk_check(p_groups, p_mark, p_isAlterGroupAllowed, FALSE)"                                                                           +| 
          |                      |                    |                | PL/pgSQL function emaj._rlbk_init(text[],text,boolean,integer,boolean,boolean,text) line 25 at SQL statement                                                       | 
-    3101 | ROLLBACK_GROUPS      | BEGIN              | my_cluster     | Rollback to mark START                                                                                                                                             | postgres
-    3102 | ROLLBACK_GROUPS      | TIME STAMP SET     | 3011           |                                                                                                                                                                    | postgres
-    3103 | ROLLBACK_GROUPS      | INIT               | emaj_1         | Mark name = START ; Rollback Id = 4                                                                                                                                | postgres
-    3104 | ROLLBACK_GROUPS      | INIT               | emaj_2         | Mark name = START ; Rollback Id = 4                                                                                                                                | postgres
-    3105 | ROLLBACK_GROUPS      | LOCK               | emaj_1         | Corridor: 1                                                                                                                                                        | postgres
-    3106 | ROLLBACK_GROUPS      | LOCK               | emaj_1         | Corridor: 2                                                                                                                                                        | postgres
-    3107 | ROLLBACK_GROUPS      | LOCK               | emaj_2         | Corridor: 1                                                                                                                                                        | postgres
-    3108 | ROLLBACK_GROUPS      | LOCK               | emaj_2         | Corridor: 2                                                                                                                                                        | postgres
-    3109 | ROLLBACK_GROUPS      | START              | emaj_1         |                                                                                                                                                                    | postgres
-    3110 | ROLLBACK_GROUPS      | START              | emaj_2         |                                                                                                                                                                    | postgres
-    3111 | ROLLBACK_GROUPS      | EXEC               | emaj_1         | Corridor: 1                                                                                                                                                        | postgres
-    3112 | ROLLBACK_GROUPS      | EXEC               | emaj_1         | Corridor: 2                                                                                                                                                        | postgres
-    3113 | ROLLBACK_GROUPS      | EXEC               | emaj_2         | Corridor: 1                                                                                                                                                        | postgres
-    3114 | ROLLBACK_GROUPS      | EXEC               | emaj_2         | Corridor: 2                                                                                                                                                        | postgres
-    3115 | ROLLBACK_GROUPS      | END                | emaj_1         |                                                                                                                                                                    | postgres
-    3116 | ROLLBACK_GROUPS      | END                | emaj_2         |                                                                                                                                                                    | postgres
-    3117 | DIST_EMAJ            | END                | my_cluster     |                                                                                                                                                                    | postgres
-    3118 | VERIFY_CLUSTER       | CLEANUP_RLBK_STATE | Rollback id -2 | set to ABORTED                                                                                                                                                     | postgres
-(118 rows)
+    3067 | ROLLBACK_GROUPS      | BEGIN              | my_cluster     | Rollback to mark START                                                                                                                                             | postgres
+    3068 | ROLLBACK_GROUPS      | TIME STAMP SET     | 3009           |                                                                                                                                                                    | postgres
+    3069 | ROLLBACK_GROUPS      | INIT               | emaj_1         | Mark name = START ; Rollback Id = 3                                                                                                                                | postgres
+    3070 | ROLLBACK_GROUPS      | INIT               | emaj_2         | Mark name = START ; Rollback Id = 3                                                                                                                                | postgres
+    3071 | ROLLBACK_GROUPS      | LOCK               | emaj_1         | Corridor: 1                                                                                                                                                        | postgres
+    3072 | ROLLBACK_GROUPS      | LOCK               | emaj_1         | Corridor: 2                                                                                                                                                        | postgres
+    3073 | ROLLBACK_GROUPS      | LOCK               | emaj_2         | Corridor: 1                                                                                                                                                        | postgres
+    3074 | ROLLBACK_GROUPS      | LOCK               | emaj_2         | Corridor: 2                                                                                                                                                        | postgres
+    3075 | ROLLBACK_GROUPS      | START              | emaj_1         |                                                                                                                                                                    | postgres
+    3076 | ROLLBACK_GROUPS      | START              | emaj_2         |                                                                                                                                                                    | postgres
+    3077 | ROLLBACK_GROUPS      | EXEC               | emaj_1         | Corridor: 1                                                                                                                                                        | postgres
+    3078 | ROLLBACK_GROUPS      | EXEC               | emaj_1         | Corridor: 2                                                                                                                                                        | postgres
+    3079 | ROLLBACK_GROUPS      | EXEC               | emaj_2         | Corridor: 1                                                                                                                                                        | postgres
+    3080 | ROLLBACK_GROUPS      | EXEC               | emaj_2         | Corridor: 2                                                                                                                                                        | postgres
+    3081 | ROLLBACK_GROUPS      | END                | emaj_1         |                                                                                                                                                                    | postgres
+    3082 | ROLLBACK_GROUPS      | END                | emaj_2         |                                                                                                                                                                    | postgres
+    3083 | DIST_EMAJ            | END                | my_cluster     |                                                                                                                                                                    | postgres
+    3084 | VERIFY_CLUSTER       | CLEANUP_RLBK_STATE | Rollback id -2 | set to ABORTED                                                                                                                                                     | postgres
+(85 rows)
 
 SELECT mark_cluster, regexp_replace(mark_name, E'\\d\\d\.\\d\\d\\.\\d\\d\\.\\d\\d\\d\\d', '%', 'g'), mark_time_id
   FROM dist_emaj.dist_emaj_mark ORDER BY 1, 3;
@@ -454,12 +419,11 @@ SELECT rlbk_id, rlbk_cluster, rlbk_mark, rlbk_mark_time_id, rlbk_time_id, rlbk_i
     3000 | my_cluster   | A_Mark_Name |              3001 |         3002 | f              | f                           |              | ABORTED
     3001 | my_cluster   | A_Mark_Name |              3001 |         3003 | f              | f                           |              | ABORTED
     3002 | my_cluster   | A_Mark_Name |              3001 |         3004 | f              | f                           |              | ABORTED
-    3003 | my_cluster   | START       |              3000 |         3005 | t              | f                           |              | ABORTED
-    3004 | my_cluster   | START       |              3000 |         3007 | t              | f                           |              | COMMITTED
-    3005 | my_cluster   | START       |              3000 |         3009 | f              | f                           |              | COMMITTED
-    3006 | my_cluster   | START       |              3000 |         3010 | f              | f                           |              | ABORTED
-    3007 | my_cluster   | START       |              3000 |         3011 | f              | t                           |              | COMMITTED
-(8 rows)
+    3003 | my_cluster   | START       |              3000 |         3005 | t              | f                           |              | COMMITTED
+    3004 | my_cluster   | START       |              3000 |         3007 | f              | f                           |              | COMMITTED
+    3005 | my_cluster   | START       |              3000 |         3008 | f              | f                           |              | ABORTED
+    3006 | my_cluster   | START       |              3000 |         3009 | f              | t                           |              | COMMITTED
+(7 rows)
 
 SELECT rlbd_rlbk_id, rlbd_database, rlbd_local_rlbk_id FROM dist_emaj.dist_emaj_rlbk_database ORDER BY 1,2;
  rlbd_rlbk_id | rlbd_database | rlbd_local_rlbk_id 
@@ -468,9 +432,7 @@ SELECT rlbd_rlbk_id, rlbd_database, rlbd_local_rlbk_id FROM dist_emaj.dist_emaj_
          3003 | emaj_2        |                  1
          3004 | emaj_1        |                  2
          3004 | emaj_2        |                  2
-         3005 | emaj_1        |                  3
-         3005 | emaj_2        |                  3
-         3007 | emaj_1        |                  4
-         3007 | emaj_2        |                  4
-(8 rows)
+         3006 | emaj_1        |                  3
+         3006 | emaj_2        |                  3
+(6 rows)
 

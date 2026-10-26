@@ -167,7 +167,7 @@ if (!$hasPrivileges) {
 
 # Check the supplied cluster.
 $sql = qq(
-	SELECT dist_emaj.dist_emaj_verify_cluster(?, TRUE)
+	SELECT dist_emaj.dist_emaj_verify_cluster(?, TRUE, TRUE)
 	);
 $dbh->do($sql, undef, $cluster)
 	or traceDie("Error while checking the cluster.\n$DBI::errstr\n\n");

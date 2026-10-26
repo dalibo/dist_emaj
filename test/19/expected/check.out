@@ -8,7 +8,7 @@ SELECT count(*) as all_functions FROM pg_proc, pg_namespace
   WHERE pg_namespace.oid=pronamespace AND nspname = 'dist_emaj' AND (proname LIKE E'dist\\_emaj\\_%' OR proname LIKE E'\\_%');
  all_functions 
 ---------------
-            37
+            38
 (1 row)
 
 SELECT count(*) as user_callable_functions FROM pg_proc, pg_namespace
@@ -80,21 +80,22 @@ SELECT funcname, calls FROM pg_stat_user_functions
   ORDER BY funcname, funcid;
                  funcname                  | calls 
 -------------------------------------------+-------
- _check_dist_mark                          |    13
+ _check_dist_mark                          |    12
  _check_json_clusters_conf                 |    29
  _check_json_param_conf                    |    17
  _check_new_dist_mark                      |    33
  _dist_emaj_default_param_before_stmt_fnct |     0
  _dist_emaj_param_before_stmt_fnct         |     0
- _does_exist_cluster                       |   144
+ _does_exist_cluster                       |   143
  _export_clusters_conf                     |     6
  _export_param_conf                        |     7
  _import_clusters_conf                     |     6
  _import_clusters_conf_exec                |     6
  _import_clusters_conf_prepare             |    11
  _import_param_conf                        |     8
- _set_time_stamp                           |    87
+ _set_time_stamp                           |    85
  _verify_database                          |   125
+ _verify_instance                          |    71
  dist_emaj_assign_group                    |    16
  dist_emaj_create_cluster                  |     7
  dist_emaj_create_database                 |     6
@@ -115,14 +116,14 @@ SELECT funcname, calls FROM pg_stat_user_functions
  dist_emaj_set_param                       |    10
  dist_emaj_sync_marks_cluster              |    26
  dist_emaj_verify_all                      |     3
- dist_emaj_verify_cluster                  |    56
-(36 rows)
+ dist_emaj_verify_cluster                  |    55
+(37 rows)
 
 -- Count the total number of user-callable function calls (those who failed are not counted).
 SELECT sum(calls) FROM pg_stat_user_functions WHERE funcname LIKE E'dist\\_emaj\\_%';
  sum 
 -----
- 196
+ 195
 (1 row)
 
 -----------------------------
