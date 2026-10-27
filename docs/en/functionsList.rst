@@ -86,13 +86,12 @@ All these functions can be called by roles with *dist_emaj_adm* privileges. The 
 | :ref:`dist_emaj_set_param                        | | p_key TEXT                  | # parameters modified (0/1) INT  |
 | <dist_emaj_set_param>`                           | | p_value TEXT                |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
-| :ref:`dist_emaj_sync_marks_cluster               | | p_cluster TEXT              | # marks deleted INT              |
+| :ref:`dist_emaj_sync_marks_cluster               | p_cluster TEXT                | # marks deleted INT              |
 | <dist_emaj_sync_marks_cluster>`                  |                               |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
 | :ref:`dist_emaj_verify_all                       |                               | SETOF message TEXT               |
 | <dist_emaj_verify_all>`                          |                               |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
-| :ref:`dist_emaj_verify_cluster                   | | p_cluster TEXT              |                                  |
-| <dist_emaj_verify_cluster>`                      | | [ p_checkEmptyCluster       |                                  |
-|                                                  | | BOOLEAN ]                   |                                  |
+| :ref:`dist_emaj_verify_cluster                   | p_cluster TEXT                | # assigned groups INT            |
+| <dist_emaj_verify_cluster>`                      |                               |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+

@@ -270,18 +270,17 @@ SELECT dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_2', 'myGroup4');
 --
 -- Unknown cluster.
 SELECT dist_emaj.dist_emaj_verify_cluster('dummy');
-ERROR:  dist_emaj_verify_cluster: The cluster "dummy" is unknown.
-CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean,boolean) line 24 at RAISE
+ERROR:  _verify_cluster: The cluster "dummy" is unknown.
+CONTEXT:  PL/pgSQL function dist_emaj._verify_cluster(text,boolean,boolean) line 23 at RAISE
+SQL statement "SELECT dist_emaj._verify_cluster(p_cluster, NULL, FALSE)"
+PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text) line 13 at PERFORM
 -- Empty cluster.
 SELECT dist_emaj.dist_emaj_verify_cluster('empty_cluster');
  dist_emaj_verify_cluster 
 --------------------------
- 
+                        0
 (1 row)
 
-SELECT dist_emaj.dist_emaj_verify_cluster('empty_cluster', TRUE);
-ERROR:  dist_emaj_verify_cluster: The cluster "empty_cluster" is empty.
-CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean,boolean) line 32 at RAISE
 -- emaj is missing in a database (use template1).
 SELECT dist_emaj.dist_emaj_create_database('no_emaj', 'host=localhost port=' || pg_catalog.current_setting('port') || ' dbname=template1 user=_regress_emaj_adm password=adm', 1);
  dist_emaj_create_database 
@@ -316,14 +315,16 @@ SQL statement "SELECT dist_emaj._verify_database(db_name, db_connect_string, db_
           GROUP BY db_name, db_connect_string
           ORDER BY db_name
         ) AS databases"
-PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean,boolean) line 42 at PERFORM
+PL/pgSQL function dist_emaj._verify_cluster(text,boolean,boolean) line 41 at PERFORM
+SQL statement "SELECT dist_emaj._verify_cluster(p_cluster, NULL, FALSE)"
+PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text) line 13 at PERFORM
 ROLLBACK;
 -- Keep the database for dist_emaj_verify_all() tests in misc.sql.
 -- Should be OK.
 SELECT dist_emaj.dist_emaj_verify_cluster('my_cluster');
  dist_emaj_verify_cluster 
 --------------------------
- 
+                        5
 (1 row)
 
 --

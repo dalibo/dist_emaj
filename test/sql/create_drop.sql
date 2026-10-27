@@ -144,7 +144,6 @@ SELECT dist_emaj.dist_emaj_assign_group('my_cluster', 'emaj_2', 'myGroup4');
 SELECT dist_emaj.dist_emaj_verify_cluster('dummy');
 -- Empty cluster.
 SELECT dist_emaj.dist_emaj_verify_cluster('empty_cluster');
-SELECT dist_emaj.dist_emaj_verify_cluster('empty_cluster', TRUE);
 -- emaj is missing in a database (use template1).
 SELECT dist_emaj.dist_emaj_create_database('no_emaj', 'host=localhost port=' || pg_catalog.current_setting('port') || ' dbname=template1 user=_regress_emaj_adm password=adm', 1);
 BEGIN;

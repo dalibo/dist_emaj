@@ -67,8 +67,8 @@ Error: the user is not allowed to access the dist_emaj database.
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
 Error while checking the cluster.
-ERROR:  dist_emaj_verify_cluster: The cluster "empty_cluster" is empty.
-CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean,boolean) line 32 at RAISE
+ERROR:  _verify_cluster: The cluster "empty_cluster" is empty.
+CONTEXT:  PL/pgSQL function dist_emaj._verify_cluster(text,boolean,boolean) line 31 at RAISE
 
 -- Errors in rollback target mark.
 --   Unknown mark.
@@ -101,7 +101,7 @@ SQL statement "SELECT dist_emaj._verify_database(db_name, db_connect_string, db_
           GROUP BY db_name, db_connect_string
           ORDER BY db_name
         ) AS databases"
-PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean,boolean) line 42 at PERFORM
+PL/pgSQL function dist_emaj._verify_cluster(text,boolean,boolean) line 41 at PERFORM
 
 DELETE FROM dist_emaj.dist_emaj_cluster_group WHERE clgrp_group LIKE 'extraGroup%';
 \c regression_1
@@ -151,10 +151,10 @@ UPDATE dist_emaj.dist_emaj_database SET db_rlbk_parallel_session = current_setti
 \! ${DIST_EMAJ_DIR}/client/distEmajRollback.pl -d regression -U postgres --cluster my_cluster --mark START --logged
  Distributed E-Maj Rollback (version <devel>)
 --------------------------------------------
-WARNING:  dist_emaj_verify_cluster: Error: On the postgres instance hosting "dist_emaj", "emaj_1", "emaj_2" databases, the current "max_prepared_transactions" value (10) is two low to handle the 13 requested connections to rollback the cluster "my_cluster".
+WARNING:  _verify_cluster: Error: On the postgres instance hosting "dist_emaj", "emaj_1", "emaj_2" databases, the current "max_prepared_transactions" value (10) is two low to handle the 13 requested connections to rollback the cluster "my_cluster".
 Error while checking the cluster.
-ERROR:  dist_emaj_verify_cluster: At least one postgres instance has a too low "max_prepared_transactions" parameter
-CONTEXT:  PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean,boolean) line 64 at RAISE
+ERROR:  _verify_cluster: At least one postgres instance has a too low "max_prepared_transactions" parameter
+CONTEXT:  PL/pgSQL function dist_emaj._verify_cluster(text,boolean,boolean) line 63 at RAISE
 
 UPDATE dist_emaj.dist_emaj_database SET db_rlbk_parallel_session = 2
   WHERE db_name = 'emaj_2';
@@ -285,7 +285,7 @@ SET application_name = 'distEmajRollback';
 SELECT dist_emaj.dist_emaj_verify_cluster('my_cluster');
  dist_emaj_verify_cluster 
 --------------------------
- 
+                        5
 (1 row)
 
 RESET application_name;

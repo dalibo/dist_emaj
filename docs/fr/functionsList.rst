@@ -86,13 +86,12 @@ Toutes ces fonctions sont appelables par les rôles disposant des privilèges *d
 | :ref:`dist_emaj_set_param                        | | p_key TEXT                  | nb paramètre modifié (0/1) INT   |
 | <dist_emaj_set_param>`                           | | p_value TEXT                |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
-| :ref:`dist_emaj_sync_marks_cluster               | | p_cluster TEXT              | nb marques supprimées INT        |
+| :ref:`dist_emaj_sync_marks_cluster               | p_cluster TEXT                | nb marques supprimées INT        |
 | <dist_emaj_sync_marks_cluster>`                  |                               |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
 | :ref:`dist_emaj_verify_all                       |                               | SETOF message TEXT               |
 | <dist_emaj_verify_all>`                          |                               |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+
-| :ref:`dist_emaj_verify_cluster                   | | p_cluster TEXT              |                                  |
-| <dist_emaj_verify_cluster>`                      | | [ p_checkEmptyCluster       |                                  |
-|                                                  | |                   BOOLEAN ] |                                  |
+| :ref:`dist_emaj_verify_cluster                   | p_cluster TEXT                | nb groupes assignés INT          |
+| <dist_emaj_verify_cluster>`                      |                               |                                  |
 +--------------------------------------------------+-------------------------------+----------------------------------+

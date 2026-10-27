@@ -60,7 +60,7 @@ SQL statement "SELECT dist_emaj._verify_database(db_name, db_connect_string, db_
           GROUP BY db_name, db_connect_string
           ORDER BY db_name
         ) AS databases"
-PL/pgSQL function dist_emaj.dist_emaj_verify_cluster(text,boolean,boolean) line 42 at PERFORM
+PL/pgSQL function dist_emaj._verify_cluster(text,boolean,boolean) line 41 at PERFORM
 
 DELETE FROM dist_emaj.dist_emaj_cluster_group WHERE clgrp_cluster = 'my_cluster' AND clgrp_database = 'emaj_1' AND clgrp_group LIKE 'extraGroup%';
 -- Start a cluster (with a comment and useless --reset-logs and --idle-groups-allowed).

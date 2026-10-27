@@ -213,7 +213,7 @@ SELECT dist_emaj._verify_instance('my_cluster', TRUE);   -- simulate call by dis
 -----------------------------
 -- Errors in input parameters.
 SELECT dist_emaj.dist_emaj_delete_before_mark_cluster('dummy_cluster', 'dummy_mark');
-ERROR:  dist_emaj_verify_cluster: The cluster "dummy_cluster" is unknown.
+ERROR:  _verify_cluster: The cluster "dummy_cluster" is unknown.
 SELECT dist_emaj.dist_emaj_delete_before_mark_cluster('my_cluster', 'dummy_mark');
 ERROR:  _check_dist_mark: The mark "dummy_mark" is unknown within the cluster "my_cluster".
 -- Should be OK.

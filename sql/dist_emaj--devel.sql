@@ -1903,7 +1903,7 @@ $dist_emaj_delete_before_mark_cluster$
     INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_event, hist_object, hist_wording)
       VALUES ('DELETE_BEFORE_MARK_CLUSTER', 'BEGIN', p_cluster, p_mark);
 -- Check the cluster.
-    PERFORM dist_emaj.dist_emaj_verify_cluster(p_cluster, TRUE);
+    PERFORM dist_emaj._verify_cluster(p_cluster, TRUE, NULL);
 -- Synchronize marks before checking the supplied mark (to detect a missing local mark to be set as first mark)
     PERFORM dist_emaj.dist_emaj_sync_marks_cluster(p_cluster);
 -- Check the distributed mark name.
@@ -2194,11 +2194,11 @@ $_verify_instance$
   END;
 $_verify_instance$;
 
-CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_verify_cluster(p_cluster TEXT, p_checkEmptyCluster BOOLEAN DEFAULT FALSE,
-                                                              p_isRollbackAction BOOLEAN DEFAULT NULL)
+CREATE OR REPLACE FUNCTION dist_emaj._verify_cluster(p_cluster TEXT, p_checkEmptyCluster BOOLEAN DEFAULT FALSE,
+                                                     p_isRollbackAction BOOLEAN DEFAULT NULL)
 RETURNS VOID LANGUAGE plpgsql
 SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS
-$dist_emaj_verify_cluster$
+$_verify_cluster$
 -- This function verifies the cluster health.
 -- It checks that:
 --   the cluster exists,
@@ -2211,8 +2211,7 @@ $dist_emaj_verify_cluster$
 --        flag indicating whether empty cluster has to be checked (no check by default),
 --        flag indicating whether the check concerns the distEmajRollback (TRUE) or distEmaj (FALSE) clients. NULL by default.
 -- The function is defined as SECURITY DEFINER to look at all PG processes in pg_stat_activity.
--- It is called by both distEmaj.pl and distEmajRollback.pl clients (with empty cluster detection).
--- It may also be called manualy.
+-- It is called by both distEmaj.pl and distEmajRollback.pl clients and by the dist_emaj_verify_cluster() function.
   DECLARE
     v_dblinkSchema           TEXT;
     v_errorFound             BOOLEAN = FALSE;
@@ -2221,7 +2220,7 @@ $dist_emaj_verify_cluster$
   BEGIN
 -- Check that the cluster exists and lock it.
     IF NOT dist_emaj._does_exist_cluster(p_cluster, TRUE) THEN
-      RAISE EXCEPTION 'dist_emaj_verify_cluster: The cluster "%" is unknown.', p_cluster;
+      RAISE EXCEPTION '_verify_cluster: The cluster "%" is unknown.', p_cluster;
     END IF;
 -- If requested, check that the cluster has at least 1 assigned table group.
     IF p_checkEmptyCluster THEN
@@ -2229,7 +2228,7 @@ $dist_emaj_verify_cluster$
         FROM dist_emaj.dist_emaj_cluster_group
         WHERE clgrp_cluster = p_cluster;
       IF NOT FOUND THEN
-        RAISE EXCEPTION 'dist_emaj_verify_cluster: The cluster "%" is empty.', p_cluster;
+        RAISE EXCEPTION '_verify_cluster: The cluster "%" is empty.', p_cluster;
       END IF;
     END IF;
 -- Look for the schema holding the dblink functions.
@@ -2255,13 +2254,13 @@ $dist_emaj_verify_cluster$
       SELECT msg
         FROM dist_emaj._verify_instance(p_cluster, p_isRollbackAction) msg
     LOOP
-      RAISE WARNING 'dist_emaj_verify_cluster: %', r_instance.msg;
+      RAISE WARNING '_verify_cluster: %', r_instance.msg;
       IF r_instance.msg LIKE 'Error%' THEN
         v_errorFound = TRUE;
       END IF;
     END LOOP;
     IF v_errorFound THEN
-      RAISE EXCEPTION 'dist_emaj_verify_cluster: At least one postgres instance has a too low "max_prepared_transactions" parameter';
+      RAISE EXCEPTION '_verify_cluster: At least one postgres instance has a too low "max_prepared_transactions" parameter';
     END IF;
 -- Cleanup the rollback states.
 -- Look at each distributed rollback operation known as in-progress, i.e. not yet commited or aborted.
@@ -2289,8 +2288,30 @@ $dist_emaj_verify_cluster$
       END IF;
     END LOOP;
   END;
+$_verify_cluster$;
+
+CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_verify_cluster(p_cluster TEXT)
+RETURNS INT LANGUAGE plpgsql AS
+$dist_emaj_verify_cluster$
+-- This function allows a Distributed E-Maj administrator to verify the cluster health.
+-- It calls _verify_cluster() to check that:
+--   the cluster exists,
+--   all databases are reachable by dblink, contain a emaj extension in a valid version and can handle global transactions,
+--   all table groups assigned to the cluster exist,
+--   all postgres instances have a large enough "max_prepared_transactions" parameter.
+-- It also cleans up the state of rollback operations that are known as in-progress.
+-- Input: cluster name.
+-- Output: number of table groups assigned to the cluster.
+  BEGIN
+-- Call the _verify_cluster() function, that raises an exception if an issue is encountered.
+    PERFORM dist_emaj._verify_cluster(p_cluster, NULL, FALSE);
+-- The cluster is OK, now compute and return the number of assigned table groups.
+    RETURN count(*)
+      FROM dist_emaj.dist_emaj_cluster_group
+      WHERE clgrp_cluster = p_cluster;
+  END;
 $dist_emaj_verify_cluster$;
-COMMENT ON FUNCTION dist_emaj.dist_emaj_verify_cluster(TEXT, BOOLEAN, BOOLEAN) IS
+COMMENT ON FUNCTION dist_emaj.dist_emaj_verify_cluster(TEXT) IS
 $$Performs a health check of a cluster.$$;
 
 CREATE OR REPLACE FUNCTION dist_emaj.dist_emaj_sync_marks_cluster(p_cluster TEXT)

@@ -27,32 +27,30 @@ Verifying the State of a Cluster
 
 Once a *cluster* is created and populated with table groups, you can verify its state by executing the following SQL query::
 
-   SELECT dist_emaj.dist_emaj_verify_cluster(p_cluster, p_checkEmptyCluster);
+   SELECT dist_emaj.dist_emaj_verify_cluster(p_cluster);
 
 **Input Parameters**
 
 - ``p_cluster`` (*TEXT*): **Name of the cluster** to verify.
-- ``p_checkEmptyCluster`` (*BOOLEAN*):
-
-   - *FALSE*, default value: The *cluster* may contain no table groups.
-   - *TRUE*: If the *cluster* contains no table groups, the function generates an error.
 
 **Returned Data**
 
-The function does not return any data.
+If no error is encountered, the function returns the number of assigned table groups.
 
 **Notes**
 
 The function checks that:
 
-- The cluster exists,
-- The cluster has at least one assigned table group (checked on demand),
-- All *databases* accessed by the *cluster* are accessible via *dblink*, contain the *emaj* extension, and can handle global transactions,
+- The *cluster* exists.
+- All *databases* accessed by the *cluster*:
+
+   - Are accessible via *dblink*.
+   - Contain the *emaj* extension in a proper version.
+   - Are accessed by a role having E-Maj administration rights.
+- All PostgreSQL instances hosting *databases* have a *max_prepared_transactions* parameter large enough to support the number of requested sessions in global transactions.
 - All table groups assigned to the *cluster* exist.
 
 The function also updates the state of *distributed rollback* operations that are reputed to be in progress.
-
-This function is called by the two clients: :doc:`distEmaj.pl<distEmajClient>` and :doc:`distEmajRollback.pl<distEmajRollbackClient>`. However, it can also be called manually, particularly right after configuring the *cluster*.
 
 ----
 
@@ -79,12 +77,13 @@ The function checks that:
 
 - All *databases*:
 
-   - Are accessible via *dblink*,
-   - Contain a valid version of the *emaj* extension,
-   - Can handle global transactions,
-- All table groups assigned to the cluster exist.
+   - Are accessible via *dblink*.
+   - Contain a compatible version of the *emaj* extension.
+   - Are accessed by a role having E-Maj administration rights.
+- All PostgreSQL instances hosting *databases* have a *max_prepared_transactions* parameter large enough to support the number of requested sessions in global transactions.
+- All table groups assigned to the *cluster* exist.
 
-If no anomalies are detected, the function returns a single row containing the message::
+If no error is detected, the function returns a single row containing the message::
 
    'No error detected'
 
