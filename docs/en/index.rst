@@ -45,7 +45,6 @@ Welcome to the Distributed E-Maj documentation!
    :caption: Miscellaneous:
 
    traces
-   reliability
    emajActionsImpacts
    limits
 

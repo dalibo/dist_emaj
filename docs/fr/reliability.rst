@@ -1,2 +1,0 @@
-Fiabilisation du fonctionnement
-===============================

@@ -45,7 +45,6 @@ Bienvenue dans la documentation Distributed E-Maj !
    :caption: Considérations diverses :
 
    traces
-   reliability
    emajActionsImpacts
    limits
 
