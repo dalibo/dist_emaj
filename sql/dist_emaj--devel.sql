@@ -2073,7 +2073,7 @@ $_verify_database$
         RETURN NEXT v_msg;
       END IF;
     END IF;
--- Then check the emaj version installed on the database is >= 5.0.
+-- Then check the emaj version installed on the database is >= 5.0.1.
     IF v_checkStep >= 3 THEN
       v_stmt = 'SELECT emaj.emaj_get_version() AS emaj_version';
       EXECUTE format('SELECT emaj_version FROM %I.dblink(%L) AS (emaj_version TEXT)',
@@ -2084,8 +2084,8 @@ $_verify_database$
         v_emajVersionNum = v_emajVersionArray[1]::SMALLINT * 10000 +
                            v_emajVersionArray[2]::SMALLINT * 100 +
                            v_emajVersionArray[3]::SMALLINT;
-        IF v_emajVersionNum < 50000 THEN
-          v_msg = format('Error on database "%s", the emaj version (%s) is too old. It must be at least 5.0.0.',
+        IF v_emajVersionNum < 50001 THEN
+          v_msg = format('Error on database "%s", the emaj version (%s) is too old. It must be at least 5.0.1.',
                          p_database, v_emajVersion);
           IF p_onErrorStop THEN
             EXECUTE format('SELECT %I.dblink_disconnect()', p_dblinkSchema);
@@ -2203,7 +2203,7 @@ $_verify_cluster$
 -- It checks that:
 --   the cluster exists,
 --   the cluster has at least 1 assigned table group (on request),
---   all databases are reachable by dblink, contain a emaj extension in a valid version and can handle global transactions,
+--   all databases are reachable by dblink, contain a emaj extension in a valid version,
 --   all table groups assigned to the cluster exist,
 --   all postgres instances have a large enough "max_prepared_transactions" parameter.
 -- It also cleans up the state of rollback operations that are known as in-progress.
