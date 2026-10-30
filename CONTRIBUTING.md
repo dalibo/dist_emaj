@@ -3,6 +3,4 @@ Contributing to Distributed E-Maj
 
 Any contribution is welcome to improve the Distributed E-Maj extension.
 
-The https://github.com/dalibo/emaj github repository contains all needed source components, as well as some tools that can help in developping and maintaining the extension.
-
-A lot of pratical information is available in the [documentation](http://emaj.readthedocs.io/en/latest/contributing.html).
+The https://github.com/dalibo/dist_emaj github repository contains all needed source components, as well as some tools that can help in developping and maintaining the extension.
