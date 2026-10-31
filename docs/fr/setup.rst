@@ -1,7 +1,9 @@
 Installer Distributed E-Maj dans une base de données
 ====================================================
 
-Distributed E-Maj s'installe dans une base de données comme une *EXTENSION* (au sens de PostgreSQL). Pour ce faire, l’utilisateur doit disposer des droits **SUPERUSER**.
+Au préalable, le :doc:`logiciel Distributed E-Maj doit avoir été installé<install>` sur le serveur.
+
+Distributed E-Maj s'installe dans une base de données comme une *EXTENSION* (au sens de PostgreSQL). Celle-ci nécessite que l’utilisateur dispose des droits **SUPERUSER**.
 
 Création de l’extension dist_emaj
 ---------------------------------
