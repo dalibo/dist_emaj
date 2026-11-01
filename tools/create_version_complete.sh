@@ -1,0 +1,173 @@
+#! /bin/bash
+# create_version_complete.sh
+# create_version is a tool that creates a new Distributed E-Maj version from the devel dist_emaj environment.
+# This create_version_complete.sh script is the third step of the operation, after having
+#   executed the create_version_prepare.sh script and commited and tagged the version. 
+#
+# Usage: (assuming the Distributed E-Maj project root directory is ~/proj/dist_emaj)
+# 	cd ~/proj
+# 	sh dist_emaj/tools/create_version_complete.sh <new_version>
+#     (where for instance: <new_version> = '1.0.0')
+#
+# If the operation has to be reverted, the repo has to be set back to a state prior the latest commit:
+#   git reset HEAD^1 --hard
+#   rm *.bak sql/*.bak test/sql/*.bak client/*.bak
+#	rm -R ../dist_emaj-<new_version>
+#
+	echo "Starting create_version_complete.sh..."
+
+# Checks
+# ------
+
+# Get and verify parameters
+	if [ $# -ne 1 ]
+	then
+		echo "Expected syntax is: dist_emaj/tools/create_version_complete.sh <new version>"
+		echo "For instance: sh dist_emaj/tools/create_version_complete.sh '1.0.0'"
+		exit 1
+	fi
+	NEW=$1
+
+# Build directory names
+	MAINDIR="dist_emaj"
+	NEWDIR="dist_emaj-"$NEW
+
+# Verify that the current dist_emaj version is not devel
+	if [ -f $MAINDIR/sql/dist_emaj--devel.sql ]
+	then
+		echo "A $MAINDIR/sql/dist_emaj--devel.sql file has been found."
+		echo "The environement is probably already in <devel> state."
+		exit 1
+	fi
+
+# Verify that the new version directory doesn't already exist
+	if [ -d $NEWDIR ]
+	then
+		echo "A $NEWDIR directory already exists !"
+		echo "Remove it with rm -Rf $NEWDIR before reruning this script."
+		exit 1
+	fi
+
+# Create the new version environment
+# ----------------------------------
+
+# Clone the dist_emaj directory to the new version directory (this also clones the .git directory)
+	echo "Cloning version to $NEW..."
+	cp -R $MAINDIR $NEWDIR
+
+# Adjust the new directory content
+	cd $NEWDIR
+	echo "Adjusting $NEW content..."
+
+# Remove the .bak files created by create_version_prepare.sh
+	rm *.bak sql/*.bak client/*.bak test/sql/*.bak
+
+# Change version identifiers inside files from tools, except the README file
+	find tools ! -path tools/README -type f -exec sed -i "s/<devel>/${NEW}/g" '{}' \;
+
+# Change environment directories and files into tools
+	sed -i "s/\/dist_emaj/\/dist_emaj-${NEW}/" tools/copy2Expected.sh
+
+	sed -i "s/\/proj\/dist_emaj/\/proj\/dist_emaj-${NEW}/" tools/regress.sh
+	sed -i "s/dist_emaj..sql/dist_emaj-${NEW}\\\\\/sql/" tools/regress.sh
+
+	sed -i "s/\/proj\/dist_emaj/\/proj\/dist_emaj-${NEW}/" tools/check_code.pl
+	sed -i "s/dist_emaj--devel.sql/dist_emaj--${NEW}.sql/g" tools/check_code.pl
+
+	sed -i "s/\/proj\/dist_emaj/\/proj\/dist_emaj-${NEW}/" tools/check_error_messages.pl
+	sed -i "s/dist_emaj--devel.sql/dist_emaj--${NEW}.sql/g" tools/check_error_messages.pl
+
+#	sed -i "s/dist_emaj--devel.sql/dist_emaj--${NEW}.sql/" tools/create_sql_install_script.pl
+#	sed -i "s/dist_emaj-devel.sql/dist_emaj-${NEW}.sql/" tools/create_sql_install_script.pl
+
+# Process doc directory: copy the Libre Office source documents from the emaj_doc directory, if any
+	echo "Processing the pdf documentation..."
+
+	cp ../emaj_doc/Emaj.devel_pres_en.odp doc/Dist_Emaj.${NEW}_pres_en.odp
+	cp ../emaj_doc/Emaj.devel_pres_fr.odp doc/Dist_Emaj.${NEW}_pres_fr.odp
+
+# Generate the pdf files
+	cd doc
+	libreoffice --headless --convert-to pdf Dist_Emaj.${NEW}_pres_en.odp
+	libreoffice --headless --convert-to pdf Dist_Emaj.${NEW}_pres_fr.odp
+	cd ..
+
+# Add the doc files into the tar.index file
+	echo "${NEWDIR}/doc/Dist_Emaj.${NEW}_pres_en.odp" >>tar.index
+	echo "${NEWDIR}/doc/Dist_Emaj.${NEW}_pres_fr.odp" >>tar.index
+	echo "${NEWDIR}/doc/Dist_Emaj.${NEW}_pres_en.pdf" >>tar.index
+	echo "${NEWDIR}/doc/Dist_Emaj.${NEW}_pres_fr.pdf" >>tar.index
+
+# Create the delivery tar file
+	cd ..
+	echo "Creating the tar file for PGXN (dist_emaj-${NEW}.tar.gz)..."
+	tar -czf dist_emaj-${NEW}.tar.gz -T dist_emaj-${NEW}/tar.index
+
+# Check that no 'devel' string remains in sql scripts
+	cd $NEWDIR
+	echo "Chack that no 'devel' string appear below"
+	grep -s 'devel[^o]' * sql/* test/sql/*
+
+# Adjust the emaj directory content
+# ---------------------------------
+	echo "Adjusting $MAINDIR content..."
+
+	cd $MAINDIR
+# Add a new entry in CHANGES.md
+	sed -i "3idevel\n------\n### Enhancements: ###\n\n\n### Bug fixes: ###\n\n" CHANGES.md
+
+# Revert the version id to <devel> for files modified by the create_version_prepare.sh script
+	mv META.json.bak META.json
+	mv README.md.bak README.md
+	mv dist_emaj.control.bak dist_emaj.control
+	mv tar.index.bak tar.index
+
+#	mv sql/dist_emaj-devel.sql.bak sql/dist_emaj-devel.sql
+#	git add sql/dist_emaj-devel.sql
+	mv sql/dist_emaj--devel.sql.bak sql/dist_emaj--devel.sql
+	git add sql/dist_emaj--devel.sql
+
+	mv client/distEmaj.pl.bak client/distEmaj.pl
+	mv client/distEmajRollback.pl.bak client/distEmajRollback.pl
+
+	mv test/sql/install.sql.bak test/sql/install.sql
+#	mv test/sql/install_upgrade.sql.bak test/sql/install_upgrade.sql
+#	mv test/sql/install_oldest.sql.bak test/sql/install_oldest.sql
+#	mv test/sql/upgrade_while_logging.sql.bak test/sql/upgrade_while_logging.sql
+#	mv test/sql/install_psql.sql.bak test/sql/install_psql.sql
+#	mv test/sql/non_superuser_install.sql.bak test/sql/non_superuser_install.sql
+
+# Adjust the extension version to create into the install_previous.sql and install_upgrade.sql test scripts
+#	sed -i "s/CREATE EXTENSION emaj VERSION '.*' CASCADE;/CREATE EXTENSION emaj VERSION '${NEW}' CASCADE;/" test/sql/install_previous.sql
+#	sed -i "s/CREATE EXTENSION emaj VERSION '.*' CASCADE;/CREATE EXTENSION emaj VERSION '${NEW}' CASCADE;/" test/sql/install_upgrade.sql
+
+# Create a new empty migration script, by copying and adjusting the upgrade script template
+#    sed "s/<PREVIOUS_VERSION>/${NEW}/g" tools/emaj_upgrade.template >sql/emaj--$NEW--devel.sql
+#	git add sql/emaj--$NEW--devel.sql
+
+# Adjust the tar.index content
+#	sed -ri "s/dist_emaj--(.*?)--devel.sql/dist_emaj--\1--${NEW}.sql/" tar.index
+#	sed -i "/dist_emaj-devel.sql/ a\dist_emaj/sql/dist_emaj--${NEW}--devel.sql" tar.index
+
+# Adjust the functions synchronization tool that build the upgrade script (sync_fct_in_upgrade_script.pl)
+#	sed -i -E "s/previousSourceFile = .*;/previousSourceFile = \$emajEnvRootDir . \"\/sql\/emaj--${NEW}\.sql\";/" tools/sync_fct_in_upgrade_script.pl
+#	sed -i -E "s/upgradeScriptFile  = .*;/upgradeScriptFile  = \$emajEnvRootDir . \"\/sql\/emaj--${NEW}--devel\.sql\";/" tools/sync_fct_in_upgrade_script.pl
+
+# Delete the now useless psql installation script for the last version
+#	git rm sql/emaj-${NEW}.sql
+
+# Adjust the extension version to create into the install_previous.sql and install_upgrade.sql test scripts
+#	sed -i "s/CREATE EXTENSION emaj VERSION '.*' CASCADE;/CREATE EXTENSION emaj VERSION '${NEW}' CASCADE;/" test/sql/install_previous.sql
+#	sed -i "s/CREATE EXTENSION emaj VERSION '.*' CASCADE;/CREATE EXTENSION emaj VERSION '${NEW}' CASCADE;/" test/sql/install_upgrade.sql
+
+# Check there is no .bak file anymore
+	echo "Check that no .bak file appear below"
+	find |grep '\.bak$'
+
+	cd ..
+
+# End of processing
+# -----------------
+	echo "The $NEWDIR directory is ready for non regression tests."
+	echo "The $NEWDIR directory is ready for non regression tests and checks, before a commit."
+	echo "  git commit -am 'Revert the version back to devel. Prepare a new empty upgrade script and adjust the regression test environment for the next release.'"

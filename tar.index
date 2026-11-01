@@ -1,0 +1,12 @@
+dist_emaj/AUTHORS.md
+dist_emaj/CHANGES.md
+dist_emaj/CONTRIBUTING.md
+dist_emaj/LICENSE
+dist_emaj/META.json
+dist_emaj/Makefile
+dist_emaj/README.md
+dist_emaj/SECURITY.md
+dist_emaj/dist_emaj.control
+dist_emaj/sql/dist_emaj--devel.sql
+dist_emaj/client/distEmaj.pl
+dist_emaj/client/distEmajRollback.pl

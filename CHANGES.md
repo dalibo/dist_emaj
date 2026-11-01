@@ -1,11 +1,9 @@
 Distributed E-Maj - Change log
 ==============================
-<devel>
+devel
 ------
-###Enhancements:###
+### Enhancements: ###
 
-###Bug fixes:###
+  * Initial version.
 
-0.5 (2010-Feb-23)
-----
-First released version
+### Bug fixes: ###
