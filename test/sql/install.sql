@@ -29,13 +29,13 @@ ALTER DATABASE regression_2 SET timezone_abbreviations TO 'Default';
 -----------------------------
 
 \c regression_1
-CREATE EXTENSION emaj VERSION '0.9.0' CASCADE;
+CREATE EXTENSION emaj VERSION 'devel' CASCADE;
 
 \c regression_2
-CREATE EXTENSION emaj VERSION '0.9.0' CASCADE;
+CREATE EXTENSION emaj VERSION 'devel' CASCADE;
 
 \c regression
-CREATE EXTENSION emaj VERSION '0.9.0' CASCADE;
+CREATE EXTENSION emaj VERSION 'devel' CASCADE;
 
 -----------------------------
 -- Create the dist_emaj extension into regression.
@@ -47,7 +47,7 @@ CREATE EXTENSION emaj VERSION '0.9.0' CASCADE;
 \set ECHO all
 
 -- The good way.
-CREATE EXTENSION dist_emaj VERSION '0.9.0' CASCADE;
+CREATE EXTENSION dist_emaj VERSION 'devel' CASCADE;
 
 -----------------------------
 -- Check installation.

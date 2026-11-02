@@ -24,7 +24,7 @@ STDOUT->autoflush(1);
 
 use vars qw($VERSION $PROGRAM $APPNAME);
 
-$VERSION = '0.9.0';
+$VERSION = '<devel>';
 $PROGRAM = 'distEmajRollback.pl';
 $APPNAME = 'distEmajRollback';
 

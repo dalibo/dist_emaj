@@ -107,6 +107,7 @@
 	cd $NEWDIR
 	echo "Chack that no 'devel' string appear below"
 	grep -s 'devel[^o]' * sql/* test/sql/*
+	cd ..
 
 # Adjust the emaj directory content
 # ---------------------------------
