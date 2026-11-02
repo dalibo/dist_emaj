@@ -1,6 +1,10 @@
 README.md
 =========
 
+Distributed E-Maj: rollbacks tables content changes distributed on several databases in a consistent manner.
+
+Version: <devel>
+
 License
 -------
 
