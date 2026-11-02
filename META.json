@@ -1,35 +1,36 @@
 {
-   "name": "Distributed E-Maj",
-   "abstract": "Distributed E-Maj is a PostgreSQL extension which extends the E-Maj extension capabilities by offering multi-databases distribution capabilities.",
-   "description": "Two clients allow to synchronize E-Maj marks set and E-Maj rollback operations in a consistent manner.",
+   "name": "dist_emaj",
+   "abstract": "Distributed E-Maj is a PostgreSQL extension which extends the E-Maj extension by offering multi-databases distribution capabilities.",
+   "description": "Two clients allow to synchronize E-Maj marks set and E-Maj rollback operations on several databases in a consistent manner.",
    "version": "devel",
+   "release_status": "unstable",
    "maintainer": "Philippe Beaudoin - phb<dot>emaj<at>free<dot>fr",
    "license": "gpl_3",
-   "tags": [ "emaj", "2PC", "2 phase commit", "consistency" ],
+   "tags": [ "emaj", "E-Maj", "distributed", "2PC", "2 phase commit", "consistency" ],
    "prereqs": {
      "runtime": {
        "requires": {
-         "dblink": 0,
+         "dblink": 0
        }
      }
    },
    "provides": {
-     "emaj": {
+     "dist_emaj": {
        "file": "sql/dist_emaj--devel.sql",
-       "docfile": "doc/Emaj.devel_doc_en.pdf",
+       "docfile": "README.md",
        "version": "devel",
        "abstract": "Distributed tables changes log and rollback"
      }
    },
    "resources": {
-      "homepage": "http://emaj.readthedocs.io",
+      "homepage": "http://dist_emaj.readthedocs.io",
       "repository": {
-        "url":  "https://github.com/dalibo/emaj.git",
-        "web":  "https://github.com/dalibo/emaj/",
+        "url":  "https://github.com/dalibo/dist_emaj.git",
+        "web":  "https://github.com/dalibo/dist_emaj/",
         "type": "git"
       },
       "bugtracker": {
-         "web": "https://github.com/dalibo/emaj/issues"
+         "web": "https://github.com/dalibo/dist_emaj/issues"
       }
    },
    "meta-spec": {
