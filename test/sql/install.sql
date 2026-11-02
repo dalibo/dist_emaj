@@ -41,12 +41,6 @@ CREATE EXTENSION emaj VERSION 'devel' CASCADE;
 -- Create the dist_emaj extension into regression.
 -----------------------------
 
--- The bad way.
-\set ECHO none
-\i sql/dist_emaj--devel.sql
-\set ECHO all
-
--- The good way.
 CREATE EXTENSION dist_emaj VERSION 'devel' CASCADE;
 
 -----------------------------

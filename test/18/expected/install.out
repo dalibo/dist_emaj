@@ -37,10 +37,6 @@ NOTICE:  installing required extension "btree_gist"
 -----------------------------
 -- Create the dist_emaj extension into regression.
 -----------------------------
--- The bad way.
-\set ECHO none
-Use "CREATE EXTENSION dist_emaj CASCADE" to install the dist_emaj extension.
--- The good way.
 CREATE EXTENSION dist_emaj VERSION 'devel' CASCADE;
 -----------------------------
 -- Check installation.

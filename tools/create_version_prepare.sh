@@ -89,7 +89,7 @@
 	sed -i.bak -e "s/^dist_emaj/dist_emaj-${NEW}/" -e "s/devel/${NEW}/g" tar.index
 
 # Change version identifiers inside files from /test/sql
-	sed -i.bak "s/'devel'/'${NEW}'/g" test/sql/install.sql
+	sed -i.bak "s/dist_emaj VERSION 'devel'/dist_emaj VERSION '${NEW}'/g" test/sql/install.sql
 #	sed -i.bak "s/'devel'/'${NEW}'/g" test/sql/install_upgrade.sql
 #	sed -i.bak "s/'devel'/'${NEW}'/g" test/sql/install_oldest.sql
 #	sed -i.bak "s/'devel'/'${NEW}'/g" test/sql/upgrade_while_logging.sql
