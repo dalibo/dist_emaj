@@ -1,6 +1,7 @@
 Distributed E-Maj - Change log
 ==============================
-devel
+
+0.9.0 (2026-Nov-2)
 ------
 ### Enhancements: ###
 

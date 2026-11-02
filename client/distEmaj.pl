@@ -24,7 +24,7 @@ STDOUT->autoflush(1);
 
 use vars qw($VERSION $PROGRAM $APPNAME);
 
-$VERSION = '<devel>';
+$VERSION = '0.9.0';
 $PROGRAM = 'distEmaj.pl';
 $APPNAME = 'distEmaj';
 

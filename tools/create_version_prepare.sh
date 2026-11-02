@@ -63,10 +63,10 @@
 	sed -i "s/^devel$/\n${NEW} (${DATE})/" CHANGES.md
 
 # Adapt and rename the migration script
-	sed -i "s/<devel>/${NEW}/g" sql/dist_emaj--*--devel.sql
-	for file in sql/dist_emaj--*-devel.sql; do
-		git mv $file $(echo $file | sed -r "s/devel/${NEW}/")
-	done
+#	sed -i "s/<devel>/${NEW}/g" sql/dist_emaj--*--devel.sql
+#	for file in sql/dist_emaj--*--devel.sql; do
+#		git mv $file $(echo $file | sed -r "s/devel/${NEW}/")
+#	done
 
 # Process sql directory: change version identifiers and rename scripts in development version
 	find sql/*devel.sql -type f -exec sed -i.bak "s/<devel>/${NEW}/g" '{}' \;
@@ -74,7 +74,7 @@
 #	git mv sql/dist_emaj-devel.sql sql/dist_emaj-${NEW}.sql
 
 # Change version identifiers inside files from /client
-	find client/dist_emaj.pl client/distEmajRollback.pl -type f -exec sed -i.bak "s/<devel>/${NEW}/g" '{}' \;
+	find client/distEmaj.pl client/distEmajRollback.pl -type f -exec sed -i.bak "s/<devel>/${NEW}/g" '{}' \;
 
 # Change version identifiers inside README.md
 	sed -i.bak "s/<devel>/${NEW}/g" README.md

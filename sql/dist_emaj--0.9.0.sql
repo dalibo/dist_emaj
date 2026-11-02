@@ -1,5 +1,5 @@
 --
--- Distributed E-Maj : add distributed features to the E-Maj solution : Version <devel>
+-- Distributed E-Maj : add distributed features to the E-Maj solution : Version 0.9.0
 --
 -- This software is distributed under the GNU General Public License.
 --
@@ -3287,7 +3287,7 @@ INSERT INTO pg_catalog.pg_description (objoid, classoid, objsubid, description)
         );
 -- Register the dist_emaj version into the version history table.
 INSERT INTO dist_emaj.dist_emaj_version_hist (verh_version, verh_time_range)
-  SELECT '<devel>', TSTZRANGE(clock_timestamp(), null, '[]');
+  SELECT '0.9.0', TSTZRANGE(clock_timestamp(), null, '[]');
 -- Insert the completion event into the operations history.
 INSERT INTO dist_emaj.dist_emaj_hist (hist_function, hist_object, hist_wording)
-  VALUES ('DIST_EMAJ_INSTALL', 'dist_emaj <devel>', 'Initialisation completed');
+  VALUES ('DIST_EMAJ_INSTALL', 'dist_emaj 0.9.0', 'Initialisation completed');
