@@ -3072,6 +3072,7 @@ $dist_emaj_drop_extension$
 -- This function drops dist_emaj from the current database.
   DECLARE
     v_isSuperuser            BOOLEAN;
+    v_exceptionDetail        TEXT;
   BEGIN
 -- Check the current role is superuser.
     SELECT rolsuper INTO v_isSuperuser
@@ -3098,14 +3099,24 @@ $dist_emaj_drop_extension$
     BEGIN
       DROP ROLE dist_emaj_adm;
       RAISE NOTICE 'dist_emaj_drop_extension: The dist_emaj_adm role has been dropped.';
-    EXCEPTION WHEN OTHERS THEN
-      RAISE WARNING 'dist_emaj_drop_extension: The dist_emaj_adm role has not been dropped (sqlstate %).', SQLSTATE;
+    EXCEPTION
+        WHEN SQLSTATE '2BP01' THEN
+          GET STACKED DIAGNOSTICS v_exceptionDetail = PG_EXCEPTION_DETAIL;
+          RAISE WARNING 'dist_emaj_drop_extension: The dist_emaj_adm role cannot been dropped because some objects still depend on it'
+                        ' (%).', v_exceptionDetail;
+        WHEN OTHERS THEN
+          RAISE WARNING 'dist_emaj_drop_extension: The dist_emaj_adm role has not been dropped (sqlstate %).', SQLSTATE;
     END;
     BEGIN
       DROP ROLE dist_emaj_viewer;
       RAISE NOTICE 'dist_emaj_drop_extension: The dist_emaj_viewer role has been dropped.';
-    EXCEPTION WHEN OTHERS THEN
-      RAISE WARNING 'dist_emaj_drop_extension: The dist_emaj_viewer role has not been dropped (sqlstate %).', SQLSTATE;
+    EXCEPTION
+        WHEN SQLSTATE '2BP01' THEN
+          GET STACKED DIAGNOSTICS v_exceptionDetail = PG_EXCEPTION_DETAIL;
+          RAISE WARNING 'dist_emaj_drop_extension: The dist_emaj_viewer role cannot been dropped because some objects still depend on it'
+                        ' (%).', v_exceptionDetail;
+        WHEN OTHERS THEN
+          RAISE WARNING 'dist_emaj_drop_extension: The dist_emaj_viewer role has not been dropped (sqlstate %).', SQLSTATE;
     END;
 --
     RETURN;
