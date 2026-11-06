@@ -6,12 +6,11 @@
 # It performs various checks on the script format.
 # It detects unused variables declared in functions.
 # It also verifies that lines do not contains tab char or trailing spaces.
+# It must be run from the project main directory.
 
 use warnings; use strict;
 
-# The 2 variables below are to be customized
-  my $dir = $ENV{DIST_EMAJ_DIR};
-  my $fic_src = $dir."/sql/dist_emaj--devel.sql";
+  my $fic_src = "sql/dist_emaj--devel.sql";
 
   our $fnctName;
   our @varNames;    # array of variable names for the current function
@@ -42,7 +41,8 @@ use warnings; use strict;
   print ("----------------------------------------------------------\n");
   print ("Code checking of the Distributed E-Maj installation script\n");
   print ("----------------------------------------------------------\n");
-  open (FICSRC,$fic_src) || die ("Error in opening ".$fic_src." file\n");
+  open (FICSRC, $fic_src)
+    || die ("Error while opening " . $fic_src . " file. Please check your working directory is the project main directory.\n");
 
 # scan and process input file
   while (<FICSRC>){

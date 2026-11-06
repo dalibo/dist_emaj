@@ -80,7 +80,7 @@ Similarly, a symbolic link has to be created to locate the *sql* install script 
 
      ln -s sql test/sql/sql
 
-Then the *regress.sh* script may be adapted.
+Then the *regress.sh* script may be adapted if needed.
 
 At the end of the script, a menu is displayed to propose all available tests. You can adapt it to your environment by modifing values in the *DIST_EMAJ_REGTEST_\*_PGVER* arrays.
 
@@ -96,13 +96,14 @@ At the beginning of the script (near line 7), the *DIST_EMAJ_HOME* variable is i
 Then for each available postgres major version on the environment, 2 commands copy the ouput test files from the /results to the /expected directories. You must adapt the script to your installed major postgres versions.
 
 check_code.pl
-----------------------------
+-------------
 
 The *check_code.pl* perl script performs various checks on the SQL script that creates the *dist_emaj* extension. It detects unused variables in plpgsql functions. It checks the format of lines and reports tab characters or trailing spaces.
 
 **Customisation**:
 
-Line 29 and 30, two variables set the pathname of the source script to analyze.
+No customization is needed.
+
 
 check_error_messages.pl
 -----------------------
@@ -111,7 +112,7 @@ The *check_error_messages.pl* perl script analyzes how the non regression tests 
 
 **Customisation**:
 
-Line 12 to 14, three variables set the pathname of the source script to analyze and the regression tests output results files.
+The variable set at line 15 needs to be customized to fit the regression tests result files to examine.
 
 create_version
 -----------------
@@ -156,4 +157,5 @@ Once the environement is ready for future developments, commit the changes on th
     git commit -am 'Revert the version back to devel. Prepare a new empty upgrade script and adjust the regression test environment for the next release.''
 
 **Customization**:
+
 No customization is needed for these scripts.

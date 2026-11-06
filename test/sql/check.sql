@@ -66,4 +66,4 @@ SELECT sum(calls) FROM pg_stat_user_functions WHERE funcname LIKE E'dist\\_emaj\
 -- Execute the perl script that checks the code.
 -----------------------------
 
-\! perl ${DIST_EMAJ_DIR}/tools/check_code.pl | grep -P '^WARNING:|^ERROR:'
+\! perl ${DIST_EMAJ_DIR}/tools/check_code.pl | grep -P '^Error |^WARNING:|^ERROR:'
